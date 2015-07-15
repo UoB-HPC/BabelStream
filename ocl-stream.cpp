@@ -57,6 +57,20 @@ int main(void)
 		std::vector<DATATYPE> h_a(ARRAY_SIZE, 1.0);
 		std::vector<DATATYPE> h_b(ARRAY_SIZE, 2.0);
 		std::vector<DATATYPE> h_c(ARRAY_SIZE, 0.0);
+
+		// Create device buffers
+		cl::Buffer d_a(context, CL_MEM_READ_WRITE, sizeof(DATATYPE) * ARRAY_SIZE);
+		cl::Buffer d_b(context, CL_MEM_READ_WRITE, sizeof(DATATYPE) * ARRAY_SIZE);
+		cl::Buffer d_c(context, CL_MEM_READ_WRITE, sizeof(DATATYPE) * ARRAY_SIZE);
+
+		// Copy host memory to device
+		cl::copy(queue, h_a.begin(), h_a.end(), d_a);
+		cl::copy(queue, h_b.begin(), h_b.end(), d_b);
+		cl::copy(queue, h_c.begin(), h_c.end(), d_c);
+
+		// Make sure the copies are finished
+		queue.finish();
+
 	}
 	// Catch OpenCL Errors and display information
 	catch (cl::Error& e)
