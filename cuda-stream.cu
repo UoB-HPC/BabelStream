@@ -96,29 +96,29 @@ void check_solution(std::vector<DATATYPE>& a, std::vector<DATATYPE>& b, std::vec
 
 const DATATYPE scalar = 3.0;
 
-// __global__ void copy(const DATATYPE * restrict a, DATATYPE * restrict c)
-// {
-//     const int i = blockDim.x * blockIdx.x + threadIdx.x;
-//     c[i] = a[i];
-// }
+__global__ void copy(const DATATYPE * a, DATATYPE * c)
+{
+    const int i = blockDim.x * blockIdx.x + threadIdx.x;
+    c[i] = a[i];
+}
 
-// __global__ void mul(DATATYPE * restrict b, const DATATYPE * restrict c)
-// {
-//     const int i = blockDim.x * blockIdx.x + threadIdx.x;
-//     b[i] = scalar * c[i];
-// }
+__global__ void mul(DATATYPE * b, const DATATYPE * c)
+{
+    const int i = blockDim.x * blockIdx.x + threadIdx.x;
+    b[i] = scalar * c[i];
+}
 
-// __global__ void add(const DATATYPE * restrict a, const DATATYPE * restrict b, DATATYPE * restrict c)
-// {
-//     const int i = blockDim.x * blockIdx.x + threadIdx.x;
-//     c[i] = a[i] + b[i];
-// }
+__global__ void add(const DATATYPE * a, const DATATYPE * b, DATATYPE * c)
+{
+    const int i = blockDim.x * blockIdx.x + threadIdx.x;
+    c[i] = a[i] + b[i];
+}
 
-// __global__ void triad(DATATYPE * restrict a, const DATATYPE * restrict b, const DATATYPE * restrict c)
-// {
-//     const int i = blockDim.x * blockIdx.x + threadIdx.x;
-//     a[i] = b[i] + scalar * c[i];
-// }
+__global__ void triad(DATATYPE * a, const DATATYPE * b, const DATATYPE * c)
+{
+    const int i = blockDim.x * blockIdx.x + threadIdx.x;
+    a[i] = b[i] + scalar * c[i];
+}
 
 int deviceIndex = 0;
 
