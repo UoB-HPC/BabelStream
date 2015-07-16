@@ -286,6 +286,13 @@ int parseUInt(const char *str, unsigned int *output)
     return !strlen(next);
 }
 
+int parseInt(const char *str, int *output)
+{
+    char *next;
+    *output = strtol(str, &next, 10);
+    return !strlen(next);
+}
+
 void parseArguments(int argc, char *argv[])
 {
     for (int i = 1; i < argc; i++)
@@ -315,7 +322,7 @@ void parseArguments(int argc, char *argv[])
         }
         else if (!strcmp(argv[i], "--device"))
         {
-            if (++i >= argc || !parseUInt(argv[i], &deviceIndex))
+            if (++i >= argc || !parseInt(argv[i], &deviceIndex))
             {
                 std::cout << "Invalid device index" << std::endl;
                 exit(1);
