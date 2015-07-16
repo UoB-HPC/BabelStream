@@ -11,13 +11,19 @@
 #include "cl.hpp"
 
 #define DATATYPE double
-#define ARRAY_SIZE 50000000
+unsigned int ARRAY_SIZE = 50000000;
+bool useFloat = false;
 #define NTIMES 10
 
 #define MIN(a,b) ((a) < (b)) ? (a) : (b)
 #define MAX(a,b) ((a) > (b)) ? (a) : (b)
 
 #define VERSION_STRING "0.0"
+
+void parseArguments(int argc, char *argv[]);
+std::string getDeviceName(const cl::Device& device);
+unsigned getDeviceList(std::vector<cl::Device>& devices);
+
 
 struct badfile : public std::exception
 {
@@ -32,6 +38,14 @@ struct badtype : public std::exception
   virtual const char * what () const throw ()
   {
     return "Datatype is not 4 or 8";
+  }
+};
+
+struct invaliddevice : public std::exception
+{
+  virtual const char * what () const throw ()
+  {
+    return "Chosen device index is invalid";
   }
 };
 
@@ -92,8 +106,9 @@ void check_solution(std::vector<DATATYPE>& a, std::vector<DATATYPE>& b, std::vec
 			<< std::endl;
 }
 
+cl_uint deviceIndex = 0;
 
-int main(void)
+int main(int argc, char *argv[])
 {
 
 	// Print out run information
@@ -104,19 +119,30 @@ int main(void)
 
 	try
 	{
+		parseArguments(argc, argv);
+
 		// Open the Kernel source
 		std::ifstream in("ocl-stream-kernels.cl");
 		if (!in.is_open()) throw badfile();
 		std::string kernels(std::istreambuf_iterator<char>(in), (std::istreambuf_iterator<char>()));
 
 		// Setup OpenCL
-		cl::Context context(CL_DEVICE_TYPE_GPU);
+
+		// Get list of devices
+		std::vector<cl::Device> devices;
+		getDeviceList(devices);
+
+		// Check device index is in range
+		if (deviceIndex >= devices.size()) throw invaliddevice();
+
+		cl::Device device = devices[deviceIndex];
+
+		cl::Context context(device);
 		cl::CommandQueue queue(context);
 		cl::Program program(context, kernels);
 
 		// Print out device name
-		std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
-		std::string name = devices[0].getInfo<CL_DEVICE_NAME>();
+		std::string name = getDeviceName(device);
 		std::cout << "Using OpenCL device " << name << std::endl;
 
 		try
@@ -274,4 +300,114 @@ int main(void)
 			<< e.what()
 			<< std::endl;
 	}
+}
+
+unsigned getDeviceList(std::vector<cl::Device>& devices)
+{
+  // Get list of platforms
+  std::vector<cl::Platform> platforms;
+  cl::Platform::get(&platforms);
+
+  // Enumerate devices
+  for (unsigned int i = 0; i < platforms.size(); i++)
+  {
+    std::vector<cl::Device> plat_devices;
+    platforms[i].getDevices(CL_DEVICE_TYPE_ALL, &plat_devices);
+    devices.insert(devices.end(), plat_devices.begin(), plat_devices.end());
+  }
+
+  return devices.size();
+}
+
+std::string getDeviceName(const cl::Device& device)
+{
+  std::string name;
+  cl_device_info info = CL_DEVICE_NAME;
+
+  // Special case for AMD
+#ifdef CL_DEVICE_BOARD_NAME_AMD
+  device.getInfo(CL_DEVICE_VENDOR, &name);
+  if (strstr(name.c_str(), "Advanced Micro Devices"))
+    info = CL_DEVICE_BOARD_NAME_AMD;
+#endif
+
+  device.getInfo(info, &name);
+  return name;
+}
+
+
+int parseUInt(const char *str, cl_uint *output)
+{
+  char *next;
+  *output = strtoul(str, &next, 10);
+  return !strlen(next);
+}
+
+void parseArguments(int argc, char *argv[])
+{
+  for (int i = 1; i < argc; i++)
+  {
+    if (!strcmp(argv[i], "--list"))
+    {
+      // Get list of devices
+      std::vector<cl::Device> devices;
+      getDeviceList(devices);
+
+      // Print device names
+      if (devices.size() == 0)
+      {
+        std::cout << "No devices found." << std::endl;
+      }
+      else
+      {
+        std::cout << std::endl;
+        std::cout << "Devices:" << std::endl;
+        for (unsigned i = 0; i < devices.size(); i++)
+        {
+          std::cout << i << ": " << getDeviceName(devices[i]) << std::endl;
+        }
+        std::cout << std::endl;
+      }
+      exit(0);
+    }
+    else if (!strcmp(argv[i], "--device"))
+    {
+      if (++i >= argc || !parseUInt(argv[i], &deviceIndex))
+      {
+        std::cout << "Invalid device index" << std::endl;
+        exit(1);
+      }
+    }
+    else if (!strcmp(argv[i], "--arraysize") || !strcmp(argv[i], "-s"))
+    {
+      if (++i >= argc || !parseUInt(argv[i], &ARRAY_SIZE))
+      {
+        std::cout << "Invalid array size" << std::endl;
+        exit(1);
+      }
+    }
+    else if (!strcmp(argv[i], "--float"))
+    {
+      useFloat = true;
+    }
+    else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
+    {
+      std::cout << std::endl;
+      std::cout << "Usage: ./gpu-stream-ocl [OPTIONS]" << std::endl << std::endl;
+      std::cout << "Options:" << std::endl;
+      std::cout << "  -h  --help               Print the message" << std::endl;
+      std::cout << "      --list               List available devices" << std::endl;
+      std::cout << "      --device     INDEX   Select device at INDEX" << std::endl;
+      std::cout << "  -s  --arraysize  SIZE    Use SIZE elements in the array" << std::endl;
+      std::cout << "      --float              Enable use of floats instead of doubles" << std::endl;
+      std::cout << std::endl;
+      exit(0);
+    }
+    else
+    {
+      std::cout << "Unrecognized argument '" << argv[i] << "' (try '--help')"
+                << std::endl;
+      exit(1);
+    }
+  }
 }
