@@ -131,6 +131,16 @@ int main(int argc, char *argv[])
         << "Version: " << VERSION_STRING << std::endl
         << "Implementation: CUDA" << std::endl << std::endl;
 
+    if (ARRAY_SIZE % 1024 != 0)
+    {
+        unsigned int OLD_ARRAY_SIZE = ARRAY_SIZE;
+        ARRAY_SIZE -= ARRAY_SIZE % 1024;
+        std::cout
+            << "Warning: array size must divide 1024" << std::endl
+            << "Resizing array from " << OLD_ARRAY_SIZE
+            << " to " << ARRAY_SIZE << std::endl;
+    }
+
     try
     {
         parseArguments(argc, argv);
