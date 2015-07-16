@@ -113,7 +113,7 @@ const DATATYPE scalar = 3.0;
 //     a[i] = b[i] + scalar * c[i];
 // }
 
-cl_uint deviceIndex = 0;
+int deviceIndex = 0;
 
 int main(int argc, char *argv[])
 {
@@ -279,7 +279,7 @@ std::string getDeviceName()
 }
 
 
-int parseUInt(const char *str, cl_uint *output)
+int parseUInt(const char *str, unsigned int *output)
 {
     char *next;
     *output = strtoul(str, &next, 10);
