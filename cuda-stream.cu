@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     std::cout
         << "GPU-STREAM" << std::endl
         << "Version: " << VERSION_STRING << std::endl
-        << "Implementation: OpenCL" << std::endl << std::endl;
+        << "Implementation: CUDA" << std::endl << std::endl;
 
     try
     {
