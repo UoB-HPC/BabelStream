@@ -1,0 +1,12 @@
+GPU-STREAM
+Version: 0.0
+Implementation: CUDA
+
+Warning: array size must divide 1024
+Resizing array from 50000000 to 49999872
+Using CUDA device GeForce GTX 780 Ti
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        278448      0.00287306  0.00288167  0.00287746  
+Mul         278463      0.00287292  0.00288136  0.00287668  
+Add         280658      0.00427566  0.00429018  0.00428196  
+Triad       280592      0.00427667  0.00429209  0.00428346  
