@@ -114,6 +114,11 @@ int main(void)
 		cl::CommandQueue queue(context);
 		cl::Program program(context, kernels);
 
+		// Print out device name
+		std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
+		std::string name = devices[0].getInfo<CL_DEVICE_NAME>();
+		std::cout << "Using OpenCL device " << name << std::endl;
+
 		try
 		{
 			program.build();
