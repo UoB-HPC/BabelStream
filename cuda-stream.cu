@@ -7,8 +7,7 @@
 #include <iomanip>
 #include <cmath>
 
-#define __CL_ENABLE_EXCEPTIONS
-#include "cl.hpp"
+#include <cuda.h>
 
 #define DATATYPE double
 unsigned int ARRAY_SIZE = 50000000;
