@@ -12,7 +12,6 @@
 
 #define DATATYPE double
 unsigned int ARRAY_SIZE = 50000000;
-bool useFloat = false;
 #define NTIMES 10
 
 #define MIN(a,b) ((a) < (b)) ? (a) : (b)
@@ -386,10 +385,6 @@ void parseArguments(int argc, char *argv[])
                 exit(1);
             }
         }
-        else if (!strcmp(argv[i], "--float"))
-        {
-            useFloat = true;
-        }
         else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
         {
             std::cout << std::endl;
@@ -399,7 +394,6 @@ void parseArguments(int argc, char *argv[])
             std::cout << "      --list               List available devices" << std::endl;
             std::cout << "      --device     INDEX   Select device at INDEX" << std::endl;
             std::cout << "  -s  --arraysize  SIZE    Use SIZE elements in the array" << std::endl;
-            std::cout << "      --float              Enable use of floats instead of doubles" << std::endl;
             std::cout << std::endl;
             exit(0);
         }
