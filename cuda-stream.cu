@@ -365,7 +365,7 @@ void parseArguments(int argc, char *argv[])
         else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
         {
             std::cout << std::endl;
-            std::cout << "Usage: ./gpu-stream-ocl [OPTIONS]" << std::endl << std::endl;
+            std::cout << "Usage: ./gpu-stream-cuda [OPTIONS]" << std::endl << std::endl;
             std::cout << "Options:" << std::endl;
             std::cout << "  -h  --help               Print the message" << std::endl;
             std::cout << "      --list               List available devices" << std::endl;
