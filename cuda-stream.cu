@@ -168,12 +168,19 @@ int main(int argc, char *argv[])
             h_c[i] = 0.0;
         }
 
+        // Create device buffers
+        DATATYPE * d_a, * d_b, *d_c;
+        cudaMalloc(&d_a, ARRAY_SIZE*sizeof(DATATYPE));
+        cudaMalloc(&d_b, ARRAY_SIZE*sizeof(DATATYPE));
+        cudaMalloc(&d_c, ARRAY_SIZE*sizeof(DATATYPE));
 
         // Copy host memory to device
-
+        cudaMemcpy(d_a, h_a, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_b, h_b, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_c, h_c, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyHostToDevice);
 
         // Make sure the copies are finished
-
+        cudaDeviceSynchronize();
 
         // List of times
         std::vector< std::vector<double> > timings;
@@ -184,56 +191,42 @@ int main(int argc, char *argv[])
         // Main loop
         for (unsigned int k = 0; k < NTIMES; k++)
         {
-            /*std::vector<double> times;
+            std::vector<double> times;
             t1 = std::chrono::high_resolution_clock::now();
-            copy(
-                cl::EnqueueArgs(
-                queue,
-                cl::NDRange(ARRAY_SIZE)),
-                d_a, d_c);
-            queue.finish();
+            copy<<<ARRAY_SIZE/1024, 1024>>>(d_a, d_c);
+            cudaDeviceSynchronize();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
             t1 = std::chrono::high_resolution_clock::now();
-            mul(
-                cl::EnqueueArgs(
-                queue,
-                cl::NDRange(ARRAY_SIZE)),
-                d_b, d_c);
-            queue.finish();
+            mul<<<ARRAY_SIZE/1024, 1024>>>(d_b, d_c);
+            cudaDeviceSynchronize();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
             t1 = std::chrono::high_resolution_clock::now();
-            add(
-                cl::EnqueueArgs(
-                queue,
-                cl::NDRange(ARRAY_SIZE)),
-                d_a, d_b, d_c);
-            queue.finish();
+            add<<<ARRAY_SIZE/1024, 1024>>>(d_a, d_b, d_c);
+            cudaDeviceSynchronize();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
             t1 = std::chrono::high_resolution_clock::now();
-            triad(
-                cl::EnqueueArgs(
-                queue,
-                cl::NDRange(ARRAY_SIZE)),
-                d_a, d_b, d_c);
-            queue.finish();
+            triad<<<ARRAY_SIZE/1024, 1024>>>(d_a, d_b, d_c);
+            cudaDeviceSynchronize();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
-            timings.push_back(times);*/
+            timings.push_back(times);
 
         }
 
         // Check solutions
-
+        cudaMemcpy(h_a, d_a, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyDeviceToHost);
+        cudaMemcpy(h_b, d_b, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyDeviceToHost);
+        cudaMemcpy(h_c, d_c, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyDeviceToHost);
         check_solution(h_a, h_b, h_c);
 
         // Crunch results
