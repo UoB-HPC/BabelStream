@@ -24,12 +24,70 @@ struct badfile : public std::exception
   }
 };
 
+struct badtype : public std::exception
+{
+  virtual const char * what () const throw ()
+  {
+    return "Datatype is not 4 or 8";
+  }
+};
+
 size_t sizes[4] = {
 	2 * sizeof(DATATYPE) * ARRAY_SIZE,
 	2 * sizeof(DATATYPE) * ARRAY_SIZE,
 	3 * sizeof(DATATYPE) * ARRAY_SIZE,
 	3 * sizeof(DATATYPE) * ARRAY_SIZE
 };
+
+void check_solution(std::vector<DATATYPE>& a, std::vector<DATATYPE>& b, std::vector<DATATYPE>& c)
+{
+	// Generate correct solution
+	DATATYPE golda = 1.0;
+	DATATYPE goldb = 2.0;
+	DATATYPE goldc = 0.0;
+
+	const DATATYPE scalar = 3.0;
+
+	for (unsigned int i = 0; i < NTIMES; i++)
+	{
+		goldc = golda;
+		goldb = scalar * goldc;
+		goldc = golda + goldb;
+		golda = goldb + scalar * goldc;
+	}
+
+	// Calculate average error
+	double erra = 0.0;
+	double errb = 0.0;
+	double errc = 0.0;
+	for (unsigned int i = 0; i < ARRAY_SIZE; i++)
+	{
+		erra += abs(a[i] - golda);
+		errb += abs(b[i] - goldb);
+		errc += abs(c[i] - goldc);
+	}
+	erra /= (double)ARRAY_SIZE;
+	errb /= (double)ARRAY_SIZE;
+	errc /= (double)ARRAY_SIZE;
+
+	double epsi;
+	if (sizeof(DATATYPE) == 4) epsi = 1.0E-6;
+	else if (sizeof(DATATYPE) == 8) epsi = 1.0E-13;
+	else throw badtype();
+
+	if (erra > epsi)
+		std::cout
+			<< "Validation failed on a[]. Average error " << erra
+			<< std::endl;
+	if (errb > epsi)
+		std::cout
+			<< "Validation failed on b[]. Average error " << errb
+			<< std::endl;
+	if (errc > epsi)
+		std::cout
+			<< "Validation failed on c[]. Average error " << errc
+			<< std::endl;
+}
 
 
 int main(void)
