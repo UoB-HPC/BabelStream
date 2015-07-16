@@ -1,0 +1,12 @@
+GPU-STREAM
+Version: 0.0
+Implementation: CUDA
+
+Warning: array size must divide 1024
+Resizing array from 50000000 to 49999872
+Using CUDA device GeForce GTX 980
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        169256      0.00472657  0.00473075  0.00472877  
+Mul         169305      0.0047252   0.00473152  0.00472861  
+Add         171685      0.00698954  0.00699297  0.00699159  
+Triad       171660      0.00699056  0.00699286  0.006992    
