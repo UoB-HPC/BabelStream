@@ -5,13 +5,14 @@
 #include <chrono>
 #include <cfloat>
 #include <iomanip>
+#include <cmath>
 
 #define __CL_ENABLE_EXCEPTIONS
 #include "cl.hpp"
 
 #define DATATYPE double
 #define ARRAY_SIZE 50000000
-#define NTIMES 2
+#define NTIMES 10
 
 #define MIN(a,b) ((a) < (b)) ? (a) : (b)
 #define MAX(a,b) ((a) > (b)) ? (a) : (b)
@@ -62,9 +63,9 @@ void check_solution(std::vector<DATATYPE>& a, std::vector<DATATYPE>& b, std::vec
 	double errc = 0.0;
 	for (unsigned int i = 0; i < ARRAY_SIZE; i++)
 	{
-		erra += abs(a[i] - golda);
-		errb += abs(b[i] - goldb);
-		errc += abs(c[i] - goldc);
+		erra += fabs(a[i] - golda);
+		errb += fabs(b[i] - goldb);
+		errc += fabs(c[i] - goldc);
 	}
 	erra /= (double)ARRAY_SIZE;
 	errb /= (double)ARRAY_SIZE;
@@ -100,7 +101,7 @@ int main(void)
 		std::string kernels(std::istreambuf_iterator<char>(in), (std::istreambuf_iterator<char>()));
 
 		// Setup OpenCL
-		cl::Context context(CL_DEVICE_TYPE_CPU);
+		cl::Context context(CL_DEVICE_TYPE_GPU);
 		cl::CommandQueue queue(context);
 		cl::Program program(context, kernels);
 
