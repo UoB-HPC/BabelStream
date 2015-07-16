@@ -156,7 +156,7 @@ int main(void)
 			}
 		}
 		for (int j = 0; j < 4; j++)
-			avg[j] /= (double)NTIMES;
+			avg[j] /= (double)(NTIMES-1);
 
 		// Display results
 		std::string labels[] = {"Copy", "Mul", "Add", "Triad"};
