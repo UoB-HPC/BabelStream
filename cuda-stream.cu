@@ -321,6 +321,7 @@ void parseArguments(int argc, char *argv[])
                 std::cout << "Devices:" << std::endl;
                 for (int i = 0; i < count; i++)
                 {
+                    cudaSetDevice(i);
                     std::cout << i << ": " << getDeviceName() << std::endl;
                 }
                 std::cout << std::endl;
