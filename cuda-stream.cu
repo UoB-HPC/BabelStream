@@ -246,15 +246,6 @@ int main(int argc, char *argv[])
         }
 
     }
-    // Catch OpenCL Errors and display information
-    catch (cl::Error& e)
-    {
-        std::cerr
-            << "Error: "
-            << e.what()
-            << "(" << e.err() << ")"
-            << std::endl;
-    }
     catch (std::exception& e)
     {
         std::cerr
