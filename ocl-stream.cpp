@@ -12,7 +12,7 @@
 
 #define DATATYPE double
 unsigned int ARRAY_SIZE = 50000000;
-#define NTIMES 10
+unsigned int NTIMES = 10;
 
 #define MIN(a,b) ((a) < (b)) ? (a) : (b)
 #define MAX(a,b) ((a) > (b)) ? (a) : (b)
@@ -45,6 +45,14 @@ struct invaliddevice : public std::exception
     virtual const char * what () const throw ()
     {
         return "Chosen device index is invalid";
+    }
+};
+
+struct badntimes : public std::exception
+{
+    virtual const char * what () const throw ()
+    {
+        return "Chosen number of times is invalid, must be >= 2";
     }
 };
 
@@ -119,6 +127,8 @@ int main(int argc, char *argv[])
     try
     {
         parseArguments(argc, argv);
+
+        if (NTIMES < 2) throw badntimes();
 
         // Open the Kernel source
         std::ifstream in("ocl-stream-kernels.cl");
@@ -385,6 +395,14 @@ void parseArguments(int argc, char *argv[])
                 exit(1);
             }
         }
+        else if (!strcmp(argv[i], "--numtimes") || !strcmp(argv[i], "-n"))
+        {
+            if (++i >= argc || !parseUInt(argv[i], &NTIMES))
+            {
+                std::cout << "Invalid number of times" << std::endl;
+                exit(1);
+            }
+        }
         else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
         {
             std::cout << std::endl;
@@ -394,6 +412,7 @@ void parseArguments(int argc, char *argv[])
             std::cout << "      --list               List available devices" << std::endl;
             std::cout << "      --device     INDEX   Select device at INDEX" << std::endl;
             std::cout << "  -s  --arraysize  SIZE    Use SIZE elements in the array" << std::endl;
+            std::cout << "  -n  --numtimes   NUM     Run the test NUM times (NUM >= 2)" << std::endl;
             std::cout << std::endl;
             exit(0);
         }
