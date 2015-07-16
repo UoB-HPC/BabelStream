@@ -44,7 +44,7 @@ size_t sizes[4] = {
     3 * sizeof(DATATYPE) * ARRAY_SIZE
 };
 
-void check_solution(std::vector<DATATYPE>& a, std::vector<DATATYPE>& b, std::vector<DATATYPE>& c)
+void check_solution(DATATYPE * a, DATATYPE * b, DATATYPE * c)
 {
     // Generate correct solution
     DATATYPE golda = 1.0;
@@ -146,11 +146,17 @@ int main(int argc, char *argv[])
 
 
         // Create host vectors
-        std::vector<DATATYPE> h_a(ARRAY_SIZE, 1.0);
-        std::vector<DATATYPE> h_b(ARRAY_SIZE, 2.0);
-        std::vector<DATATYPE> h_c(ARRAY_SIZE, 0.0);
+        DATATYPE * h_a = (DATATYPE *) malloc(ARRAY_SIZE*sizeof(DATATYPE));
+        DATATYPE * h_b = (DATATYPE *) malloc(ARRAY_SIZE*sizeof(DATATYPE));
+        DATATYPE * h_c = (DATATYPE *) malloc(ARRAY_SIZE*sizeof(DATATYPE));
 
-        // Create device buffers
+        // Initilise host vectors
+        for (unsigned int i = 0; i < ARRAY_SIZE; i++)
+        {
+            h_a[i] = 1.0;
+            h_b[i] = 2.0;
+            h_c[i] = 0.0;
+        }
 
 
         // Copy host memory to device
