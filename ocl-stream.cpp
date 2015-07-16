@@ -141,6 +141,12 @@ int main(void)
 
 		}
 
+		// Check solutions
+		cl::copy(queue, d_a, h_a.begin(), h_a.end());
+		cl::copy(queue, d_b, h_b.begin(), h_b.end());
+		cl::copy(queue, d_c, h_c.begin(), h_c.end());
+		check_solution(h_a, h_b, h_c);
+
 		// Crunch results
 		double min[4] = {DBL_MAX, DBL_MAX, DBL_MAX, DBL_MAX};
 		double max[4] = {0.0, 0.0, 0.0, 0.0};
