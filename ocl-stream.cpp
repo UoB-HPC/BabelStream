@@ -17,6 +17,8 @@
 #define MIN(a,b) ((a) < (b)) ? (a) : (b)
 #define MAX(a,b) ((a) > (b)) ? (a) : (b)
 
+#define VERSION_STRING "0.0"
+
 struct badfile : public std::exception
 {
   virtual const char * what () const throw ()
@@ -93,6 +95,13 @@ void check_solution(std::vector<DATATYPE>& a, std::vector<DATATYPE>& b, std::vec
 
 int main(void)
 {
+
+	// Print out run information
+	std::cout
+		<< "GPU-STREAM" << std::endl
+		<< "Version: " << VERSION_STRING << std::endl
+		<< "Implementation: OpenCL" << std::endl << std::endl;
+
 	try
 	{
 		// Open the Kernel source
