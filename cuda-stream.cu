@@ -19,7 +19,7 @@ unsigned int NTIMES = 10;
 #define VERSION_STRING "0.0"
 
 void parseArguments(int argc, char *argv[]);
-std::string getDeviceName();
+std::string getDeviceName(int device);
 
 struct badtype : public std::exception
 {
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
         cudaSetDevice(deviceIndex);
 
         // Print out device name
-        std::cout << "Using CUDA device " << getDeviceName() << std::endl;
+        std::cout << "Using CUDA device " << getDeviceName(deviceIndex) << std::endl;
 
 
         // Create host vectors
@@ -286,10 +286,8 @@ int main(int argc, char *argv[])
     }
 }
 
-std::string getDeviceName()
+std::string getDeviceName(int device)
 {
-    int device;
-    cudaGetDevice(&device);
     struct cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, device);
     return std::string(prop.name);
@@ -331,8 +329,7 @@ void parseArguments(int argc, char *argv[])
                 std::cout << "Devices:" << std::endl;
                 for (int i = 0; i < count; i++)
                 {
-                    cudaSetDevice(i);
-                    std::cout << i << ": " << getDeviceName() << std::endl;
+                    std::cout << i << ": " << getDeviceName(i) << std::endl;
                 }
                 std::cout << std::endl;
             }
