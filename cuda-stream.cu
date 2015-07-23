@@ -13,6 +13,9 @@
 unsigned int ARRAY_SIZE = 50000000;
 unsigned int NTIMES = 10;
 
+size_t DATATYPE_SIZE = sizeof(double);
+bool useFloat = false;
+
 #define MIN(a,b) ((a) < (b)) ? (a) : (b)
 #define MAX(a,b) ((a) > (b)) ? (a) : (b)
 
@@ -20,14 +23,6 @@ unsigned int NTIMES = 10;
 
 void parseArguments(int argc, char *argv[]);
 std::string getDeviceName(int device);
-
-struct badtype : public std::exception
-{
-    virtual const char * what () const throw ()
-    {
-        return "Datatype is not 4 or 8";
-    }
-};
 
 struct invaliddevice : public std::exception
 {
@@ -46,27 +41,37 @@ struct badntimes : public std::exception
 };
 
 size_t sizes[4] = {
-    2 * sizeof(DATATYPE) * ARRAY_SIZE,
-    2 * sizeof(DATATYPE) * ARRAY_SIZE,
-    3 * sizeof(DATATYPE) * ARRAY_SIZE,
-    3 * sizeof(DATATYPE) * ARRAY_SIZE
+    2 * DATATYPE_SIZE * ARRAY_SIZE,
+    2 * DATATYPE_SIZE * ARRAY_SIZE,
+    3 * DATATYPE_SIZE * ARRAY_SIZE,
+    3 * DATATYPE_SIZE * ARRAY_SIZE
 };
 
-void check_solution(DATATYPE * a, DATATYPE * b, DATATYPE * c)
+void check_solution(void* a, void* b, void* c)
 {
     // Generate correct solution
-    DATATYPE golda = 1.0;
-    DATATYPE goldb = 2.0;
-    DATATYPE goldc = 0.0;
+    double golda = 1.0;
+    double goldb = 2.0;
+    double goldc = 0.0;
+    float goldaf = 1.0;
+    float goldbf = 2.0;
+    float goldcf = 0.0;
 
-    const DATATYPE scalar = 3.0;
+    const double scalar = 3.0;
+    const float scalarf = 3.0;
 
     for (unsigned int i = 0; i < NTIMES; i++)
     {
+        // Double
         goldc = golda;
         goldb = scalar * goldc;
         goldc = golda + goldb;
         golda = goldb + scalar * goldc;
+        // Float
+        goldcf = goldaf;
+        goldbf = scalarf * goldcf;
+        goldcf = goldaf + goldbf;
+        goldaf = goldbf + scalarf * goldcf;
     }
 
     // Calculate average error
@@ -75,18 +80,26 @@ void check_solution(DATATYPE * a, DATATYPE * b, DATATYPE * c)
     double errc = 0.0;
     for (unsigned int i = 0; i < ARRAY_SIZE; i++)
     {
-        erra += fabs(a[i] - golda);
-        errb += fabs(b[i] - goldb);
-        errc += fabs(c[i] - goldc);
+        if (useFloat)
+        {
+            erra += fabsf(((float*)a)[i] - goldaf);
+            errb += fabsf(((float*)b)[i] - goldbf);
+            errc += fabsf(((float*)c)[i] - goldcf);
+        }
+        else
+        {
+            erra += fabs(((double*)a)[i] - (double)golda);
+            errb += fabs(((double*)b)[i] - (double)goldb);
+            errc += fabs(((double*)c)[i] - (double)goldc);
+        }
     }
     erra /= (double)ARRAY_SIZE;
     errb /= (double)ARRAY_SIZE;
     errc /= (double)ARRAY_SIZE;
 
     double epsi;
-    if (sizeof(DATATYPE) == 4) epsi = 1.0E-6;
-    else if (sizeof(DATATYPE) == 8) epsi = 1.0E-13;
-    else throw badtype();
+    if (useFloat) epsi = 1.0E-6;
+    else epsi = 1.0E-13;
 
     if (erra > epsi)
         std::cout
@@ -102,28 +115,33 @@ void check_solution(DATATYPE * a, DATATYPE * b, DATATYPE * c)
             << std::endl;
 }
 
-const DATATYPE scalar = 3.0;
 
-__global__ void copy(const DATATYPE * a, DATATYPE * c)
+template <typename T>
+__global__ void copy(const T * a, T * c)
 {
     const int i = blockDim.x * blockIdx.x + threadIdx.x;
     c[i] = a[i];
 }
 
-__global__ void mul(DATATYPE * b, const DATATYPE * c)
+template <typename T>
+__global__ void mul(T * b, const T * c)
 {
+    const T scalar = 3.0;
     const int i = blockDim.x * blockIdx.x + threadIdx.x;
     b[i] = scalar * c[i];
 }
 
-__global__ void add(const DATATYPE * a, const DATATYPE * b, DATATYPE * c)
+template <typename T>
+__global__ void add(const T * a, const T * b, T * c)
 {
     const int i = blockDim.x * blockIdx.x + threadIdx.x;
     c[i] = a[i] + b[i];
 }
 
-__global__ void triad(DATATYPE * a, const DATATYPE * b, const DATATYPE * c)
+template <typename T>
+__global__ void triad(T * a, const T * b, const T * c)
 {
+    const T scalar = 3.0;
     const int i = blockDim.x * blockIdx.x + threadIdx.x;
     a[i] = b[i] + scalar * c[i];
 }
@@ -166,28 +184,37 @@ int main(int argc, char *argv[])
 
 
         // Create host vectors
-        DATATYPE * h_a = (DATATYPE *) malloc(ARRAY_SIZE*sizeof(DATATYPE));
-        DATATYPE * h_b = (DATATYPE *) malloc(ARRAY_SIZE*sizeof(DATATYPE));
-        DATATYPE * h_c = (DATATYPE *) malloc(ARRAY_SIZE*sizeof(DATATYPE));
+        void * h_a = malloc(ARRAY_SIZE*DATATYPE_SIZE);
+        void * h_b = malloc(ARRAY_SIZE*DATATYPE_SIZE);
+        void * h_c = malloc(ARRAY_SIZE*DATATYPE_SIZE);
 
-        // Initilise host vectors
+        // Initilise arrays
         for (unsigned int i = 0; i < ARRAY_SIZE; i++)
         {
-            h_a[i] = 1.0;
-            h_b[i] = 2.0;
-            h_c[i] = 0.0;
+            if (useFloat)
+            {
+                ((float*)h_a)[i] = 1.0;
+                ((float*)h_b)[i] = 2.0;
+                ((float*)h_c)[i] = 0.0;
+            }
+            else
+            {
+                ((double*)h_a)[i] = 1.0;
+                ((double*)h_b)[i] = 2.0;
+                ((double*)h_c)[i] = 0.0;
+            }
         }
 
         // Create device buffers
-        DATATYPE * d_a, * d_b, *d_c;
-        cudaMalloc(&d_a, ARRAY_SIZE*sizeof(DATATYPE));
-        cudaMalloc(&d_b, ARRAY_SIZE*sizeof(DATATYPE));
-        cudaMalloc(&d_c, ARRAY_SIZE*sizeof(DATATYPE));
+        void * d_a, * d_b, *d_c;
+        cudaMalloc(&d_a, ARRAY_SIZE*DATATYPE_SIZE);
+        cudaMalloc(&d_b, ARRAY_SIZE*DATATYPE_SIZE);
+        cudaMalloc(&d_c, ARRAY_SIZE*DATATYPE_SIZE);
 
         // Copy host memory to device
-        cudaMemcpy(d_a, h_a, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_b, h_b, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_c, h_c, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_a, h_a, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_b, h_b, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_c, h_c, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyHostToDevice);
 
         // Make sure the copies are finished
         cudaDeviceSynchronize();
@@ -203,28 +230,40 @@ int main(int argc, char *argv[])
         {
             std::vector<double> times;
             t1 = std::chrono::high_resolution_clock::now();
-            copy<<<ARRAY_SIZE/1024, 1024>>>(d_a, d_c);
+            if (useFloat)
+                copy<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_c);
+            else
+                copy<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_c);
             cudaDeviceSynchronize();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
             t1 = std::chrono::high_resolution_clock::now();
-            mul<<<ARRAY_SIZE/1024, 1024>>>(d_b, d_c);
+            if (useFloat)
+                mul<<<ARRAY_SIZE/1024, 1024>>>((float*)d_b, (float*)d_c);
+            else
+                mul<<<ARRAY_SIZE/1024, 1024>>>((double*)d_b, (double*)d_c);
             cudaDeviceSynchronize();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
             t1 = std::chrono::high_resolution_clock::now();
-            add<<<ARRAY_SIZE/1024, 1024>>>(d_a, d_b, d_c);
+            if (useFloat)
+                add<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_b, (float*)d_c);
+            else
+                add<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_b, (double*)d_c);
             cudaDeviceSynchronize();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
             t1 = std::chrono::high_resolution_clock::now();
-            triad<<<ARRAY_SIZE/1024, 1024>>>(d_a, d_b, d_c);
+            if (useFloat)
+                triad<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_b, (float*)d_c);
+            else
+                triad<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_b, (double*)d_c);
             cudaDeviceSynchronize();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
@@ -234,9 +273,9 @@ int main(int argc, char *argv[])
         }
 
         // Check solutions
-        cudaMemcpy(h_a, d_a, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyDeviceToHost);
-        cudaMemcpy(h_b, d_b, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyDeviceToHost);
-        cudaMemcpy(h_c, d_c, ARRAY_SIZE*sizeof(DATATYPE), cudaMemcpyDeviceToHost);
+        cudaMemcpy(h_a, d_a, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyDeviceToHost);
+        cudaMemcpy(h_b, d_b, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyDeviceToHost);
+        cudaMemcpy(h_c, d_c, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyDeviceToHost);
         check_solution(h_a, h_b, h_c);
 
         // Crunch results
@@ -359,6 +398,11 @@ void parseArguments(int argc, char *argv[])
                 exit(1);
             }
         }
+        else if (!strcmp(argv[i], "--float"))
+        {
+            useFloat = true;
+            DATATYPE_SIZE = sizeof(float);
+        }
         else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
         {
             std::cout << std::endl;
@@ -369,6 +413,7 @@ void parseArguments(int argc, char *argv[])
             std::cout << "      --device     INDEX   Select device at INDEX" << std::endl;
             std::cout << "  -s  --arraysize  SIZE    Use SIZE elements in the array" << std::endl;
             std::cout << "  -n  --numtimes   NUM     Run the test NUM times (NUM >= 2)" << std::endl;
+            std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
             std::cout << std::endl;
             exit(0);
         }
