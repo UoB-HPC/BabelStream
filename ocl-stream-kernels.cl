@@ -1,7 +1,11 @@
 
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+#ifdef FLOAT
+	#define DATATYPE float
+#else
+	#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+	#define DATATYPE double
+#endif
 
-#define DATATYPE double
 
 constant DATATYPE scalar = 3.0;
 
