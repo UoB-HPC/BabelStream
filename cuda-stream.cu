@@ -185,6 +185,21 @@ int main(int argc, char *argv[])
                 << " to " << ARRAY_SIZE << std::endl;
         }
 
+        // Get precision (used to reset later)
+        std::streamsize ss = std::cout.precision();
+
+        // Display number of bytes in array
+        std::cout << std::setprecision(1) << std::fixed
+            << "Array size: " << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
+            << " (=" << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
+            << std::endl;
+        std::cout << "Total size: " << 3*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
+            << " (=" << 3*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
+            << std::endl;
+
+        // Reset precision
+        std::cout.precision(ss);
+
         // Check device index is in range
         int count;
         cudaGetDeviceCount(&count);
@@ -346,10 +361,10 @@ int main(int argc, char *argv[])
         {
             std::cout
                 << std::left << std::setw(12) << labels[j]
-                << std::left << std::setw(12) << 1.0E-06 * sizes[j]/min[j]
-                << std::left << std::setw(12) << min[j]
-                << std::left << std::setw(12) << max[j]
-                << std::left << std::setw(12) << avg[j]
+                << std::left << std::setw(12) << std::setprecision(3) << 1.0E-06 * sizes[j]/min[j]
+                << std::left << std::setw(12) << std::setprecision(5) << min[j]
+                << std::left << std::setw(12) << std::setprecision(5) << max[j]
+                << std::left << std::setw(12) << std::setprecision(5) << avg[j]
                 << std::endl;
         }
 
