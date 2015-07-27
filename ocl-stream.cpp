@@ -127,13 +127,20 @@ int main(int argc, char *argv[])
     std::cout
         << "GPU-STREAM" << std::endl
         << "Version: " << VERSION_STRING << std::endl
-        << "Implementation: OpenCL" << std::endl << std::endl;
+        << "Implementation: OpenCL" << std::endl;
 
     try
     {
         parseArguments(argc, argv);
 
         if (NTIMES < 2) throw badntimes();
+
+        std::cout << "Precision: ";
+        if (useFloat) std::cout << "float";
+        else std::cout << "double";
+        std::cout << std::endl << std::endl;
+
+
 
         // Open the Kernel source
         std::ifstream in("ocl-stream-kernels.cl");

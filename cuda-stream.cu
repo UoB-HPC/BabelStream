@@ -162,13 +162,18 @@ int main(int argc, char *argv[])
     std::cout
         << "GPU-STREAM" << std::endl
         << "Version: " << VERSION_STRING << std::endl
-        << "Implementation: CUDA" << std::endl << std::endl;
+        << "Implementation: CUDA" << std::endl;
 
     try
     {
         parseArguments(argc, argv);
 
         if (NTIMES < 2) throw badntimes();
+
+        std::cout << "Precision: ";
+        if (useFloat) std::cout << "float";
+        else std::cout << "double";
+        std::cout << std::endl << std::endl;
 
         if (ARRAY_SIZE % 1024 != 0)
         {
