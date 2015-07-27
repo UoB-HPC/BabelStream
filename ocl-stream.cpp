@@ -49,12 +49,6 @@ struct badntimes : public std::exception
     }
 };
 
-size_t sizes[4] = {
-    2 * DATATYPE_SIZE * ARRAY_SIZE,
-    2 * DATATYPE_SIZE * ARRAY_SIZE,
-    3 * DATATYPE_SIZE * ARRAY_SIZE,
-    3 * DATATYPE_SIZE * ARRAY_SIZE
-};
 
 void check_solution(void* a, void* b, void* c)
 {
@@ -288,6 +282,12 @@ int main(int argc, char *argv[])
         check_solution(h_a, h_b, h_c);
 
         // Crunch results
+        size_t sizes[4] = {
+            2 * DATATYPE_SIZE * ARRAY_SIZE,
+            2 * DATATYPE_SIZE * ARRAY_SIZE,
+            3 * DATATYPE_SIZE * ARRAY_SIZE,
+            3 * DATATYPE_SIZE * ARRAY_SIZE
+        };
         double min[4] = {DBL_MAX, DBL_MAX, DBL_MAX, DBL_MAX};
         double max[4] = {0.0, 0.0, 0.0, 0.0};
         double avg[4] = {0.0, 0.0, 0.0, 0.0};
