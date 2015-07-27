@@ -40,6 +40,20 @@ struct badntimes : public std::exception
     }
 };
 
+// Code to check CUDA errors
+void check_cuda_error(void)
+{
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess)
+    {
+        std::cerr
+            << "Error: "
+            << cudaGetErrorString(err)
+            << std::endl;
+            exit(err);
+    }
+}
+
 void check_solution(void* a, void* b, void* c)
 {
     // Generate correct solution
@@ -169,8 +183,10 @@ int main(int argc, char *argv[])
         // Check device index is in range
         int count;
         cudaGetDeviceCount(&count);
+        check_cuda_error();
         if (deviceIndex >= count) throw invaliddevice();
         cudaSetDevice(deviceIndex);
+        check_cuda_error();
 
         // Print out device name
         std::cout << "Using CUDA device " << getDeviceName(deviceIndex) << std::endl;
@@ -201,16 +217,23 @@ int main(int argc, char *argv[])
         // Create device buffers
         void * d_a, * d_b, *d_c;
         cudaMalloc(&d_a, ARRAY_SIZE*DATATYPE_SIZE);
+        check_cuda_error();
         cudaMalloc(&d_b, ARRAY_SIZE*DATATYPE_SIZE);
+        check_cuda_error();
         cudaMalloc(&d_c, ARRAY_SIZE*DATATYPE_SIZE);
+        check_cuda_error();
 
         // Copy host memory to device
         cudaMemcpy(d_a, h_a, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyHostToDevice);
+        check_cuda_error();
         cudaMemcpy(d_b, h_b, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyHostToDevice);
+        check_cuda_error();
         cudaMemcpy(d_c, h_c, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyHostToDevice);
+        check_cuda_error();
 
         // Make sure the copies are finished
         cudaDeviceSynchronize();
+        check_cuda_error();
 
         // List of times
         std::vector< std::vector<double> > timings;
@@ -227,7 +250,9 @@ int main(int argc, char *argv[])
                 copy<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_c);
             else
                 copy<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_c);
+            check_cuda_error();
             cudaDeviceSynchronize();
+            check_cuda_error();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
@@ -237,7 +262,9 @@ int main(int argc, char *argv[])
                 mul<<<ARRAY_SIZE/1024, 1024>>>((float*)d_b, (float*)d_c);
             else
                 mul<<<ARRAY_SIZE/1024, 1024>>>((double*)d_b, (double*)d_c);
+            check_cuda_error();
             cudaDeviceSynchronize();
+            check_cuda_error();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
@@ -247,7 +274,9 @@ int main(int argc, char *argv[])
                 add<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_b, (float*)d_c);
             else
                 add<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_b, (double*)d_c);
+            check_cuda_error();
             cudaDeviceSynchronize();
+            check_cuda_error();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
@@ -257,7 +286,9 @@ int main(int argc, char *argv[])
                 triad<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_b, (float*)d_c);
             else
                 triad<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_b, (double*)d_c);
+            check_cuda_error();
             cudaDeviceSynchronize();
+            check_cuda_error();
             t2 = std::chrono::high_resolution_clock::now();
             times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
@@ -267,8 +298,11 @@ int main(int argc, char *argv[])
 
         // Check solutions
         cudaMemcpy(h_a, d_a, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyDeviceToHost);
+        check_cuda_error();
         cudaMemcpy(h_b, d_b, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyDeviceToHost);
+        check_cuda_error();
         cudaMemcpy(h_c, d_c, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyDeviceToHost);
+        check_cuda_error();
         check_solution(h_a, h_b, h_c);
 
         // Crunch results
@@ -328,6 +362,7 @@ std::string getDeviceName(int device)
 {
     struct cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, device);
+    check_cuda_error();
     return std::string(prop.name);
 }
 
@@ -355,6 +390,7 @@ void parseArguments(int argc, char *argv[])
             // Get number of devices
             int count;
             cudaGetDeviceCount(&count);
+            check_cuda_error();
 
             // Print device names
             if (count == 0)
@@ -368,6 +404,7 @@ void parseArguments(int argc, char *argv[])
                 for (int i = 0; i < count; i++)
                 {
                     std::cout << i << ": " << getDeviceName(i) << std::endl;
+                    check_cuda_error();
                 }
                 std::cout << std::endl;
             }
