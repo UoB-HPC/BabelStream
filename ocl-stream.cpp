@@ -262,45 +262,73 @@ int main(int argc, char *argv[])
     {
         std::vector<double> times;
         t1 = std::chrono::high_resolution_clock::now();
-        copy(
-            cl::EnqueueArgs(
-            queue,
-            cl::NDRange(ARRAY_SIZE)),
-            d_a, d_c);
-        queue.finish();
+        try
+        {
+            copy(
+                cl::EnqueueArgs(
+                queue,
+                cl::NDRange(ARRAY_SIZE)),
+                d_a, d_c);
+            queue.finish();
+        }
+        catch (cl::Error &e)
+        {
+            die("Executing copy", e);
+        }
         t2 = std::chrono::high_resolution_clock::now();
         times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
         t1 = std::chrono::high_resolution_clock::now();
-        mul(
-            cl::EnqueueArgs(
-            queue,
-            cl::NDRange(ARRAY_SIZE)),
-            d_b, d_c);
-        queue.finish();
+        try
+        {
+            mul(
+                cl::EnqueueArgs(
+                queue,
+                cl::NDRange(ARRAY_SIZE)),
+                d_b, d_c);
+            queue.finish();
+        }
+        catch (cl::Error &e)
+        {
+            die("Executing mul", e);
+        }
         t2 = std::chrono::high_resolution_clock::now();
         times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
         t1 = std::chrono::high_resolution_clock::now();
-        add(
-            cl::EnqueueArgs(
-            queue,
-            cl::NDRange(ARRAY_SIZE)),
-            d_a, d_b, d_c);
-        queue.finish();
+        try
+        {
+            add(
+                cl::EnqueueArgs(
+                queue,
+                cl::NDRange(ARRAY_SIZE)),
+                d_a, d_b, d_c);
+            queue.finish();
+        }
+        catch (cl::Error &e)
+        {
+            die("Executing add", e);
+        }
         t2 = std::chrono::high_resolution_clock::now();
         times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
         t1 = std::chrono::high_resolution_clock::now();
-        triad(
-            cl::EnqueueArgs(
-            queue,
-            cl::NDRange(ARRAY_SIZE)),
-            d_a, d_b, d_c);
-        queue.finish();
+        try
+        {
+            triad(
+                cl::EnqueueArgs(
+                queue,
+                cl::NDRange(ARRAY_SIZE)),
+                d_a, d_b, d_c);
+            queue.finish();
+        }
+        catch (cl::Error &e)
+        {
+            die("Executing triad", e);
+        }
         t2 = std::chrono::high_resolution_clock::now();
         times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
