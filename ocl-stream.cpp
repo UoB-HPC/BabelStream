@@ -38,6 +38,18 @@ struct badntimes : public std::exception
 };
 
 
+// Print error and exit
+void die(std::string msg, cl::Error& e)
+{
+    std::cerr
+            << "Error: "
+            << msg
+            << ": " << e.what()
+            << "(" << e.err() << ")"
+            << std::endl;
+    exit(e.err());
+}
+
 int main(int argc, char *argv[])
 {
 
@@ -48,8 +60,18 @@ int main(int argc, char *argv[])
         << "Implementation: OpenCL" << std::endl;
 
     parseArguments(argc, argv);
-
-    if (NTIMES < 2) throw badntimes();
+    try
+    {
+        if (NTIMES < 2) throw badntimes();
+    }
+    catch (std::exception& e)
+    {
+        std::cerr
+            << "Error: "
+            << e.what()
+            << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     std::cout << "Precision: ";
     if (useFloat) std::cout << "float";
@@ -88,17 +110,25 @@ int main(int argc, char *argv[])
     std::cout << "Total size: " << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
         << " (=" << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
         << std::endl;
-
+        
     // Reset precision
     std::cout.precision(ss);
 
     // Open the Kernel source
     std::string kernels;
-
+    try
     {
         std::ifstream in("ocl-stream-kernels.cl");
         if (!in.is_open()) throw badfile();
         kernels = std::string (std::istreambuf_iterator<char>(in), (std::istreambuf_iterator<char>()));
+    }
+    catch (std::exception& e)
+    {
+        std::cerr
+            << "Error: "
+            << e.what()
+            << std::endl;
+        exit(EXIT_FAILURE);
     }
 
     // Setup OpenCL
@@ -108,13 +138,50 @@ int main(int argc, char *argv[])
     getDeviceList(devices);
 
     // Check device index is in range
-    if (deviceIndex >= devices.size()) throw invaliddevice();
+    try
+    {
+        if (deviceIndex >= devices.size()) throw invaliddevice();
+    }
+    catch (std::exception& e)
+    {
+        std::cerr
+            << "Error: "
+            << e.what()
+            << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     cl::Device device = devices[deviceIndex];
+    cl::Context context;
+    cl::CommandQueue queue;
+    cl::Program program;
 
-    cl::Context context(device);
-    cl::CommandQueue queue(context);
-    cl::Program program(context, kernels);
+    try
+    {
+        context = cl::Context(device);
+    }
+    catch (cl::Error& e)
+    {
+        die("Creating context", e);
+    }
+
+    try
+    {
+        queue = cl::CommandQueue(context);
+    }
+    catch (cl::Error &e)
+    {
+        die("Creating queue", e);
+    }
+
+    try
+    {
+        program = cl::Program(context, kernels);
+    }
+    catch (cl::Error &e)
+    {
+        die("Creating program", e);
+    }
 
     // Print out device name
     std::string name = getDeviceName(device);
@@ -135,18 +202,18 @@ int main(int argc, char *argv[])
             << "Build error:"
             << buildlog
             << std::endl;
-        throw e;
+        exit(e.err());
     }
 
-    cl::make_kernel<cl::Buffer, cl::Buffer> copy(program, "copy");
-    cl::make_kernel<cl::Buffer, cl::Buffer> mul(program, "mul");
-    cl::make_kernel<cl::Buffer, cl::Buffer, cl::Buffer> add(program, "add");
-    cl::make_kernel<cl::Buffer, cl::Buffer, cl::Buffer> triad(program, "triad");
+    cl::make_kernel<cl::Buffer&, cl::Buffer&> copy(program, "copy");
+    cl::make_kernel<cl::Buffer&, cl::Buffer&> mul(program, "mul");
+    cl::make_kernel<cl::Buffer&, cl::Buffer&, cl::Buffer&> add(program, "add");
+    cl::make_kernel<cl::Buffer&, cl::Buffer&, cl::Buffer&> triad(program, "triad");
 
     // Create host vectors
-    void * h_a = malloc(ARRAY_SIZE*DATATYPE_SIZE);
-    void * h_b = malloc(ARRAY_SIZE*DATATYPE_SIZE);
-    void * h_c = malloc(ARRAY_SIZE*DATATYPE_SIZE);
+    void *h_a = malloc(ARRAY_SIZE * DATATYPE_SIZE);
+    void *h_b = malloc(ARRAY_SIZE * DATATYPE_SIZE);
+    void *h_c = malloc(ARRAY_SIZE * DATATYPE_SIZE);
 
     // Initilise arrays
     for (unsigned int i = 0; i < ARRAY_SIZE; i++)
@@ -166,17 +233,39 @@ int main(int argc, char *argv[])
     }
 
     // Create device buffers
-    cl::Buffer d_a(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
-    cl::Buffer d_b(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
-    cl::Buffer d_c(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
+    cl::Buffer d_a, d_b, d_c;
+    try
+    {
+        d_a = cl::Buffer(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
+        d_b = cl::Buffer(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
+        d_c = cl::Buffer(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
+    }
+    catch (cl::Error &e)
+    {
+        die("Creating buffers", e);
+    }
 
     // Copy host memory to device
-    queue.enqueueWriteBuffer(d_a, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_a);
-    queue.enqueueWriteBuffer(d_b, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_b);
-    queue.enqueueWriteBuffer(d_c, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_c);
+    try
+    {
+        queue.enqueueWriteBuffer(d_a, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_a);
+        queue.enqueueWriteBuffer(d_b, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_b);
+        queue.enqueueWriteBuffer(d_c, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_c);
+    }
+    catch (cl::Error &e)
+    {
+        die("Copying buffers to device", e);
+    }
 
     // Make sure the copies are finished
-    queue.finish();
+    try
+    {
+        queue.finish();
+    }
+    catch (cl::Error &e)
+    {
+        die("Queue finish", e);
+    }
 
     // List of times
     std::vector< std::vector<double> > timings;
@@ -236,11 +325,18 @@ int main(int argc, char *argv[])
     }
 
     // Check solutions
-    queue.enqueueReadBuffer(d_a, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_a);
-    queue.enqueueReadBuffer(d_b, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_b);
-    queue.enqueueReadBuffer(d_c, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_c);
-    queue.finish();
-
+    try
+    {
+        queue.enqueueReadBuffer(d_a, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_a);
+        queue.enqueueReadBuffer(d_b, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_b);
+        queue.enqueueReadBuffer(d_c, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_c);
+        queue.finish();
+    }
+    catch (cl::Error &e)
+    {
+        die("Copying back buffers", e);
+    }
+        
     if (useFloat)
     {
         check_solution<float>(h_a, h_b, h_c);
@@ -260,7 +356,6 @@ int main(int argc, char *argv[])
     double min[4] = {DBL_MAX, DBL_MAX, DBL_MAX, DBL_MAX};
     double max[4] = {0.0, 0.0, 0.0, 0.0};
     double avg[4] = {0.0, 0.0, 0.0, 0.0};
-
     // Ignore first result
     for (unsigned int i = 1; i < NTIMES; i++)
     {
@@ -271,7 +366,6 @@ int main(int argc, char *argv[])
             max[j] = std::max(max[j], timings[i][j]);
         }
     }
-
     for (int j = 0; j < 4; j++)
         avg[j] /= (double)(NTIMES-1);
 
@@ -284,7 +378,6 @@ int main(int argc, char *argv[])
         << std::left << std::setw(12) << "Max"
         << std::left << std::setw(12) << "Average"
         << std::endl;
-
     for (int j = 0; j < 4; j++)
     {
         std::cout
@@ -295,38 +388,66 @@ int main(int argc, char *argv[])
             << std::left << std::setw(12) << std::setprecision(5) << avg[j]
             << std::endl;
     }
+
 }
+
+
+
 
 unsigned getDeviceList(std::vector<cl::Device>& devices)
 {
-  // Get list of platforms
-  std::vector<cl::Platform> platforms;
-  cl::Platform::get(&platforms);
+    // Get list of platforms
+    std::vector<cl::Platform> platforms;
+    try
+    {
+        cl::Platform::get(&platforms);
+    }
+    catch (cl::Error &e)
+    {
+        die("Getting platforms", e);
+    }
 
-  // Enumerate devices
-  for (unsigned int i = 0; i < platforms.size(); i++)
-  {
-    std::vector<cl::Device> plat_devices;
-    platforms[i].getDevices(CL_DEVICE_TYPE_ALL, &plat_devices);
-    devices.insert(devices.end(), plat_devices.begin(), plat_devices.end());
-  }
+    // Enumerate devices
+    for (unsigned int i = 0; i < platforms.size(); i++)
+    {
+        std::vector<cl::Device> plat_devices;
+        try
+        {
+            platforms[i].getDevices(CL_DEVICE_TYPE_ALL, &plat_devices);
+        }
+        catch (cl::Error &e)
+        {
+            die("Getting devices", e);
+        }
+        devices.insert(devices.end(), plat_devices.begin(), plat_devices.end());
+    }
 
-  return devices.size();
+    return devices.size();
 }
+
 
 std::string getDeviceName(const cl::Device& device)
 {
     std::string name;
     cl_device_info info = CL_DEVICE_NAME;
 
-    // Special case for AMD
+    try
+    {
+
+        // Special case for AMD
 #ifdef CL_DEVICE_BOARD_NAME_AMD
-    device.getInfo(CL_DEVICE_VENDOR, &name);
-    if (strstr(name.c_str(), "Advanced Micro Devices"))
-        info = CL_DEVICE_BOARD_NAME_AMD;
+        device.getInfo(CL_DEVICE_VENDOR, &name);
+        if (strstr(name.c_str(), "Advanced Micro Devices"))
+            info = CL_DEVICE_BOARD_NAME_AMD;
 #endif
 
-    device.getInfo(info, &name);
+        device.getInfo(info, &name);
+    }
+    catch (cl::Error &e)
+    {
+        die("Getting device name", e);
+    }
+
     return name;
 }
 
