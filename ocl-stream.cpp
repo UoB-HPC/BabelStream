@@ -34,6 +34,7 @@ void die(std::string msg, cl::Error& e)
     exit(e.err());
 }
 
+
 int main(int argc, char *argv[])
 {
 
@@ -43,367 +44,290 @@ int main(int argc, char *argv[])
         << "Version: " << VERSION_STRING << std::endl
         << "Implementation: OpenCL" << std::endl;
 
-    parseArguments(argc, argv);
+    std::string status;
+
     try
     {
+        parseArguments(argc, argv);
         if (NTIMES < 2) throw badntimes();
-    }
-    catch (std::exception& e)
-    {
-        std::cerr
-            << "Error: "
-            << e.what()
-            << std::endl;
-        exit(EXIT_FAILURE);
-    }
 
-    std::cout << "Precision: ";
-    if (useFloat) std::cout << "float";
-    else std::cout << "double";
-    std::cout << std::endl << std::endl;
 
-    if (ARRAY_SIZE % 1024 != 0)
-    {
-        unsigned int OLD_ARRAY_SIZE = ARRAY_SIZE;
-        ARRAY_SIZE -= ARRAY_SIZE % 1024;
-        std::cout
-            << "Warning: array size must divide 1024" << std::endl
-            << "Resizing array from " << OLD_ARRAY_SIZE
-            << " to " << ARRAY_SIZE << std::endl;
-    }
+        std::cout << "Precision: ";
+        if (useFloat) std::cout << "float";
+        else std::cout << "double";
+        std::cout << std::endl << std::endl;
 
-    // Get precision (used to reset later)
-    std::streamsize ss = std::cout.precision();
+        if (ARRAY_SIZE % 1024 != 0)
+        {
+            unsigned int OLD_ARRAY_SIZE = ARRAY_SIZE;
+            ARRAY_SIZE -= ARRAY_SIZE % 1024;
+            std::cout
+                << "Warning: array size must divide 1024" << std::endl
+                << "Resizing array from " << OLD_ARRAY_SIZE
+                << " to " << ARRAY_SIZE << std::endl;
+        }
 
-    size_t DATATYPE_SIZE;
+        // Get precision (used to reset later)
+        std::streamsize ss = std::cout.precision();
 
-    if (useFloat)
-    {
-        DATATYPE_SIZE = sizeof(float);
-    }
-    else
-    {
-        DATATYPE_SIZE = sizeof(double);
-    }
+        size_t DATATYPE_SIZE;
 
-    // Display number of bytes in array
-    std::cout << std::setprecision(1) << std::fixed
-        << "Array size: " << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
-        << " (=" << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
-        << std::endl;
-    std::cout << "Total size: " << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
-        << " (=" << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
-        << std::endl;
-        
-    // Reset precision
-    std::cout.precision(ss);
-
-    // Open the Kernel source
-    std::string kernels;
-    try
-    {
-        std::ifstream in("ocl-stream-kernels.cl");
-        if (!in.is_open()) throw badfile();
-        kernels = std::string (std::istreambuf_iterator<char>(in), (std::istreambuf_iterator<char>()));
-    }
-    catch (std::exception& e)
-    {
-        std::cerr
-            << "Error: "
-            << e.what()
-            << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Setup OpenCL
-
-    // Get list of devices
-    std::vector<cl::Device> devices;
-    getDeviceList(devices);
-
-    // Check device index is in range
-    try
-    {
-        if (deviceIndex >= devices.size()) throw invaliddevice();
-    }
-    catch (std::exception& e)
-    {
-        std::cerr
-            << "Error: "
-            << e.what()
-            << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    cl::Device device = devices[deviceIndex];
-    cl::Context context;
-    cl::CommandQueue queue;
-    cl::Program program;
-
-    try
-    {
-        context = cl::Context(device);
-    }
-    catch (cl::Error& e)
-    {
-        die("Creating context", e);
-    }
-
-    try
-    {
-        queue = cl::CommandQueue(context);
-    }
-    catch (cl::Error &e)
-    {
-        die("Creating queue", e);
-    }
-
-    try
-    {
-        program = cl::Program(context, kernels);
-    }
-    catch (cl::Error &e)
-    {
-        die("Creating program", e);
-    }
-
-    // Print out device name
-    std::string name = getDeviceName(device);
-    std::cout << "Using OpenCL device " << name << std::endl;
-
-    try
-    {
-        std::string options = "";
-        if (useFloat)
-            options = "-DFLOAT";
-        program.build(options.c_str());
-    }
-    catch (cl::Error& e)
-    {
-        std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
-        std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0]);
-        std::cerr
-            << "Build error:"
-            << buildlog
-            << std::endl;
-        exit(e.err());
-    }
-
-    cl::make_kernel<cl::Buffer&, cl::Buffer&> copy(program, "copy");
-    cl::make_kernel<cl::Buffer&, cl::Buffer&> mul(program, "mul");
-    cl::make_kernel<cl::Buffer&, cl::Buffer&, cl::Buffer&> add(program, "add");
-    cl::make_kernel<cl::Buffer&, cl::Buffer&, cl::Buffer&> triad(program, "triad");
-
-    // Create host vectors
-    void *h_a = malloc(ARRAY_SIZE * DATATYPE_SIZE);
-    void *h_b = malloc(ARRAY_SIZE * DATATYPE_SIZE);
-    void *h_c = malloc(ARRAY_SIZE * DATATYPE_SIZE);
-
-    // Initilise arrays
-    for (unsigned int i = 0; i < ARRAY_SIZE; i++)
-    {
         if (useFloat)
         {
-            ((float*)h_a)[i] = 1.0;
-            ((float*)h_b)[i] = 2.0;
-            ((float*)h_c)[i] = 0.0;
+            DATATYPE_SIZE = sizeof(float);
         }
         else
         {
-            ((double*)h_a)[i] = 1.0;
-            ((double*)h_b)[i] = 2.0;
-            ((double*)h_c)[i] = 0.0;
+            DATATYPE_SIZE = sizeof(double);
         }
-    }
 
-    // Create device buffers
-    cl::Buffer d_a, d_b, d_c;
-    try
-    {
-        d_a = cl::Buffer(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
-        d_b = cl::Buffer(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
-        d_c = cl::Buffer(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
-    }
-    catch (cl::Error &e)
-    {
-        die("Creating buffers", e);
-    }
+        // Display number of bytes in array
+        std::cout << std::setprecision(1) << std::fixed
+            << "Array size: " << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
+            << " (=" << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
+            << std::endl;
+        std::cout << "Total size: " << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
+            << " (=" << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
+            << std::endl;
+        
+        // Reset precision
+        std::cout.precision(ss);
 
-    // Copy host memory to device
-    try
-    {
+        // Open the Kernel source
+        std::string kernels;
+        {
+            std::ifstream in("ocl-stream-kernels.cl");
+            if (!in.is_open()) throw badfile();
+            kernels = std::string (std::istreambuf_iterator<char>(in), (std::istreambuf_iterator<char>()));
+        }
+
+
+        // Setup OpenCL
+
+        // Get list of devices
+        std::vector<cl::Device> devices;
+        getDeviceList(devices);
+
+        // Check device index is in range
+        if (deviceIndex >= devices.size()) throw invaliddevice();
+
+        cl::Device device = devices[deviceIndex];
+
+        status = "Creating context";
+        cl::Context context(device);
+
+        status = "Creating queue";
+        cl::CommandQueue queue(context);
+        
+        status = "Creating program";
+        cl::Program program(context, kernels);
+
+        // Print out device name
+        std::string name = getDeviceName(device);
+        std::cout << "Using OpenCL device " << name << std::endl;
+
+        try
+        {
+            std::string options = "";
+            if (useFloat)
+                options = "-DFLOAT";
+            program.build(options.c_str());
+        }
+        catch (cl::Error& e)
+        {
+            std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
+            std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0]);
+            std::cerr
+                << "Build error:"
+                << buildlog
+                << std::endl;
+            throw e;
+        }
+
+        status = "Making kernel copy";
+        cl::make_kernel<cl::Buffer&, cl::Buffer&> copy(program, "copy");
+        status = "Making kernel mul";
+        cl::make_kernel<cl::Buffer&, cl::Buffer&> mul(program, "mul");
+        status = "Making kernel add";
+        cl::make_kernel<cl::Buffer&, cl::Buffer&, cl::Buffer&> add(program, "add");
+        status = "Making kernel triad";
+        cl::make_kernel<cl::Buffer&, cl::Buffer&, cl::Buffer&> triad(program, "triad");
+
+        // Create host vectors
+        void *h_a = malloc(ARRAY_SIZE * DATATYPE_SIZE);
+        void *h_b = malloc(ARRAY_SIZE * DATATYPE_SIZE);
+        void *h_c = malloc(ARRAY_SIZE * DATATYPE_SIZE);
+
+        // Initilise arrays
+        for (unsigned int i = 0; i < ARRAY_SIZE; i++)
+        {
+            if (useFloat)
+            {
+                ((float*)h_a)[i] = 1.0;
+                ((float*)h_b)[i] = 2.0;
+                ((float*)h_c)[i] = 0.0;
+            }
+            else
+            {
+                ((double*)h_a)[i] = 1.0;
+                ((double*)h_b)[i] = 2.0;
+                ((double*)h_c)[i] = 0.0;
+            }
+        }
+
+        // Create device buffers
+        status = "Creating buffers";
+        cl::Buffer d_a(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
+        cl::Buffer d_b(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
+        cl::Buffer d_c(context, CL_MEM_READ_WRITE, DATATYPE_SIZE * ARRAY_SIZE);
+
+
+        // Copy host memory to device
+        status = "Copying buffers";
         queue.enqueueWriteBuffer(d_a, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_a);
         queue.enqueueWriteBuffer(d_b, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_b);
         queue.enqueueWriteBuffer(d_c, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_c);
-    }
-    catch (cl::Error &e)
-    {
-        die("Copying buffers to device", e);
-    }
 
-    // Make sure the copies are finished
-    try
-    {
+        // Make sure the copies are finished
         queue.finish();
-    }
-    catch (cl::Error &e)
-    {
-        die("Queue finish", e);
-    }
 
-    // List of times
-    std::vector< std::vector<double> > timings;
 
-    // Declare timers
-    std::chrono::high_resolution_clock::time_point t1, t2;
+        // List of times
+        std::vector< std::vector<double> > timings;
 
-    // Main loop
-    for (unsigned int k = 0; k < NTIMES; k++)
-    {
-        std::vector<double> times;
-        t1 = std::chrono::high_resolution_clock::now();
-        try
+        // Declare timers
+        std::chrono::high_resolution_clock::time_point t1, t2;
+
+        // Main loop
+        for (unsigned int k = 0; k < NTIMES; k++)
         {
+            status = "Executing copy";
+            std::vector<double> times;
+            t1 = std::chrono::high_resolution_clock::now();
             copy(
                 cl::EnqueueArgs(
                 queue,
                 cl::NDRange(ARRAY_SIZE)),
                 d_a, d_c);
             queue.finish();
-        }
-        catch (cl::Error &e)
-        {
-            die("Executing copy", e);
-        }
-        t2 = std::chrono::high_resolution_clock::now();
-        times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+            t2 = std::chrono::high_resolution_clock::now();
+            times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
-        t1 = std::chrono::high_resolution_clock::now();
-        try
-        {
+            status = "Executing mul";
+            t1 = std::chrono::high_resolution_clock::now();
             mul(
                 cl::EnqueueArgs(
                 queue,
                 cl::NDRange(ARRAY_SIZE)),
                 d_b, d_c);
             queue.finish();
-        }
-        catch (cl::Error &e)
-        {
-            die("Executing mul", e);
-        }
-        t2 = std::chrono::high_resolution_clock::now();
-        times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+            t2 = std::chrono::high_resolution_clock::now();
+            times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
-        t1 = std::chrono::high_resolution_clock::now();
-        try
-        {
+            status = "Executing add";
+            t1 = std::chrono::high_resolution_clock::now();
             add(
                 cl::EnqueueArgs(
                 queue,
                 cl::NDRange(ARRAY_SIZE)),
                 d_a, d_b, d_c);
             queue.finish();
-        }
-        catch (cl::Error &e)
-        {
-            die("Executing add", e);
-        }
-        t2 = std::chrono::high_resolution_clock::now();
-        times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+            t2 = std::chrono::high_resolution_clock::now();
+            times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
 
-        t1 = std::chrono::high_resolution_clock::now();
-        try
-        {
+            status = "Executing triad";
+            t1 = std::chrono::high_resolution_clock::now();
             triad(
                 cl::EnqueueArgs(
                 queue,
                 cl::NDRange(ARRAY_SIZE)),
                 d_a, d_b, d_c);
             queue.finish();
+            t2 = std::chrono::high_resolution_clock::now();
+            times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
+            timings.push_back(times);
+
         }
-        catch (cl::Error &e)
-        {
-            die("Executing triad", e);
-        }
-        t2 = std::chrono::high_resolution_clock::now();
-        times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
-        timings.push_back(times);
-
-    }
-
-    // Check solutions
-    try
-    {
+        // Check solutions
+        status = "Copying back buffers";
         queue.enqueueReadBuffer(d_a, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_a);
         queue.enqueueReadBuffer(d_b, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_b);
         queue.enqueueReadBuffer(d_c, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_c);
         queue.finish();
+
+            
+        if (useFloat)
+        {
+            check_solution<float>(h_a, h_b, h_c);
+        }
+        else
+        {
+            check_solution<double>(h_a, h_b, h_c);
+        }
+
+        // Crunch results
+        size_t sizes[4] = {
+            2 * DATATYPE_SIZE * ARRAY_SIZE,
+            2 * DATATYPE_SIZE * ARRAY_SIZE,
+            3 * DATATYPE_SIZE * ARRAY_SIZE,
+            3 * DATATYPE_SIZE * ARRAY_SIZE
+        };
+        double min[4] = {DBL_MAX, DBL_MAX, DBL_MAX, DBL_MAX};
+        double max[4] = {0.0, 0.0, 0.0, 0.0};
+        double avg[4] = {0.0, 0.0, 0.0, 0.0};
+        // Ignore first result
+        for (unsigned int i = 1; i < NTIMES; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                avg[j] += timings[i][j];
+                min[j] = std::min(min[j], timings[i][j]);
+                max[j] = std::max(max[j], timings[i][j]);
+            }
+        }
+        for (int j = 0; j < 4; j++)
+            avg[j] /= (double)(NTIMES-1);
+
+        // Display results
+        std::string labels[] = {"Copy", "Mul", "Add", "Triad"};
+        std::cout
+            << std::left << std::setw(12) << "Function"
+            << std::left << std::setw(12) << "MBytes/sec"
+            << std::left << std::setw(12) << "Min (sec)"
+            << std::left << std::setw(12) << "Max"
+            << std::left << std::setw(12) << "Average"
+            << std::endl;
+        for (int j = 0; j < 4; j++)
+        {
+            std::cout
+                << std::left << std::setw(12) << labels[j]
+                << std::left << std::setw(12) << std::setprecision(3) << 1.0E-06 * sizes[j]/min[j]
+                << std::left << std::setw(12) << std::setprecision(5) << min[j]
+                << std::left << std::setw(12) << std::setprecision(5) << max[j]
+                << std::left << std::setw(12) << std::setprecision(5) << avg[j]
+                << std::endl;
+        }
+
     }
     catch (cl::Error &e)
     {
-        die("Copying back buffers", e);
+        die(status, e);
     }
-        
-    if (useFloat)
+    catch (std::exception& e)
     {
-        check_solution<float>(h_a, h_b, h_c);
-    }
-    else
-    {
-        check_solution<double>(h_a, h_b, h_c);
-    }
-
-    // Crunch results
-    size_t sizes[4] = {
-        2 * DATATYPE_SIZE * ARRAY_SIZE,
-        2 * DATATYPE_SIZE * ARRAY_SIZE,
-        3 * DATATYPE_SIZE * ARRAY_SIZE,
-        3 * DATATYPE_SIZE * ARRAY_SIZE
-    };
-    double min[4] = {DBL_MAX, DBL_MAX, DBL_MAX, DBL_MAX};
-    double max[4] = {0.0, 0.0, 0.0, 0.0};
-    double avg[4] = {0.0, 0.0, 0.0, 0.0};
-    // Ignore first result
-    for (unsigned int i = 1; i < NTIMES; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            avg[j] += timings[i][j];
-            min[j] = std::min(min[j], timings[i][j]);
-            max[j] = std::max(max[j], timings[i][j]);
-        }
-    }
-    for (int j = 0; j < 4; j++)
-        avg[j] /= (double)(NTIMES-1);
-
-    // Display results
-    std::string labels[] = {"Copy", "Mul", "Add", "Triad"};
-    std::cout
-        << std::left << std::setw(12) << "Function"
-        << std::left << std::setw(12) << "MBytes/sec"
-        << std::left << std::setw(12) << "Min (sec)"
-        << std::left << std::setw(12) << "Max"
-        << std::left << std::setw(12) << "Average"
-        << std::endl;
-    for (int j = 0; j < 4; j++)
-    {
-        std::cout
-            << std::left << std::setw(12) << labels[j]
-            << std::left << std::setw(12) << std::setprecision(3) << 1.0E-06 * sizes[j]/min[j]
-            << std::left << std::setw(12) << std::setprecision(5) << min[j]
-            << std::left << std::setw(12) << std::setprecision(5) << max[j]
-            << std::left << std::setw(12) << std::setprecision(5) << avg[j]
+        std::cerr
+            << "Error: "
+            << e.what()
             << std::endl;
+        exit(EXIT_FAILURE);
     }
 
 }
-
-
 
 
 unsigned getDeviceList(std::vector<cl::Device>& devices)
