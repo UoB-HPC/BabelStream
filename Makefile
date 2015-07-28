@@ -3,7 +3,7 @@ CXXFLAGS = -std=c++11 -O3
 
 PLATFORM = $(shell uname -s)
 ifeq ($(PLATFORM), Darwin)
-	LIBS = -framework OpenCL
+	LDLIBS = -framework OpenCL
 endif
 
 all: gpu-stream-ocl gpu-stream-cuda
