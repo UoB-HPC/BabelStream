@@ -13,10 +13,6 @@ gpu-stream-ocl: ocl-stream.cpp common.o Makefile
 
 common.o: common.cpp Makefile
 
-ifeq ($(shell which nvcc),"")
-$(error "Cannot find nvcc, please install CUDA toolkit")
-endif
-
 gpu-stream-cuda: cuda-stream.cu common.o Makefile
 ifeq ($(shell which nvcc > /dev/null; echo $$?), 0)
 	nvcc $(CXXFLAGS) common.o $< -o $@
