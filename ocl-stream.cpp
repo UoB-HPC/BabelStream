@@ -85,8 +85,8 @@ int main(int argc, char *argv[])
         << "Array size: " << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
         << " (=" << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
         << std::endl;
-    std::cout << "Total size: " << 3*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
-        << " (=" << 3*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
+    std::cout << "Total size: " << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
+        << " (=" << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
         << std::endl;
 
     // Reset precision
