@@ -14,6 +14,23 @@ extern bool useFloat;
 
 extern int deviceIndex;
 
+// Exceptions
+struct invaliddevice : public std::exception
+{
+    virtual const char * what () const throw ()
+    {
+        return "Chosen device index is invalid";
+    }
+};
+
+struct badntimes : public std::exception
+{
+    virtual const char * what () const throw ()
+    {
+        return "Chosen number of times is invalid, must be >= 2";
+    }
+};
+
 template < typename T >
 void check_solution(void* a_in, void* b_in, void* c_in)
 {

@@ -21,22 +21,6 @@ struct badfile : public std::exception
     }
 };
 
-struct invaliddevice : public std::exception
-{
-    virtual const char * what () const throw ()
-    {
-        return "Chosen device index is invalid";
-    }
-};
-
-struct badntimes : public std::exception
-{
-    virtual const char * what () const throw ()
-    {
-        return "Chosen number of times is invalid, must be >= 2";
-    }
-};
-
 
 // Print error and exit
 void die(std::string msg, cl::Error& e)
