@@ -313,6 +313,11 @@ int main(int argc, char *argv[])
                 << std::endl;
         }
 
+        // Free host vectors
+        free(h_a);
+        free(h_b);
+        free(h_c);
+
     }
     catch (cl::Error &e)
     {
