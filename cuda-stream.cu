@@ -81,6 +81,7 @@ int main(int argc, char *argv[])
             << "Warning: array size must divide 1024" << std::endl
             << "Resizing array from " << OLD_ARRAY_SIZE
             << " to " << ARRAY_SIZE << std::endl;
+        if (ARRAY_SIZE == 0) throw badarraysize();
     }
 
     // Get precision (used to reset later)

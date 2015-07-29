@@ -33,6 +33,14 @@ struct badntimes : public std::exception
     }
 };
 
+struct badarraysize : public std::exception
+{
+    virtual const char * what () const throw ()
+    {
+        return "Array size must be >= 1024";
+    }
+};
+
 template < typename T >
 void check_solution(void* a_in, void* b_in, void* c_in)
 {
