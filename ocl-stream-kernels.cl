@@ -1,13 +1,13 @@
 
 #ifdef FLOAT
 	#define DATATYPE float
+	constant DATATYPE scalar = 3.0f;
 #else
 	#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 	#define DATATYPE double
+	constant DATATYPE scalar = 3.0;
 #endif
 
-
-constant DATATYPE scalar = 3.0;
 
 kernel void copy(global const DATATYPE * restrict a, global DATATYPE * restrict c)
 {
