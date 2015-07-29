@@ -131,9 +131,9 @@ int main(int argc, char *argv[])
     {
         if (useFloat)
         {
-            ((float*)h_a)[i] = 1.0;
-            ((float*)h_b)[i] = 2.0;
-            ((float*)h_c)[i] = 0.0;
+            ((float*)h_a)[i] = 1.0f;
+            ((float*)h_b)[i] = 2.0f;
+            ((float*)h_c)[i] = 0.0f;
         }
         else
         {
