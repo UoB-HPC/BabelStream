@@ -1,0 +1,15 @@
+GPU-STREAM
+Version: 0.0
+Implementation: CUDA
+Precision: double
+
+Warning: array size must divide 1024
+Resizing array from 50000000 to 49999872
+Array size: 381.5 MB (=0.4 GB)
+Total size: 1144.4 MB (=1.1 GB)
+Using CUDA device Tesla K80
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        203910.595  0.00392     0.00393     0.00393     
+Mul         203682.941  0.00393     0.00393     0.00393     
+Add         203489.986  0.00590     0.00590     0.00590     
+Triad       203421.823  0.00590     0.00590     0.00590     
