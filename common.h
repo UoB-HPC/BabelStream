@@ -3,6 +3,8 @@
 #include <cstring>
 #include <limits>
 
+#define VERSION_STRING "0.0"
+
 extern void parseArguments(int argc, char *argv[]);
 
 extern void listDevices(void);
@@ -85,6 +87,4 @@ void check_solution(void* a_in, void* b_in, void* c_in)
             << "Validation failed on c[]. Average error " << errc
             << std::endl;
 }
-
-#define VERSION_STRING "0.0"
 
