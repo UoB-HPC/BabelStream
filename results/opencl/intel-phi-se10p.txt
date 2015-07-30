@@ -1,0 +1,15 @@
+GPU-STREAM
+Version: 0.0
+Implementation: OpenCL
+Precision: double
+
+Warning: array size must divide 1024
+Resizing array from 50000000 to 49999872
+Array size: 381.5 MB (=0.4 GB)
+Total size: 1144.4 MB (=1.1 GB)
+Using OpenCL device Intel(R) Many Integrated Core Acceleration Card
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        96934.200   0.00825     0.00911     0.00887     
+Mul         101522.583  0.00788     0.00806     0.00795     
+Add         110415.617  0.01087     0.01261     0.01113     
+Triad       109458.809  0.01096     0.01216     0.01155
