@@ -39,7 +39,7 @@
 #include <cstring>
 #include <limits>
 
-#define VERSION_STRING "0.0"
+#define VERSION_STRING "0.9"
 
 extern void parseArguments(int argc, char *argv[]);
 
