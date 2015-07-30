@@ -73,6 +73,8 @@ int main(int argc, char *argv[])
     else std::cout << "double";
     std::cout << std::endl << std::endl;
 
+    std::cout << "Running kernels " << NTIMES << " times" << std::endl;
+
     if (ARRAY_SIZE % 1024 != 0)
     {
         unsigned int OLD_ARRAY_SIZE = ARRAY_SIZE;
