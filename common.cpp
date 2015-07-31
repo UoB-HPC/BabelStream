@@ -36,7 +36,10 @@
 
 #include "common.h"
 
-int ARRAY_SIZE = 50000000;
+// Default array size 50 * 2^20 (50*8 Mebibytes double precision)
+// Use binary powers of two so divides 1024
+int ARRAY_SIZE = 52428800;
+
 int NTIMES = 10;
 
 bool useFloat = false;
