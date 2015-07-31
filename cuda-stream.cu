@@ -162,7 +162,6 @@ int main(int argc, char *argv[])
     // Check buffers fit on the device
     cudaDeviceProp props;
     cudaGetDeviceProperties(&props, deviceIndex);
-    // if (props. < DATATYPE_SIZE*ARRAY_SIZE) throw badbuffersize();
     if (props.totalGlobalMem < 3*DATATYPE_SIZE*ARRAY_SIZE) throw badmemsize();
 
     // Create host vectors
