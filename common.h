@@ -52,54 +52,6 @@ extern bool useFloat;
 
 extern int deviceIndex;
 
-// Exceptions
-struct invaliddevice : public std::exception
-{
-    virtual const char * what () const throw ()
-    {
-        return "Chosen device index is invalid";
-    }
-};
-
-struct badntimes : public std::exception
-{
-    virtual const char * what () const throw ()
-    {
-        return "Chosen number of times is invalid, must be >= 2";
-    }
-};
-
-struct badarraysize : public std::exception
-{
-    virtual const char * what () const throw ()
-    {
-        return "Array size must be >= 1024";
-    }
-};
-
-struct badbuffersize : public std::exception
-{
-    virtual const char * what () const throw ()
-    {
-        return "Device cannot allocate a buffer big enough";
-    }
-};
-
-struct badmemsize : public std::exception
-{
-    virtual const char * what () const throw ()
-    {
-        return "Device does not have enough memory for all 3 buffers";
-    }
-};
-
-struct nodouble : public std::exception
-{
-    virtual const char * what () const throw ()
-    {
-        return "Device does not support double precision, please use --float";
-    }
-};
 
 template < typename T >
 void check_solution(void* a_in, void* b_in, void* c_in)

@@ -49,14 +49,6 @@
 std::string getDeviceName(const cl::Device& device);
 unsigned getDeviceList(std::vector<cl::Device>& devices);
 
-struct badfile : public std::exception
-{
-    virtual const char * what () const throw ()
-    {
-        return "Cannot open kernel file";
-    }
-};
-
 
 // Print error and exit
 void die(std::string msg, cl::Error& e)
@@ -85,7 +77,8 @@ int main(int argc, char *argv[])
     try
     {
         parseArguments(argc, argv);
-        if (NTIMES < 2) throw badntimes();
+        if (NTIMES < 2)
+            throw std::runtime_error("Chosen number of times is invalid, must be >= 2");
 
 
         std::cout << "Precision: ";
@@ -103,7 +96,8 @@ int main(int argc, char *argv[])
                 << "Warning: array size must divide 1024" << std::endl
                 << "Resizing array from " << OLD_ARRAY_SIZE
                 << " to " << ARRAY_SIZE << std::endl;
-            if (ARRAY_SIZE == 0) throw badarraysize();
+            if (ARRAY_SIZE == 0)
+                throw std::runtime_error("Array size must be >= 1024");
         }
 
         // Get precision (used to reset later)
@@ -136,7 +130,8 @@ int main(int argc, char *argv[])
         std::string kernels;
         {
             std::ifstream in("ocl-stream-kernels.cl");
-            if (!in.is_open()) throw badfile();
+            if (!in.is_open())
+                throw std::runtime_error("Cannot open kernel file");
             kernels = std::string (std::istreambuf_iterator<char>(in), (std::istreambuf_iterator<char>()));
         }
 
@@ -148,7 +143,8 @@ int main(int argc, char *argv[])
         getDeviceList(devices);
 
         // Check device index is in range
-        if (deviceIndex >= devices.size()) throw invaliddevice();
+        if (deviceIndex >= devices.size())
+            throw std::runtime_error("Chosen device index is invalid");
 
         cl::Device device = devices[deviceIndex];
 
@@ -166,14 +162,17 @@ int main(int argc, char *argv[])
         std::cout << "Using OpenCL device " << name << std::endl;
 
         // Check device can do double precision if requested
-        if (!useFloat && !device.getInfo<CL_DEVICE_DOUBLE_FP_CONFIG>()) throw nodouble();
+        if (!useFloat && !device.getInfo<CL_DEVICE_DOUBLE_FP_CONFIG>())
+            throw std::runtime_error("Device does not support double precision, please use --float");
 
         // Check buffers fit on the device
         status = "Getting device memory sizes";
         cl_ulong totalmem = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
         cl_ulong maxbuffer = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
-        if (maxbuffer < DATATYPE_SIZE*ARRAY_SIZE) throw badbuffersize();
-        if (totalmem < 3*DATATYPE_SIZE*ARRAY_SIZE) throw badmemsize();
+        if (maxbuffer < DATATYPE_SIZE*ARRAY_SIZE)
+            throw std::runtime_error("Device cannot allocate a buffer big enough");
+        if (totalmem < 3*DATATYPE_SIZE*ARRAY_SIZE)
+            throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
         try
         {

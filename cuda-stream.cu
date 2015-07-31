@@ -102,7 +102,8 @@ int main(int argc, char *argv[])
 
     parseArguments(argc, argv);
 
-    if (NTIMES < 2) throw badntimes();
+    if (NTIMES < 2)
+        throw std::runtime_error("Chosen number of times is invalid, must be >= 2");
 
     std::cout << "Precision: ";
     if (useFloat) std::cout << "float";
@@ -119,7 +120,8 @@ int main(int argc, char *argv[])
             << "Warning: array size must divide 1024" << std::endl
             << "Resizing array from " << OLD_ARRAY_SIZE
             << " to " << ARRAY_SIZE << std::endl;
-        if (ARRAY_SIZE == 0) throw badarraysize();
+        if (ARRAY_SIZE == 0)
+            throw std::runtime_error("Array size must be >= 1024");
     }
 
     // Get precision (used to reset later)
@@ -152,7 +154,8 @@ int main(int argc, char *argv[])
     int count;
     cudaGetDeviceCount(&count);
     check_cuda_error();
-    if (deviceIndex >= count) throw invaliddevice();
+    if (deviceIndex >= count)
+        throw std::runtime_error("Chosen device index is invalid");
     cudaSetDevice(deviceIndex);
     check_cuda_error();
 
@@ -162,7 +165,8 @@ int main(int argc, char *argv[])
     // Check buffers fit on the device
     cudaDeviceProp props;
     cudaGetDeviceProperties(&props, deviceIndex);
-    if (props.totalGlobalMem < 3*DATATYPE_SIZE*ARRAY_SIZE) throw badmemsize();
+    if (props.totalGlobalMem < 3*DATATYPE_SIZE*ARRAY_SIZE)
+        throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
     // Create host vectors
     void * h_a = malloc(ARRAY_SIZE*DATATYPE_SIZE);
