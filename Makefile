@@ -11,7 +11,7 @@ all: gpu-stream-ocl gpu-stream-cuda
 gpu-stream-ocl: ocl-stream.cpp common.o Makefile
 	$(CXX) $(CXXFLAGS) -Wno-deprecated-declarations common.o $< -o $@ $(LDLIBS)
 
-common.o: common.cpp Makefile
+common.o: common.cpp common.h Makefile
 
 gpu-stream-cuda: cuda-stream.cu common.o Makefile
 ifeq ($(shell which nvcc > /dev/null; echo $$?), 0)
