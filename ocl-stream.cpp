@@ -165,6 +165,9 @@ int main(int argc, char *argv[])
         std::string name = getDeviceName(device);
         std::cout << "Using OpenCL device " << name << std::endl;
 
+        // Check device can do double precision if requested
+        if (!useFloat && !device.getInfo<CL_DEVICE_DOUBLE_FP_CONFIG>()) throw nodouble();
+
         // Check buffers fit on the device
         status = "Getting device memory sizes";
         cl_ulong totalmem = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();

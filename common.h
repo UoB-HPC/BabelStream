@@ -93,6 +93,14 @@ struct badmemsize : public std::exception
     }
 };
 
+struct nodouble : public std::exception
+{
+    virtual const char * what () const throw ()
+    {
+        return "Device does not support double precision, please use --float";
+    }
+};
+
 template < typename T >
 void check_solution(void* a_in, void* b_in, void* c_in)
 {
