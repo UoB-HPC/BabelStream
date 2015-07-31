@@ -23,7 +23,7 @@
 *         accordance with the GPU-STREAM Run Rules must be clearly
 *         labelled whenever they are published.  Examples of
 *         proper labelling include:
-*         "tuned GPU-STREAM benchmark results" 
+*         "tuned GPU-STREAM benchmark results"
 *         "based on a variant of the GPU-STREAM benchmark code"
 *         Other comparable, clear and reasonable labelling is
 *         acceptable.
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
         std::cout << "Total size: " << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
             << " (=" << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
             << std::endl;
-        
+
         // Reset precision
         std::cout.precision(ss);
 
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 
         status = "Creating queue";
         cl::CommandQueue queue(context);
-        
+
         status = "Creating program";
         cl::Program program(context, kernels);
 
@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
         queue.enqueueReadBuffer(d_c, CL_FALSE, 0, ARRAY_SIZE*DATATYPE_SIZE, h_c);
         queue.finish();
 
-            
+
         if (useFloat)
         {
             check_solution<float>(h_a, h_b, h_c);

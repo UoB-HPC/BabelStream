@@ -23,7 +23,7 @@
 *         accordance with the GPU-STREAM Run Rules must be clearly
 *         labelled whenever they are published.  Examples of
 *         proper labelling include:
-*         "tuned GPU-STREAM benchmark results" 
+*         "tuned GPU-STREAM benchmark results"
 *         "based on a variant of the GPU-STREAM benchmark code"
 *         Other comparable, clear and reasonable labelling is
 *         acceptable.
