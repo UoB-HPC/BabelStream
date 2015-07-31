@@ -332,6 +332,14 @@ int main(int argc, char *argv[])
     free(h_b);
     free(h_c);
 
+    // Free cuda buffers
+    cudaFree(d_a);
+    check_cuda_error();
+    cudaFree(d_b);
+    check_cuda_error();
+    cudaFree(d_c);
+    check_cuda_error();
+
 }
 
 std::string getDeviceName(int device)
