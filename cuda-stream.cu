@@ -159,6 +159,11 @@ int main(int argc, char *argv[])
     // Print out device name
     std::cout << "Using CUDA device " << getDeviceName(deviceIndex) << std::endl;
 
+    // Check buffers fit on the device
+    cudaDeviceProp props;
+    cudaGetDeviceProperties(&props, deviceIndex);
+    // if (props. < DATATYPE_SIZE*ARRAY_SIZE) throw badbuffersize();
+    if (props.totalGlobalMem < 3*DATATYPE_SIZE*ARRAY_SIZE) throw badmemsize();
 
     // Create host vectors
     void * h_a = malloc(ARRAY_SIZE*DATATYPE_SIZE);

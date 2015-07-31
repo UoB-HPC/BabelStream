@@ -77,6 +77,22 @@ struct badarraysize : public std::exception
     }
 };
 
+struct badbuffersize : public std::exception
+{
+    virtual const char * what () const throw ()
+    {
+        return "Device cannot allocate a buffer big enough";
+    }
+};
+
+struct badmemsize : public std::exception
+{
+    virtual const char * what () const throw ()
+    {
+        return "Device does not have enough memory for all 3 buffers";
+    }
+};
+
 template < typename T >
 void check_solution(void* a_in, void* b_in, void* c_in)
 {

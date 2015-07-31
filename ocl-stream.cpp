@@ -165,6 +165,13 @@ int main(int argc, char *argv[])
         std::string name = getDeviceName(device);
         std::cout << "Using OpenCL device " << name << std::endl;
 
+        // Check buffers fit on the device
+        status = "Getting device memory sizes";
+        cl_ulong totalmem = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
+        cl_ulong maxbuffer = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
+        if (maxbuffer < DATATYPE_SIZE*ARRAY_SIZE) throw badbuffersize();
+        if (totalmem < 3*DATATYPE_SIZE*ARRAY_SIZE) throw badmemsize();
+
         try
         {
             std::string options = "";
