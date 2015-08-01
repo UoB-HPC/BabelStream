@@ -38,6 +38,7 @@
 #include <iostream>
 #include <cstring>
 #include <limits>
+#include <stdexcept>
 
 #define VERSION_STRING "0.9"
 
