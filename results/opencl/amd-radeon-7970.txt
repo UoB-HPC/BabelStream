@@ -1,0 +1,14 @@
+GPU-STREAM
+Version: 0.9
+Implementation: OpenCL
+Precision: double
+
+Running kernels 10 times
+Array size: 400.0 MB (=0.4 GB)
+Total size: 1200.0 MB (=1.2 GB)
+Using OpenCL device 
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        211122.437  0.00397     0.00411     0.00401     
+Mul         212108.366  0.00395     0.00414     0.00402     
+Add         219478.174  0.00573     0.00593     0.00580     
+Triad       219383.160  0.00574     0.00600     0.00583     
