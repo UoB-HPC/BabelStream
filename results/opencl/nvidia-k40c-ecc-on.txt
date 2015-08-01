@@ -1,10 +1,14 @@
 GPU-STREAM
-Version: 0.0
+Version: 0.9
 Implementation: OpenCL
+Precision: double
 
+Running kernels 10 times
+Array size: 400.0 MB (=0.4 GB)
+Total size: 1200.0 MB (=1.2 GB)
 Using OpenCL device Tesla K40c
 Function    MBytes/sec  Min (sec)   Max         Average     
-Copy        190343      0.00420295  0.00422588  0.00421376
-Mul         190266      0.00420465  0.00422835  0.00421347
-Add         190144      0.00631101  0.00632369  0.00631618
-Triad       190105      0.00631229  0.00632309  0.00631735
+Copy        190354.872  0.00441     0.00443     0.00442     
+Mul         190199.107  0.00441     0.00443     0.00442     
+Add         190946.380  0.00659     0.00660     0.00660     
+Triad       190991.101  0.00659     0.00661     0.00660     
