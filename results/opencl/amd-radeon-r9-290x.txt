@@ -1,0 +1,20 @@
+GPU-STREAM
+Version: 0.9
+Implementation: OpenCL
+Precision: double
+
+Running kernels 10 times
+Array size: 400.0 MB (=0.4 GB)
+Total size: 1200.0 MB (=1.2 GB)
+Error: No root privilege. Please check with the system-admin.
+Error: No root privilege. Please check with the system-admin.
+Error: No root privilege. Please check with the system-admin.
+Error: No root privilege. Please check with the system-admin.
+Error: No root privilege. Please check with the system-admin.
+Error: No root privilege. Please check with the system-admin.
+Using OpenCL device Hawaii
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        257320.921  0.00326     0.00343     0.00333     
+Mul         265161.454  0.00316     0.00324     0.00320     
+Add         272112.619  0.00462     0.00476     0.00469     
+Triad       271556.605  0.00463     0.00479     0.00470     
