@@ -2,3 +2,7 @@
 gpu-stream-cuda
 gpu-stream-ocl
 *.o
+
+*.tar
+
+*.gz

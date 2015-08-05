@@ -6,12 +6,6 @@ Precision: double
 Running kernels 10 times
 Array size: 400.0 MB (=0.4 GB)
 Total size: 1200.0 MB (=1.2 GB)
-Error: No root privilege. Please check with the system-admin.
-Error: No root privilege. Please check with the system-admin.
-Error: No root privilege. Please check with the system-admin.
-Error: No root privilege. Please check with the system-admin.
-Error: No root privilege. Please check with the system-admin.
-Error: No root privilege. Please check with the system-admin.
 Using OpenCL device Hawaii
 Function    MBytes/sec  Min (sec)   Max         Average     
 Copy        257320.921  0.00326     0.00343     0.00333     
