@@ -40,7 +40,7 @@
 #include <limits>
 #include <stdexcept>
 
-#define VERSION_STRING "0.9"
+#define VERSION_STRING "1.0"
 
 extern void parseArguments(int argc, char *argv[]);
 
