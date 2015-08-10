@@ -42,8 +42,10 @@
 #include <cfloat>
 #include <cmath>
 
-#define __CL_ENABLE_EXCEPTIONS
-#include "CL/cl.hpp"
+#define CL_HPP_ENABLE_EXCEPTIONS
+#define CL_HPP_MINIMUM_OPENCL_VERSION 110
+#define CL_HPP_TARGET_OPENCL_VERSION 110
+#include "CL/cl2.hpp"
 #include "common.h"
 
 std::string getDeviceName(const cl::Device& device);
@@ -193,13 +195,13 @@ int main(int argc, char *argv[])
         }
 
         status = "Making kernel copy";
-        cl::make_kernel<cl::Buffer&, cl::Buffer&> copy(program, "copy");
+        auto copy = cl::KernelFunctor<cl::Buffer&, cl::Buffer&>(program, "copy");
         status = "Making kernel mul";
-        cl::make_kernel<cl::Buffer&, cl::Buffer&> mul(program, "mul");
+        auto mul = cl::KernelFunctor<cl::Buffer&, cl::Buffer&>(program, "mul");
         status = "Making kernel add";
-        cl::make_kernel<cl::Buffer&, cl::Buffer&, cl::Buffer&> add(program, "add");
+        auto add = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, cl::Buffer&>(program, "add");
         status = "Making kernel triad";
-        cl::make_kernel<cl::Buffer&, cl::Buffer&, cl::Buffer&> triad(program, "triad");
+        auto triad = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, cl::Buffer&>(program, "triad");
 
         // Create host vectors
         void *h_a = malloc(ARRAY_SIZE * DATATYPE_SIZE);
