@@ -47,12 +47,12 @@ extern void parseArguments(int argc, char *argv[]);
 
 extern void listDevices(void);
 
-extern int ARRAY_SIZE;
-extern int NTIMES;
+extern unsigned int ARRAY_SIZE;
+extern unsigned int NTIMES;
 
 extern bool useFloat;
 
-extern int deviceIndex;
+extern unsigned int deviceIndex;
 
 
 template < typename T >

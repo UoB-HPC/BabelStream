@@ -38,18 +38,18 @@
 
 // Default array size 50 * 2^20 (50*8 Mebibytes double precision)
 // Use binary powers of two so divides 1024
-int ARRAY_SIZE = 52428800;
+unsigned int ARRAY_SIZE = 52428800;
 
-int NTIMES = 10;
+unsigned int NTIMES = 10;
 
 bool useFloat = false;
 
-int deviceIndex = 0;
+unsigned int deviceIndex = 0;
 
-int parseInt(const char *str, int *output)
+int parseUInt(const char *str, unsigned int *output)
 {
     char *next;
-    *output = strtol(str, &next, 10);
+    *output = strtoul(str, &next, 10);
     return !strlen(next);
 }
 
@@ -64,7 +64,7 @@ void parseArguments(int argc, char *argv[])
         }
         else if (!strcmp(argv[i], "--device"))
         {
-            if (++i >= argc || !parseInt(argv[i], &deviceIndex))
+            if (++i >= argc || !parseUInt(argv[i], &deviceIndex))
             {
                 std::cout << "Invalid device index" << std::endl;
                 exit(1);
@@ -72,7 +72,7 @@ void parseArguments(int argc, char *argv[])
         }
         else if (!strcmp(argv[i], "--arraysize") || !strcmp(argv[i], "-s"))
         {
-            if (++i >= argc || !parseInt(argv[i], &ARRAY_SIZE))
+            if (++i >= argc || !parseUInt(argv[i], &ARRAY_SIZE))
             {
                 std::cout << "Invalid array size" << std::endl;
                 exit(1);
@@ -80,7 +80,7 @@ void parseArguments(int argc, char *argv[])
         }
         else if (!strcmp(argv[i], "--numtimes") || !strcmp(argv[i], "-n"))
         {
-            if (++i >= argc || !parseInt(argv[i], &NTIMES))
+            if (++i >= argc || !parseUInt(argv[i], &NTIMES))
             {
                 std::cout << "Invalid number of times" << std::endl;
                 exit(1);
