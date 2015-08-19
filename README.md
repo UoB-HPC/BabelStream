@@ -29,7 +29,7 @@ use the NDK to generate a standalone toolchain:
       --install-dir=${ANDROID_NATIVE_TOOLCHAIN}
 
 Make sure that the OpenCL headers and library (libOpenCL.so) are
-available in ${ANDROID_NATIVE_TOOLCHAIN}/sysroot/usr/.
+available in `${ANDROID_NATIVE_TOOLCHAIN}/sysroot/usr/`.
 
 You should then be able to build GPU-STREAM:
 
