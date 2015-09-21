@@ -1,0 +1,14 @@
+GPU-STREAM
+Version: 1.0
+Implementation: OpenCL
+Precision: double
+
+Running kernels 10 times
+Array size: 400.0 MB (=0.4 GB)
+Total size: 1200.0 MB (=1.2 GB)
+Using OpenCL device AMD Radeon (TM) R9 Fury Series
+Function    MBytes/sec  Min (sec)   Max         Average
+Copy        351139.404  0.00239     0.00258     0.00246
+Mul         400256.512  0.00210     0.00213     0.00212
+Add         388737.861  0.00324     0.00340     0.00332
+Triad       385242.562  0.00327     0.00339     0.00332
