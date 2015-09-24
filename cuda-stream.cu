@@ -46,6 +46,7 @@
 #include "common.h"
 
 std::string getDeviceName(int device);
+int getDriver(void);
 
 // Code to check CUDA errors
 void check_cuda_error(void)
@@ -161,6 +162,9 @@ int main(int argc, char *argv[])
 
     // Print out device name
     std::cout << "Using CUDA device " << getDeviceName(deviceIndex) << std::endl;
+
+    // Print out device CUDA driver version
+    std::cout << "Driver: " << getDriver() << std::endl;
 
     // Check buffers fit on the device
     cudaDeviceProp props;
@@ -356,6 +360,14 @@ std::string getDeviceName(int device)
     cudaGetDeviceProperties(&prop, device);
     check_cuda_error();
     return std::string(prop.name);
+}
+
+int getDriver(void)
+{
+    int driver;
+    cudaDriverGetVersion(&driver);
+    check_cuda_error();
+    return driver;
 }
 
 void listDevices(void)
