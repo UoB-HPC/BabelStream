@@ -49,6 +49,7 @@
 #include "common.h"
 
 std::string getDeviceName(const cl::Device& device);
+std::string getDeviceDriver(const cl::Device& device);
 unsigned getDeviceList(std::vector<cl::Device>& devices);
 
 
@@ -162,6 +163,10 @@ int main(int argc, char *argv[])
         // Print out device name
         std::string name = getDeviceName(device);
         std::cout << "Using OpenCL device " << name << std::endl;
+
+        // Print out OpenCL driver version for this device
+        std::string driver = getDeviceDriver(device);
+        std::cout << "Driver: " << driver << std::endl;
 
         // Check device can do double precision if requested
         if (!useFloat && !device.getInfo<CL_DEVICE_DOUBLE_FP_CONFIG>())
@@ -441,6 +446,22 @@ std::string getDeviceName(const cl::Device& device)
 
     return name;
 }
+
+std::string getDeviceDriver(const cl::Device& device)
+{
+    std::string driver;
+    try
+    {
+        device.getInfo(CL_DRIVER_VERSION, &driver);
+    }
+    catch (cl::Error &e)
+    {
+        die("Getting device driver", e);
+    }
+
+    return driver;
+}
+
 
 void listDevices(void)
 {
