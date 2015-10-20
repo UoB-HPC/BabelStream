@@ -9,7 +9,7 @@ Unlike other GPU memory bandwidth benchmarks this does *not* include the PCIe tr
 Usage
 -----
 
-Build the OpenCL and CUDA binaries with `make`
+Build the OpenCL and CUDA binaries with `make` (CUDA version requires CUDA >= v6.5)
 
 Run the OpenCL version with `./gpu-stream-ocl` and the CUDA version with `./gpu-stream-cuda`
 
