@@ -17,6 +17,9 @@ else ifeq ($(ARCH), GPU_OPENCL)
 else ifeq ($(ARCH), GPU_CUDA)
 endif
 
+# At least using embedded OpenCL headers
+INCLUDE_DIR ?= -I.
+
 PLATFORM = $(shell uname -s)
 ifeq ($(PLATFORM), Darwin)
 	LDLIBS = -framework OpenCL
