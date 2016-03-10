@@ -13,6 +13,29 @@ Build the OpenCL and CUDA binaries with `make` (CUDA version requires CUDA >= v6
 
 Run the OpenCL version with `./gpu-stream-ocl` and the CUDA version with `./gpu-stream-cuda`
 
+Automatic variation of array size
+---------------------------------
+
+I added a bash script that automatically re-runs `./gpu-stream-ocl` with different
+array size and prints out results in columns, useful for plotting figures. 
+
+    ./run-ocl.sh
+
+    # Benchmark GPU-STREAM running on  Tesla C2070
+    # Precision: double. Range: [204800 .. 102400000] step 409600
+    # For more details see https://github.com/UoB-HPC/GPU-STREAM
+    #  ArrayElements    ArraySize(MB)      Copy(MBytes/s)    Mul(MBytes/s)      Add(MBytes/s)      Triad(MBytes/s)
+        204800            1.56             80753.117          79927.800          83088.782          83981.752          
+        614400            4.68             93275.517          93897.395          94380.296          93960.518          
+        1024000            7.81             98982.027          98607.910          97231.728          97690.504          
+        1433600            10.93             99431.697          100773.675          99081.649          98843.119          
+        1843200            14.06             100561.265          101067.177          99730.141          99793.135          
+        ...         
+        4300800            32.81             101984.021          101605.451          100626.557          100612.825          
+        4710400            35.93             102605.629          103710.187          100675.208          100587.601          
+        5120000            39.06             101817.603          102083.414          101225.864          101156.117 
+
+
 Android
 -------
 
