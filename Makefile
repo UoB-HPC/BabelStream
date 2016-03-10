@@ -1,8 +1,21 @@
 LDLIBS = -l OpenCL
 CXXFLAGS = -std=c++11 -O3
 
-LIB_DIR = -L/opt/intel/opencl/
-INCLUDE_DIR = -I/opt/intel/opencl/include
+# Set default architecture
+# ARCH ?= MIC
+# ARCH ?= CPU
+ARCH ?= GPU_OPENCL
+# ARCH ?= GPU_CUDA
+
+ifeq ($(ARCH), MIC)
+	LIB_DIR = -L/opt/intel/opencl/
+	INCLUDE_DIR = -I/opt/intel/opencl/include
+else ifeq ($(ARCH), CPU)
+	LIB_DIR = -L/opt/intel/opencl/
+	INCLUDE_DIR = -I/opt/intel/opencl/include
+else ifeq ($(ARCH), GPU_OPENCL)
+else ifeq ($(ARCH), GPU_CUDA)
+endif
 
 PLATFORM = $(shell uname -s)
 ifeq ($(PLATFORM), Darwin)
