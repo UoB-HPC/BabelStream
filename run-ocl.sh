@@ -35,7 +35,7 @@ do
 	echo -n "    $nb_elem            $array_size             "
 
 	# Run benchmark and get results on Copy, Add, Mul and Triad
-	all=$(./gpu-stream-ocl $OPTS -s $nb_elem -n $NUMTIMES | grep -e Copy -e Mul -e Add -e Triad)
+	all=$(./gpu-stream-ocl $OPTS -s $nb_elem -n $NUMTIMES --device $DEVICE_ID | grep -e Copy -e Mul -e Add -e Triad)
 	
 	# Loop test and print in column
 	echo "$all" |
