@@ -137,7 +137,8 @@ do
 	echo -n "    $nb_elem            $array_size             "
 
 	# Run benchmark and get results on Copy, Add, Mul and Triad
-	# I observed a kernel bug of Intel driver, freeze sometimes on Xeon Phi 
+	# I observed a kernel bug of Intel driver, freeze sometimes on Xeon Phi, 
+	# so command is wrapped by timeout and repeated until it passed
 	timeout $TIMEOUT ./$BINARY_NAME $OPTS -s $nb_elem -n $NUMTIMES --device $DEVICE_ID | \
 		grep -e Copy -e Mul -e Add -e Triad > tmp.txt
 	while [ $? -ne 0 ]

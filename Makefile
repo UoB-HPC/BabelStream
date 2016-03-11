@@ -6,6 +6,7 @@ CXXFLAGS = -std=c++11 -O3
 # ARCH ?= CPU
 ARCH ?= GPU_OPENCL
 # ARCH ?= GPU_CUDA
+# ARCH ?= MPPA
 
 ifeq ($(ARCH), MIC)
 	LIB_DIR = -L/opt/intel/opencl/
@@ -15,6 +16,8 @@ else ifeq ($(ARCH), CPU)
 	INCLUDE_DIR = -I/opt/intel/opencl/include
 else ifeq ($(ARCH), GPU_OPENCL)
 else ifeq ($(ARCH), GPU_CUDA)
+else ifeq ($(ARCH), MPPA)
+	LIB_DIR = -L$(K1_TOOLCHAIN_DIR)/lib64
 endif
 
 # At least using embedded OpenCL headers
