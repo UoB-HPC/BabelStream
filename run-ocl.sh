@@ -132,6 +132,7 @@ echo -n "#  ArrayElements    ArraySize(MB)      "
 echo    "Copy(MBytes/s)    Mul(MBytes/s)      Add(MBytes/s)      Triad(MBytes/s)"
 for nb_elem in $(seq $BEGIN $STEP $END)
 do 
+	error="ok"
 	array_size=$(echo "scale=2; $nb_elem * $ELEM_SIZE / 1048576" | bc -l) # total array size in MB
 
 	echo -n "    $nb_elem            $array_size             "
@@ -140,11 +141,11 @@ do
 	# I observed a kernel bug of Intel driver, freeze sometimes on Xeon Phi, 
 	# so command is wrapped by timeout and repeated until it passed
 	timeout $TIMEOUT ./$BINARY_NAME $OPTS -s $nb_elem -n $NUMTIMES --device $DEVICE_ID | \
-		grep -e Copy -e Mul -e Add -e Triad > tmp.txt
+		grep -e Copy -e Mul -e Add -e Triad -e error > tmp.txt
 	while [ $? -ne 0 ]
 	do
 		timeout $TIMEOUT ./$BINARY_NAME $OPTS -s $nb_elem -n $NUMTIMES --device $DEVICE_ID | \
-			grep -e Copy -e Mul -e Add -e Triad > tmp.txt
+			grep -e Copy -e Mul -e Add -e Triad -e error > tmp.txt
 	done
 
 	# Loop on results and print in column
@@ -162,9 +163,12 @@ do
 		elif [[ $line == *"Triad"* ]]; then
 			triad=$(echo $line | awk '{print $2}')
 			echo -n "$triad          "
+		elif [[ $line == *"error"* ]]; then
+			# Test failed on false results of a, b, c
+			error="failed"
 		fi
 	done < tmp.txt
-	echo ""
+	echo "     $error" # print if test is failed
 
 	# sleep some seconds to cool down device
 	sleep 5
