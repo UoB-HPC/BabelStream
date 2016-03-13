@@ -137,15 +137,17 @@ do
 
 	echo -n "    $nb_elem            $array_size             "
 
+	tmp=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)
+
 	# Run benchmark and get results on Copy, Add, Mul and Triad
 	# I observed a kernel bug of Intel driver, freeze sometimes on Xeon Phi, 
 	# so command is wrapped by timeout and repeated until it passed
 	timeout $TIMEOUT ./$BINARY_NAME $OPTS -s $nb_elem -n $NUMTIMES --device $DEVICE_ID | \
-		grep -e Copy -e Mul -e Add -e Triad -e error > tmp.txt
+		grep -e Copy -e Mul -e Add -e Triad -e error > $tmp
 	while [ $? -ne 0 ]
 	do
 		timeout $TIMEOUT ./$BINARY_NAME $OPTS -s $nb_elem -n $NUMTIMES --device $DEVICE_ID | \
-			grep -e Copy -e Mul -e Add -e Triad -e error > tmp.txt
+			grep -e Copy -e Mul -e Add -e Triad -e error > $tmp
 	done
 
 	# Loop on results and print in column
@@ -167,14 +169,12 @@ do
 			# Test failed on false results of a, b, c
 			error="failed"
 		fi
-	done < tmp.txt
+	done < $tmp
 	echo "     $error" # print if test is failed
+	rm -f $tmp
 
 	# sleep some seconds to cool down device
 	sleep 5
 done
-
-# Delete tmp.txt
-rm -f tmp.txt
 
 exit 0
