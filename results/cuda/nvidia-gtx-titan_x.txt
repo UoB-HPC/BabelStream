@@ -1,0 +1,15 @@
+GPU-STREAM
+Version: 1.0
+Implementation: CUDA
+Precision: double
+
+Running kernels 10 times
+Array size: 400.0 MB (=0.4 GB)
+Total size: 1200.0 MB (=1.2 GB)
+Using CUDA device GeForce GTX TITAN X
+Driver: 7050
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        263155.587  0.00319     0.00319     0.00319     
+Mul         262943.430  0.00319     0.00319     0.00319     
+Add         268710.444  0.00468     0.00469     0.00469     
+Triad       268957.305  0.00468     0.00469     0.00468    

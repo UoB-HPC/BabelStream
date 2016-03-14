@@ -13,6 +13,13 @@ Build the OpenCL and CUDA binaries with `make` (CUDA version requires CUDA >= v6
 
 Run the OpenCL version with `./gpu-stream-ocl` and the CUDA version with `./gpu-stream-cuda`
 
+For HIP version, follow the instructions on the following blog to properly install ROCK and ROCR drivers:
+http://gpuopen.com/getting-started-with-boltzmann-components-platforms-installation/
+Clone from the HIP repository in the following link:
+https://github.com/GPUOpen-ProfessionalCompute-Tools/HIP
+
+Build the HIP binaries with make gpu-stream-hip, run it with './gpu-stream-hip'
+
 Android
 -------
 
