@@ -39,10 +39,13 @@
 // Default array size 50 * 2^20 (50*8 Mebibytes double precision)
 // Use binary powers of two so divides 1024
 unsigned int ARRAY_SIZE = 52428800;
+size_t   ARRAY_PAD_BYTES  = 0;
 
 unsigned int NTIMES = 10;
 
 bool useFloat = false;
+unsigned int  groups   = 0;
+unsigned int  groupSize   = 1024;
 
 unsigned int deviceIndex = 0;
 
@@ -52,6 +55,25 @@ int parseUInt(const char *str, unsigned int *output)
     *output = strtoul(str, &next, 10);
     return !strlen(next);
 }
+
+int parseSize(const char *str, size_t *output)
+{
+    char *next;
+    *output = strtoull(str, &next, 0);
+	int l = strlen(str);
+	if (l) {
+		char c = str[l-1]; // last char.
+		if ((c == 'k') || (c == 'K')) {
+			*output *= 1024;
+		}
+		if ((c == 'm') || (c == 'M')) {
+			*output *= (1024*1024);
+		}
+
+	}
+    return !strlen(next);
+}
+
 
 void parseArguments(int argc, char *argv[])
 {
@@ -86,6 +108,31 @@ void parseArguments(int argc, char *argv[])
                 exit(1);
             }
         }
+        else if (!strcmp(argv[i], "--groups"))
+        {
+            if (++i >= argc || !parseUInt(argv[i], &groups))
+            {
+                std::cout << "Invalid group number" << std::endl;
+                exit(1);
+            }
+        }
+        else if (!strcmp(argv[i], "--groupSize"))
+        {
+            if (++i >= argc || !parseUInt(argv[i], &groupSize))
+            {
+                std::cout << "Invalid group size" << std::endl;
+                exit(1);
+            }
+        }
+        else if (!strcmp(argv[i], "--pad"))
+        {
+            if (++i >= argc || !parseSize(argv[i], &ARRAY_PAD_BYTES))
+            {
+                std::cout << "Invalid size" << std::endl;
+                exit(1);
+            }
+			
+        }
         else if (!strcmp(argv[i], "--float"))
         {
             useFloat = true;
@@ -101,6 +148,9 @@ void parseArguments(int argc, char *argv[])
             std::cout << "      --device     INDEX   Select device at INDEX" << std::endl;
             std::cout << "  -s  --arraysize  SIZE    Use SIZE elements in the array" << std::endl;
             std::cout << "  -n  --numtimes   NUM     Run the test NUM times (NUM >= 2)" << std::endl;
+            std::cout << "      --groups             Set number of groups to launch -  each work-item proceses multiple array items" << std::endl;
+            std::cout << "      --groupSize          Set size of each group (default 1024)" << std::endl;
+            std::cout << "      --pad                Add additional array padding. Can use trailing K (KB) or M (MB)" << std::endl;
             std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
             std::cout << std::endl;
             exit(0);

@@ -43,7 +43,7 @@
 #include <cfloat>
 #include <cmath>
 
-#include <cuda.h>
+//#include <cuda.h>
 #include "common.h"
 
 std::string getDeviceName(int device);
@@ -63,15 +63,75 @@ void check_cuda_error(void)
     }
 }
 
+
+
+// looper function place more work inside each work item.
+// Goal is reduce the dispatch overhead for each group, and also give more controlover the order of memory operations
+template <typename T, int CLUMP_SIZE>
+__global__ void
+copy_looper(hipLaunchParm lp,  const T * a, T * c, int ARRAY_SIZE)
+{
+    int offset = (hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x)*CLUMP_SIZE;
+    int stride = hipBlockDim_x * hipGridDim_x * CLUMP_SIZE;
+
+    for (int i=offset; i<ARRAY_SIZE; i+=stride) {
+        c[i] = a[i];
+    }
+}
+
 template <typename T>
-__global__ void copy(hipLaunchParm lp, const T * a, T * c)
+__global__ void
+mul_looper(hipLaunchParm lp,  T * b, const T * c, int ARRAY_SIZE)
+{
+    int offset = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
+    int stride = hipBlockDim_x * hipGridDim_x;
+    const T scalar = 3.0;
+
+    for (int i=offset; i<ARRAY_SIZE; i+=stride) {
+        b[i] = scalar * c[i];
+    }
+}
+
+template <typename T>
+__global__ void
+add_looper(hipLaunchParm lp,  const T * a, const T * b, T * c, int ARRAY_SIZE)
+{
+    int offset = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
+    int stride = hipBlockDim_x * hipGridDim_x;
+
+    for (int i=offset; i<ARRAY_SIZE; i+=stride) {
+        c[i] = a[i] + b[i];
+    }
+}
+
+template <typename T>
+__global__ void
+triad_looper(hipLaunchParm lp,  T * a, const T * b, const T * c, int ARRAY_SIZE)
+{
+    int offset = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
+    int stride = hipBlockDim_x * hipGridDim_x;
+    const T scalar = 3.0;
+
+    for (int i=offset; i<ARRAY_SIZE; i+=stride) {
+        a[i] = b[i] + scalar * c[i];
+    }
+}
+
+
+
+
+template <typename T>
+__global__ void
+copy(hipLaunchParm lp,  const T * a, T * c)
 {
     const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     c[i] = a[i];
 }
 
+
 template <typename T>
-__global__ void mul(hipLaunchParm lp, T * b, const T * c)
+__global__ void
+mul(hipLaunchParm lp,  T * b, const T * c)
 {
     const T scalar = 3.0;
     const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
@@ -79,14 +139,16 @@ __global__ void mul(hipLaunchParm lp, T * b, const T * c)
 }
 
 template <typename T>
-__global__ void add(hipLaunchParm lp, const T * a, const T * b, T * c)
+__global__ void
+add(hipLaunchParm lp,  const T * a, const T * b, T * c)
 {
     const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     c[i] = a[i] + b[i];
 }
 
 template <typename T>
-__global__ void triad(hipLaunchParm lp, T * a, const T * b, const T * c)
+__global__ void
+triad(hipLaunchParm lp,  T * a, const T * b, const T * c)
 {
     const T scalar = 3.0;
     const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
@@ -100,12 +162,26 @@ int main(int argc, char *argv[])
     std::cout
         << "GPU-STREAM" << std::endl
         << "Version: " << VERSION_STRING << std::endl
-        << "Implementation: CUDA" << std::endl;
+        << "Implementation: HIP" << std::endl;
 
     parseArguments(argc, argv);
 
     if (NTIMES < 2)
         throw std::runtime_error("Chosen number of times is invalid, must be >= 2");
+
+    // Config grid size and group size for kernel launching
+    int gridSize;
+    if (groups) {
+        gridSize = groups * groupSize;
+    } else  {
+        gridSize = ARRAY_SIZE;
+    }
+
+    float operationsPerWorkitem = (float)ARRAY_SIZE / (float)gridSize;
+    std::cout << "GridSize: " << gridSize << " work-items" << std::endl;
+    std::cout << "GroupSize: " << groupSize << " work-items" << std::endl;
+    std::cout << "Operations/Work-item: " << operationsPerWorkitem << std::endl;
+    if (groups) std::cout << "Using looper kernels:" << std::endl;
 
     std::cout << "Precision: ";
     if (useFloat) std::cout << "float";
@@ -144,9 +220,10 @@ int main(int argc, char *argv[])
     std::cout << std::setprecision(1) << std::fixed
         << "Array size: " << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
         << " (=" << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
+		<< " " << ARRAY_PAD_BYTES << " bytes padding"
         << std::endl;
-    std::cout << "Total size: " << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
-        << " (=" << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
+    std::cout << "Total size: " << 3.0*(ARRAY_SIZE*DATATYPE_SIZE + ARRAY_PAD_BYTES) /1024.0/1024.0 << " MB"
+        << " (=" << 3.0*(ARRAY_SIZE*DATATYPE_SIZE + ARRAY_PAD_BYTES) /1024.0/1024.0/1024.0 << " GB)"
         << std::endl;
 
     // Reset precision
@@ -161,24 +238,31 @@ int main(int argc, char *argv[])
     hipSetDevice(deviceIndex);
     check_cuda_error();
 
-    // Print out device name
-    std::cout << "Using CUDA device " << getDeviceName(deviceIndex) << std::endl;
 
-    // Print out device CUDA driver version
-    std::cout << "Driver: " << getDriver() << std::endl;
-
-    // Check buffers fit on the device
     hipDeviceProp_t props;
     hipGetDeviceProperties(&props, deviceIndex);
+
+    // Print out device name
+    std::cout << "Using HIP device " << getDeviceName(deviceIndex) <<  " (compute_units=" << props.multiProcessorCount << ")" << std::endl;
+
+    // Print out device HIP driver version
+    std::cout << "Driver: " << getDriver() << std::endl;
+
+
+
+
+    // Check buffers fit on the device
     if (props.totalGlobalMem < 3*DATATYPE_SIZE*ARRAY_SIZE)
         throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
-    // Create host vectors
-    void * h_a = malloc(ARRAY_SIZE*DATATYPE_SIZE);
-    void * h_b = malloc(ARRAY_SIZE*DATATYPE_SIZE);
-    void * h_c = malloc(ARRAY_SIZE*DATATYPE_SIZE);
+    //int cus = props.multiProcessorCount;
 
-    // Initilise arrays
+    // Create host vectors
+    void * h_a = malloc(ARRAY_SIZE*DATATYPE_SIZE );
+    void * h_b = malloc(ARRAY_SIZE*DATATYPE_SIZE );
+    void * h_c = malloc(ARRAY_SIZE*DATATYPE_SIZE );
+
+    // Initialise arrays
     for (unsigned int i = 0; i < ARRAY_SIZE; i++)
     {
         if (useFloat)
@@ -196,12 +280,14 @@ int main(int argc, char *argv[])
     }
 
     // Create device buffers
-    void * d_a, * d_b, *d_c;
-    hipMalloc(&d_a, ARRAY_SIZE*DATATYPE_SIZE);
+    char * d_a, * d_b, *d_c;
+    hipMalloc(&d_a, ARRAY_SIZE*DATATYPE_SIZE + ARRAY_PAD_BYTES);
     check_cuda_error();
-    hipMalloc(&d_b, ARRAY_SIZE*DATATYPE_SIZE);
+    hipMalloc(&d_b, ARRAY_SIZE*DATATYPE_SIZE + ARRAY_PAD_BYTES);
+    d_b += ARRAY_PAD_BYTES;
     check_cuda_error();
-    hipMalloc(&d_c, ARRAY_SIZE*DATATYPE_SIZE);
+    hipMalloc(&d_c, ARRAY_SIZE*DATATYPE_SIZE + ARRAY_PAD_BYTES);
+    d_c += ARRAY_PAD_BYTES;
     check_cuda_error();
 
     // Copy host memory to device
@@ -212,9 +298,16 @@ int main(int argc, char *argv[])
     hipMemcpy(d_c, h_c, ARRAY_SIZE*DATATYPE_SIZE, hipMemcpyHostToDevice);
     check_cuda_error();
 
+
+    std::cout << "d_a=" << (void*)d_a << std::endl;
+	std::cout << "d_b=" << (void*)d_b << std::endl;
+	std::cout << "d_c=" << (void*)d_c << std::endl;
+
     // Make sure the copies are finished
     hipDeviceSynchronize();
     check_cuda_error();
+
+
 
     // List of times
     std::vector< std::vector<double> > timings;
@@ -227,10 +320,17 @@ int main(int argc, char *argv[])
     {
         std::vector<double> times;
         t1 = std::chrono::high_resolution_clock::now();
-        if (useFloat)
-            hipLaunchKernel(HIP_KERNEL_NAME(copy), dim3(ARRAY_SIZE/1024), dim3(1024), 0, 0, (float*)d_a, (float*)d_c);
-        else
-            hipLaunchKernel(HIP_KERNEL_NAME(copy), dim3(ARRAY_SIZE/1024), dim3(1024), 0, 0, (double*)d_a, (double*)d_c);
+        if (groups) {
+            if (useFloat)
+                hipLaunchKernel(HIP_KERNEL_NAME(copy_looper<float,1>), dim3(gridSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_c, ARRAY_SIZE);
+            else
+                hipLaunchKernel(HIP_KERNEL_NAME(copy_looper<double,1>), dim3(gridSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_c, ARRAY_SIZE);
+        } else {
+            if (useFloat)
+                hipLaunchKernel(HIP_KERNEL_NAME(copy), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_c);
+            else
+                hipLaunchKernel(HIP_KERNEL_NAME(copy), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_c);
+        }
         check_cuda_error();
         hipDeviceSynchronize();
         check_cuda_error();
@@ -239,10 +339,17 @@ int main(int argc, char *argv[])
 
 
         t1 = std::chrono::high_resolution_clock::now();
-        if (useFloat)
-            hipLaunchKernel(HIP_KERNEL_NAME(mul), dim3(ARRAY_SIZE/1024), dim3(1024), 0, 0, (float*)d_b, (float*)d_c);
-        else
-            hipLaunchKernel(HIP_KERNEL_NAME(mul), dim3(ARRAY_SIZE/1024), dim3(1024), 0, 0, (double*)d_b, (double*)d_c);
+        if (groups) {
+            if (useFloat)
+                hipLaunchKernel(HIP_KERNEL_NAME(mul_looper), dim3(gridSize), dim3(groupSize), 0, 0, (float*)d_b, (float*)d_c, ARRAY_SIZE);
+            else
+                hipLaunchKernel(HIP_KERNEL_NAME(mul_looper), dim3(gridSize), dim3(groupSize), 0, 0, (double*)d_b, (double*)d_c, ARRAY_SIZE);
+        } else {
+            if (useFloat)
+                hipLaunchKernel(HIP_KERNEL_NAME(mul), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (float*)d_b, (float*)d_c);
+            else
+                hipLaunchKernel(HIP_KERNEL_NAME(mul), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (double*)d_b, (double*)d_c);
+        }
         check_cuda_error();
         hipDeviceSynchronize();
         check_cuda_error();
@@ -251,10 +358,17 @@ int main(int argc, char *argv[])
 
 
         t1 = std::chrono::high_resolution_clock::now();
-        if (useFloat)
-            hipLaunchKernel(HIP_KERNEL_NAME(add), dim3(ARRAY_SIZE/1024), dim3(1024), 0, 0, (float*)d_a, (float*)d_b, (float*)d_c);
-        else
-            hipLaunchKernel(HIP_KERNEL_NAME(add), dim3(ARRAY_SIZE/1024), dim3(1024), 0, 0, (double*)d_a, (double*)d_b, (double*)d_c);
+        if (groups) {
+            if (useFloat)
+                hipLaunchKernel(HIP_KERNEL_NAME(add_looper), dim3(gridSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_b, (float*)d_c, ARRAY_SIZE);
+            else
+                hipLaunchKernel(HIP_KERNEL_NAME(add_looper), dim3(gridSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_b, (double*)d_c, ARRAY_SIZE);
+        } else {
+            if (useFloat)
+                hipLaunchKernel(HIP_KERNEL_NAME(add), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_b, (float*)d_c);
+            else
+                hipLaunchKernel(HIP_KERNEL_NAME(add), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_b, (double*)d_c);
+        }
         check_cuda_error();
         hipDeviceSynchronize();
         check_cuda_error();
@@ -263,10 +377,18 @@ int main(int argc, char *argv[])
 
 
         t1 = std::chrono::high_resolution_clock::now();
-        if (useFloat)
-            hipLaunchKernel(HIP_KERNEL_NAME(triad), dim3(ARRAY_SIZE/1024), dim3(1024), 0, 0, (float*)d_a, (float*)d_b, (float*)d_c);
-        else
-            hipLaunchKernel(HIP_KERNEL_NAME(triad), dim3(ARRAY_SIZE/1024), dim3(1024), 0, 0, (double*)d_a, (double*)d_b, (double*)d_c);
+        if (groups) {
+            if (useFloat)
+                hipLaunchKernel(HIP_KERNEL_NAME(triad_looper), dim3(gridSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_b, (float*)d_c, ARRAY_SIZE);
+            else
+                hipLaunchKernel(HIP_KERNEL_NAME(triad_looper), dim3(gridSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_b, (double*)d_c, ARRAY_SIZE);
+        } else {
+            if (useFloat)
+                hipLaunchKernel(HIP_KERNEL_NAME(triad), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_b, (float*)d_c);
+            else
+                hipLaunchKernel(HIP_KERNEL_NAME(triad), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_b, (double*)d_c);
+        }
+
         check_cuda_error();
         hipDeviceSynchronize();
         check_cuda_error();
@@ -316,8 +438,15 @@ int main(int argc, char *argv[])
         }
     }
 
-    for (int j = 0; j < 4; j++)
+    for (int j = 0; j < 4; j++) {
         avg[j] /= (double)(NTIMES-1);
+    }
+
+    double geomean = 1.0;
+    for (int j = 0; j < 4; j++) {
+        geomean *= (sizes[j]/min[j]);
+    }
+    geomean = pow(geomean, 0.25);
 
     // Display results
     std::string labels[] = {"Copy", "Mul", "Add", "Triad"};
@@ -339,6 +468,10 @@ int main(int argc, char *argv[])
             << std::left << std::setw(12) << std::setprecision(5) << avg[j]
             << std::endl;
     }
+    std::cout
+        << std::left << std::setw(12) << "GEOMEAN"
+        << std::left << std::setw(12) << std::setprecision(3) << 1.0E-06 * geomean
+        << std::endl;
 
     // Free host vectors
     free(h_a);

@@ -15,7 +15,9 @@ Run the OpenCL version with `./gpu-stream-ocl` and the CUDA version with `./gpu-
 
 For HIP version, follow the instructions on the following blog to properly install ROCK and ROCR drivers:
 http://gpuopen.com/getting-started-with-boltzmann-components-platforms-installation/
-Clone from the HIP repository in the following link:
+Install the HCC compiler:
+https://bitbucket.org/multicoreware/hcc/wiki/Home
+Install HIP:
 https://github.com/GPUOpen-ProfessionalCompute-Tools/HIP
 
 Build the HIP binaries with make gpu-stream-hip, run it with './gpu-stream-hip'
