@@ -1,6 +1,28 @@
 LDLIBS = -l OpenCL
 CXXFLAGS = -std=c++11 -O3
 
+# Set default architecture
+# ARCH ?= MIC
+# ARCH ?= CPU
+ARCH ?= GPU_OPENCL
+# ARCH ?= GPU_CUDA
+# ARCH ?= MPPA
+
+ifeq ($(ARCH), MIC)
+	LIB_DIR = -L/opt/intel/opencl/
+	INCLUDE_DIR = -I/opt/intel/opencl/include
+else ifeq ($(ARCH), CPU)
+	LIB_DIR = -L/opt/intel/opencl/
+	INCLUDE_DIR = -I/opt/intel/opencl/include
+else ifeq ($(ARCH), GPU_OPENCL)
+else ifeq ($(ARCH), GPU_CUDA)
+else ifeq ($(ARCH), MPPA)
+	LIB_DIR = -L$(K1_TOOLCHAIN_DIR)/lib64
+endif
+
+# At least using embedded OpenCL headers
+INCLUDE_DIR ?= -I.
+
 PLATFORM = $(shell uname -s)
 ifeq ($(PLATFORM), Darwin)
 	LDLIBS = -framework OpenCL
@@ -9,7 +31,7 @@ endif
 all: gpu-stream-ocl gpu-stream-cuda
 
 gpu-stream-ocl: ocl-stream.cpp common.o Makefile
-	$(CXX) $(CXXFLAGS) -Wno-deprecated-declarations common.o $< -o $@ $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(INCLUDE_DIR) $(LIB_DIR) -Wno-deprecated-declarations common.o $< -o $@ $(LDLIBS)
 
 common.o: common.cpp common.h Makefile
 

@@ -1,0 +1,15 @@
+GPU-STREAM
+Version: 1.0
+Implementation: OpenCL
+Precision: double
+
+Running kernels 10 times
+Array size: 400.0 MB (=0.4 GB)
+Total size: 1200.0 MB (=1.2 GB)
+Using OpenCL device Intel(R) Many Integrated Core Acceleration Card
+Driver: 1.2
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        70599.293   0.01188     0.01236     0.01205     
+Mul         69115.992   0.01214     0.01292     0.01251     
+Add         78334.757   0.01606     0.01628     0.01618     
+Triad       78081.986   0.01612     0.01649     0.01623     
