@@ -1,0 +1,15 @@
+GPU-STREAM
+Version: 1.0
+Implementation: CUDA
+Precision: double
+
+Running kernels 10 times
+Array size: 400.0 MB (=0.4 GB)
+Total size: 1200.0 MB (=1.2 GB)
+Using CUDA device Fiji
+Driver: 4
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        375822.410  0.00223     0.00225     0.00224     
+Mul         375086.879  0.00224     0.00227     0.00224     
+Add         425650.718  0.00296     0.00298     0.00297     
+Triad       424710.113  0.00296     0.00298     0.00298
