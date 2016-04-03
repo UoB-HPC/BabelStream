@@ -1,0 +1,22 @@
+GPU-STREAM
+Version: 1.0
+Implementation: HIP
+GridSize: 52428800 work-items
+GroupSize: 1024 work-items
+Operations/Work-item: 1
+Precision: double
+
+Running kernels 10 times
+Array size: 400.0 MB (=0.4 GB) 0 bytes padding
+Total size: 1200.0 MB (=1.2 GB)
+Using HIP device GeForce GTX TITAN X (compute_units=24)
+Driver: 4
+d_a=0x1306d80000
+d_b=0x131fd80000
+d_c=0x1338d80000
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        263042.207  0.00319     0.00320     0.00319     
+Mul         262972.033  0.00319     0.00320     0.00319     
+Add         268732.653  0.00468     0.00469     0.00469     
+Triad       268706.197  0.00468     0.00469     0.00469     
+GEOMEAN     265847.929 
