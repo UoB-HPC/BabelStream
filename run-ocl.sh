@@ -137,7 +137,7 @@ do
 
 	echo -n "    $nb_elem            $array_size             "
 
-	tmp=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)
+	tmp="/tmp/"$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)
 
 	# Run benchmark and get results on Copy, Add, Mul and Triad
 	# I observed a kernel bug of Intel driver, freeze sometimes on Xeon Phi, 
