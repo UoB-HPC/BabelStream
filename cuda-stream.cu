@@ -62,6 +62,59 @@ void check_cuda_error(void)
     }
 }
 
+// looper function place more work inside each work item.
+// Goal is reduce the dispatch overhead for each group, and also give more controlover the order of memory operations
+template <typename T, int CLUMP_SIZE>
+__global__ void
+copy_looper(const T * a, T * c, int ARRAY_SIZE)
+{
+    int offset = (blockDim.x * blockIdx.x + threadIdx.x)*CLUMP_SIZE;
+    int stride = blockDim.x * gridDim.x * CLUMP_SIZE;
+
+    for (int i=offset; i<ARRAY_SIZE; i+=stride) {
+        c[i] = a[i];
+    }
+}
+
+template <typename T>
+__global__ void
+mul_looper(T * b, const T * c, int ARRAY_SIZE)
+{
+    int offset = blockDim.x * blockIdx.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    const T scalar = 3.0;
+
+    for (int i=offset; i<ARRAY_SIZE; i+=stride) {
+        b[i] = scalar * c[i];
+    }
+}
+
+template <typename T>
+__global__ void
+add_looper(const T * a, const T * b, T * c, int ARRAY_SIZE)
+{
+    int offset = blockDim.x * blockIdx.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+
+    for (int i=offset; i<ARRAY_SIZE; i+=stride) {
+        c[i] = a[i] + b[i];
+    }
+}
+
+template <typename T>
+__global__ void
+triad_looper( T * a, const T * b, const T * c, int ARRAY_SIZE)
+{
+    int offset = blockDim.x * blockIdx.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    const T scalar = 3.0;
+
+    for (int i=offset; i<ARRAY_SIZE; i+=stride) {
+        a[i] = b[i] + scalar * c[i];
+    }
+}
+
+
 template <typename T>
 __global__ void copy(const T * a, T * c)
 {
@@ -105,6 +158,20 @@ int main(int argc, char *argv[])
 
     if (NTIMES < 2)
         throw std::runtime_error("Chosen number of times is invalid, must be >= 2");
+
+    // Config grid size and group size for kernel launching
+    int gridSize;
+    if (groups) {
+        gridSize = groups * groupSize;
+    } else  {
+        gridSize = ARRAY_SIZE;
+    }
+
+    float operationsPerWorkitem = (float)ARRAY_SIZE / (float)gridSize;
+    std::cout << "GridSize: " << gridSize << " work-items" << std::endl;
+    std::cout << "GroupSize: " << groupSize << " work-items" << std::endl;
+    std::cout << "Operations/Work-item: " << operationsPerWorkitem << std::endl;
+    if (groups) std::cout << "Using looper kernels:" << std::endl;
 
     std::cout << "Precision: ";
     if (useFloat) std::cout << "float";
@@ -211,6 +278,10 @@ int main(int argc, char *argv[])
     cudaMemcpy(d_c, h_c, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyHostToDevice);
     check_cuda_error();
 
+    std::cout << "d_a=" << (void*)d_a << std::endl;
+	std::cout << "d_b=" << (void*)d_b << std::endl;
+	std::cout << "d_c=" << (void*)d_c << std::endl;
+    
     // Make sure the copies are finished
     cudaDeviceSynchronize();
     check_cuda_error();
@@ -226,10 +297,18 @@ int main(int argc, char *argv[])
     {
         std::vector<double> times;
         t1 = std::chrono::high_resolution_clock::now();
-        if (useFloat)
-            copy<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_c);
-        else
-            copy<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_c);
+        if (groups) {
+            if (useFloat)
+                copy_looper<float,1><<<gridSize,groupSize>>>((float*)d_a, (float*)d_c, ARRAY_SIZE);
+            else
+                copy_looper<double,1><<<gridSize,groupSize>>>((double*)d_a, (double*)d_c, ARRAY_SIZE);
+        } else {
+            if (useFloat)
+                copy<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_c);
+            else
+                copy<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_c);
+        }
+        
         check_cuda_error();
         cudaDeviceSynchronize();
         check_cuda_error();
@@ -238,10 +317,17 @@ int main(int argc, char *argv[])
 
 
         t1 = std::chrono::high_resolution_clock::now();
-        if (useFloat)
-            mul<<<ARRAY_SIZE/1024, 1024>>>((float*)d_b, (float*)d_c);
-        else
-            mul<<<ARRAY_SIZE/1024, 1024>>>((double*)d_b, (double*)d_c);
+        if (groups) {
+            if (useFloat)
+                mul_looper<float><<<gridSize,groupSize>>>((float*)d_b, (float*)d_c, ARRAY_SIZE);
+            else
+                mul_looper<double><<<gridSize,groupSize>>>((double*)d_b, (double*)d_c, ARRAY_SIZE);
+        } else {
+            if (useFloat)
+                mul<<<ARRAY_SIZE/1024, 1024>>>((float*)d_b, (float*)d_c);
+            else
+                mul<<<ARRAY_SIZE/1024, 1024>>>((double*)d_b, (double*)d_c);
+        }
         check_cuda_error();
         cudaDeviceSynchronize();
         check_cuda_error();
@@ -250,10 +336,17 @@ int main(int argc, char *argv[])
 
 
         t1 = std::chrono::high_resolution_clock::now();
-        if (useFloat)
-            add<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_b, (float*)d_c);
-        else
-            add<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_b, (double*)d_c);
+        if (groups) {
+            if (useFloat)
+                add_looper<float><<<gridSize,groupSize>>>((float*)d_a, (float*)d_b, (float*)d_c, ARRAY_SIZE);
+            else
+                add_looper<double><<<gridSize,groupSize>>>((double*)d_a, (double*)d_b, (double*)d_c, ARRAY_SIZE);
+        } else {
+            if (useFloat)
+                add<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_b, (float*)d_c);
+            else
+                add<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_b, (double*)d_c);
+        }
         check_cuda_error();
         cudaDeviceSynchronize();
         check_cuda_error();
@@ -262,10 +355,17 @@ int main(int argc, char *argv[])
 
 
         t1 = std::chrono::high_resolution_clock::now();
-        if (useFloat)
-            triad<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_b, (float*)d_c);
-        else
-            triad<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_b, (double*)d_c);
+        if (groups) {
+            if (useFloat)
+                triad_looper<float><<<gridSize,groupSize>>>((float*)d_a, (float*)d_b, (float*)d_c, ARRAY_SIZE);
+            else
+                triad_looper<double><<<gridSize,groupSize>>>((double*)d_a, (double*)d_b, (double*)d_c, ARRAY_SIZE);
+        } else {
+            if (useFloat)
+                triad<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_b, (float*)d_c);
+            else
+                triad<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_b, (double*)d_c);
+        }
         check_cuda_error();
         cudaDeviceSynchronize();
         check_cuda_error();
@@ -318,6 +418,12 @@ int main(int argc, char *argv[])
     for (int j = 0; j < 4; j++)
         avg[j] /= (double)(NTIMES-1);
 
+    double geomean = 1.0;
+    for (int j = 0; j < 4; j++) {
+        geomean *= (sizes[j]/min[j]);
+    }
+    geomean = pow(geomean, 0.25);
+    
     // Display results
     std::string labels[] = {"Copy", "Mul", "Add", "Triad"};
     std::cout
@@ -338,6 +444,10 @@ int main(int argc, char *argv[])
             << std::left << std::setw(12) << std::setprecision(5) << avg[j]
             << std::endl;
     }
+    std::cout
+        << std::left << std::setw(12) << "GEOMEAN"
+        << std::left << std::setw(12) << std::setprecision(3) << 1.0E-06 * geomean
+        << std::endl;
 
     // Free host vectors
     free(h_a);
