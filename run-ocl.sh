@@ -6,8 +6,8 @@
 # Command : $ ./run-ocl.sh --help
 
 BEGIN=204800
-END=102400000
-STEP=409600
+END=20848640
+STEP=81920
 
 PRECISION="double"   # double float
 NUMTIMES=10          # Run the test NUM times (NUM >= 2, default = 10)
