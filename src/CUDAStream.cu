@@ -65,10 +65,21 @@ void CUDAStream<T>::copy()
   check_error();
 }
 
+template <typename T>
+__global__ void mul_kernel(T * b, const T * c)
+{
+  const T scalar = 3.0;
+  const int i = blockDim.x * blockIdx.x + threadIdx.x;
+  b[i] = scalar * c[i];
+}
+
 template <class T>
 void CUDAStream<T>::mul()
 {
-  return;
+  mul_kernel<<<1024, 1024>>>(d_b, d_c);
+  check_error();
+  cudaDeviceSynchronize();
+  check_error();
 }
 
 template <class T>
@@ -85,3 +96,4 @@ void CUDAStream<T>::triad()
 
 template class CUDAStream<float>;
 template class CUDAStream<double>;
+
