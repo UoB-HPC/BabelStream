@@ -1,4 +1,5 @@
 
+#include <iostream>
 
 #include "Stream.h"
 
@@ -13,6 +14,9 @@ class CUDAStream : public Stream<T>
 
 
   public:
+
+    CUDAStream(const unsigned int);
+
     void copy();
     void add();
     void mul();

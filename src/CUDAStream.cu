@@ -1,6 +1,24 @@
 
 #include "CUDAStream.h"
 
+void check_error(void)
+{
+  cudaError_t err = cudaGetLastError();
+  if (err != cudaSuccess)
+  {
+    std::cerr << "Error: " << cudaGetErrorString(err) << std::endl;
+    exit(err);
+  }
+}
+
+template <class T>
+CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE)
+{
+  // Create device buffers
+  cudaMalloc(&d_a, ARRAY_SIZE*sizeof(T));
+   
+}
+
 template <typename T>
 __global__ void copy_kernel(const T * a, T * c)
 {

@@ -25,7 +25,10 @@ int main(int argc, char *argv[])
   std::vector<double> c(ARRAY_SIZE, 0.0);
 
   Stream<double> *stream;
-  stream = new CUDAStream<double>();
+
+  // Use the CUDA implementation
+  stream = new CUDAStream<double>(ARRAY_SIZE);
+
   stream->copy();
 
   delete[] stream;
