@@ -33,6 +33,9 @@ int main(int argc, char *argv[])
 
   stream->copy();
 
+  stream->read_arrays(a, b, c);
+  std::cout << c[105] << std::endl;
+
   delete[] stream;
 
 }

@@ -39,7 +39,16 @@ void CUDAStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& 
 template <class T>
 void CUDAStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
+  // Copy device memory to host
+  cudaMemcpy(a.data(), d_a, a.size()*sizeof(T), cudaMemcpyDeviceToHost);
+  check_error();
+  cudaMemcpy(b.data(), d_b, b.size()*sizeof(T), cudaMemcpyDeviceToHost);
+  check_error();
+  cudaMemcpy(c.data(), d_c, c.size()*sizeof(T), cudaMemcpyDeviceToHost);
+  check_error();
 }
+
+
 template <typename T>
 __global__ void copy_kernel(const T * a, T * c)
 {
