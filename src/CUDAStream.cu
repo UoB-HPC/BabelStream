@@ -14,6 +14,8 @@ void check_error(void)
 template <class T>
 CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE)
 {
+  array_size = ARRAY_SIZE;
+
   // Create device buffers
   cudaMalloc(&d_a, ARRAY_SIZE*sizeof(T));
   check_error();
@@ -59,7 +61,7 @@ __global__ void copy_kernel(const T * a, T * c)
 template <class T>
 void CUDAStream<T>::copy()
 {
-  copy_kernel<<<1024, 1024>>>(d_a, d_c);
+  copy_kernel<<<array_size/1024, 1024>>>(d_a, d_c);
   check_error();
   cudaDeviceSynchronize();
   check_error();
@@ -76,7 +78,7 @@ __global__ void mul_kernel(T * b, const T * c)
 template <class T>
 void CUDAStream<T>::mul()
 {
-  mul_kernel<<<1024, 1024>>>(d_b, d_c);
+  mul_kernel<<<array_size/1024, 1024>>>(d_b, d_c);
   check_error();
   cudaDeviceSynchronize();
   check_error();
@@ -92,7 +94,7 @@ __global__ void add_kernel(const T * a, const T * b, T * c)
 template <class T>
 void CUDAStream<T>::add()
 {
-  add_kernel<<<1024, 1024>>>(d_a, d_b, d_c);
+  add_kernel<<<array_size/1024, 1024>>>(d_a, d_b, d_c);
   check_error();
   cudaDeviceSynchronize();
   check_error();
@@ -109,7 +111,7 @@ __global__ void triad_kernel(T * a, const T * b, const T * c)
 template <class T>
 void CUDAStream<T>::triad()
 {
-  triad_kernel<<<1024, 1024>>>(d_a, d_b, d_c);
+  triad_kernel<<<array_size/1024, 1024>>>(d_a, d_b, d_c);
   check_error();
   cudaDeviceSynchronize();
   check_error();

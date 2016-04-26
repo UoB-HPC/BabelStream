@@ -7,6 +7,8 @@ template <class T>
 class CUDAStream : public Stream<T>
 {
   private:
+    // Size of arrays
+    unsigned int array_size;
     // Device side pointers to arrays
     T *d_a;
     T *d_b;
