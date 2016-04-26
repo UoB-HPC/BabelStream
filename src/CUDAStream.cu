@@ -1,10 +1,17 @@
 
 #include "CUDAStream.h"
 
+template <typename T>
+__global__ void copy_kernel(const T * a, T * c)
+{
+  const int i = blockDim.x * blockIdx.x + threadIdx.x;
+  c[i] = a[i];
+}
+
 template <class T>
 void CUDAStream<T>::copy()
 {
-  return;
+  copy<<<1024, 1024>>>(a, c);
 }
 
 template <class T>

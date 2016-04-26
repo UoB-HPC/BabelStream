@@ -10,4 +10,11 @@ class CUDAStream : public Stream<T>
     void add();
     void mul();
     void triad();
+
+  private:
+    // Device side pointers to arrays
+    T *d_a;
+    T *d_b;
+    T *d_c;
+
 };
