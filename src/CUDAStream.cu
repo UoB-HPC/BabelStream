@@ -98,10 +98,21 @@ void CUDAStream<T>::add()
   check_error();
 }
 
+template <typename T>
+__global__ void triad_kernel(T * a, const T * b, const T * c)
+{
+  const T scalar = 3.0;
+  const int i = blockDim.x * blockIdx.x + threadIdx.x;
+  a[i] = b[i] + scalar * c[i];
+}
+
 template <class T>
 void CUDAStream<T>::triad()
 {
-  return;
+  triad_kernel<<<1024, 1024>>>(d_a, d_b, d_c);
+  check_error();
+  cudaDeviceSynchronize();
+  check_error();
 }
 
 template class CUDAStream<float>;
