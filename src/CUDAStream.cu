@@ -82,10 +82,20 @@ void CUDAStream<T>::mul()
   check_error();
 }
 
+template <typename T>
+__global__ void add_kernel(const T * a, const T * b, T * c)
+{
+  const int i = blockDim.x * blockIdx.x + threadIdx.x;
+  c[i] = a[i] + b[i];
+}
+
 template <class T>
 void CUDAStream<T>::add()
 {
-  return;
+  add_kernel<<<1024, 1024>>>(d_a, d_b, d_c);
+  check_error();
+  cudaDeviceSynchronize();
+  check_error();
 }
 
 template <class T>
