@@ -16,7 +16,11 @@ CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE)
 {
   // Create device buffers
   cudaMalloc(&d_a, ARRAY_SIZE*sizeof(T));
-   
+  check_error();
+  cudaMalloc(&d_b, ARRAY_SIZE*sizeof(T));
+  check_error();
+  cudaMalloc(&d_c, ARRAY_SIZE*sizeof(T));
+  check_error();
 }
 
 template <typename T>
