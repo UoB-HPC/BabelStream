@@ -11,7 +11,7 @@ __global__ void copy_kernel(const T * a, T * c)
 template <class T>
 void CUDAStream<T>::copy()
 {
-  copy<<<1024, 1024>>>(a, c);
+  copy_kernel<<<1024, 1024>>>(d_a, d_c);
 }
 
 template <class T>

@@ -16,6 +16,7 @@ int main(int argc, char *argv[])
 
   Stream<double> *stream;
   stream = new CUDAStream<double>();
+  stream->copy();
 
   delete[] stream;
 
