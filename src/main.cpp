@@ -29,6 +29,8 @@ int main(int argc, char *argv[])
   // Use the CUDA implementation
   stream = new CUDAStream<double>(ARRAY_SIZE);
 
+  stream->write_arrays(a, b, c);
+
   stream->copy();
 
   delete[] stream;

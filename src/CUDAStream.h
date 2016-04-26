@@ -22,4 +22,8 @@ class CUDAStream : public Stream<T>
     void mul();
     void triad();
 
+    void write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c);
+    void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c);
+
 };
+
