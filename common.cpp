@@ -136,7 +136,7 @@ void parseArguments(int argc, char *argv[])
         else if (!strcmp(argv[i], "--float"))
         {
             useFloat = true;
-            std::cout << "Warning: If number of iterations set >= 8, expect rounding errors with single precision on CUDA version" << std::endl;
+            std::cout << "Warning: If number of iterations set >= 8, expect rounding errors with single precision, not apply to AMD device" << std::endl;
         }
         else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
         {
