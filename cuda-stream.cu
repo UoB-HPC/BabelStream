@@ -64,12 +64,12 @@ void check_cuda_error(void)
 
 // looper function place more work inside each work item.
 // Goal is reduce the dispatch overhead for each group, and also give more controlover the order of memory operations
-template <typename T, int CLUMP_SIZE>
+template <typename T>
 __global__ void
 copy_looper(const T * a, T * c, int ARRAY_SIZE)
 {
-    int offset = (blockDim.x * blockIdx.x + threadIdx.x)*CLUMP_SIZE;
-    int stride = blockDim.x * gridDim.x * CLUMP_SIZE;
+    int offset = (blockDim.x * blockIdx.x + threadIdx.x);
+    int stride = blockDim.x * gridDim.x;
 
     for (int i=offset; i<ARRAY_SIZE; i+=stride) {
         c[i] = a[i];
@@ -299,9 +299,9 @@ int main(int argc, char *argv[])
         t1 = std::chrono::high_resolution_clock::now();
         if (groups) {
             if (useFloat)
-                copy_looper<float,1><<<gridSize,groupSize>>>((float*)d_a, (float*)d_c, ARRAY_SIZE);
+                copy_looper<float><<<gridSize,groupSize>>>((float*)d_a, (float*)d_c, ARRAY_SIZE);
             else
-                copy_looper<double,1><<<gridSize,groupSize>>>((double*)d_a, (double*)d_c, ARRAY_SIZE);
+                copy_looper<double><<<gridSize,groupSize>>>((double*)d_a, (double*)d_c, ARRAY_SIZE);
         } else {
             if (useFloat)
                 copy<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_c);

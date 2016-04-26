@@ -131,12 +131,12 @@ void parseArguments(int argc, char *argv[])
                 std::cout << "Invalid size" << std::endl;
                 exit(1);
             }
-			
+
         }
         else if (!strcmp(argv[i], "--float"))
         {
             useFloat = true;
-            std::cout << "Warning: If number of iterations set >= 8, expect rounding errors with single precision" << std::endl;
+            std::cout << "Warning: If number of iterations set >= 8, expect rounding errors with single precision on CUDA version" << std::endl;
         }
         else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
         {

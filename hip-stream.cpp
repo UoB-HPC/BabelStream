@@ -67,12 +67,12 @@ void check_cuda_error(void)
 
 // looper function place more work inside each work item.
 // Goal is reduce the dispatch overhead for each group, and also give more controlover the order of memory operations
-template <typename T, int CLUMP_SIZE>
+template <typename T>
 __global__ void
 copy_looper(hipLaunchParm lp,  const T * a, T * c, int ARRAY_SIZE)
 {
-    int offset = (hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x)*CLUMP_SIZE;
-    int stride = hipBlockDim_x * hipGridDim_x * CLUMP_SIZE;
+    int offset = (hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x);
+    int stride = hipBlockDim_x * hipGridDim_x;
 
     for (int i=offset; i<ARRAY_SIZE; i+=stride) {
         c[i] = a[i];
@@ -322,9 +322,9 @@ int main(int argc, char *argv[])
         t1 = std::chrono::high_resolution_clock::now();
         if (groups) {
             if (useFloat)
-                hipLaunchKernel(HIP_KERNEL_NAME(copy_looper<float,1>), dim3(gridSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_c, ARRAY_SIZE);
+                hipLaunchKernel(HIP_KERNEL_NAME(copy_looper<float>), dim3(gridSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_c, ARRAY_SIZE);
             else
-                hipLaunchKernel(HIP_KERNEL_NAME(copy_looper<double,1>), dim3(gridSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_c, ARRAY_SIZE);
+                hipLaunchKernel(HIP_KERNEL_NAME(copy_looper<double>), dim3(gridSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_c, ARRAY_SIZE);
         } else {
             if (useFloat)
                 hipLaunchKernel(HIP_KERNEL_NAME(copy), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_c);
