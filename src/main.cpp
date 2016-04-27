@@ -1,6 +1,8 @@
 
 #include <iostream>
 #include <vector>
+#include <numeric>
+#include <cmath>
 
 #include "common.h"
 #include "Stream.h"
@@ -10,6 +12,9 @@
 const unsigned int ARRAY_SIZE = 52428800;
 
 #define IMPLEMENTATION_STRING "CUDA"
+
+template <typename T>
+void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c);
 
 int main(int argc, char *argv[])
 {
@@ -32,10 +37,41 @@ int main(int argc, char *argv[])
   stream->write_arrays(a, b, c);
 
   stream->copy();
+  stream->mul();
+  stream->add();
+  stream->triad();
 
   stream->read_arrays(a, b, c);
-  std::cout << c[105] << std::endl;
+  std::cout << a[105] << std::endl;
+
+  check_solution<double>(1, a, b, c);
 
   delete[] stream;
 
 }
+
+template <typename T>
+void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
+{
+  // Generate correct solution
+  T goldA = 1.0;
+  T goldB = 2.0;
+  T goldC = 0.0;
+
+  const T scalar = 3.0;
+
+  for (unsigned int i = 0; i < ntimes; i++)
+  {
+    // Do STREAM!
+    goldC = goldA;
+    goldB = scalar * goldC;
+    goldC = goldA + goldB;
+    goldA = goldB + scalar * goldC;
+  }
+
+  // Calculate the average error
+  double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldA); });
+  
+
+}
+
