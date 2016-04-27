@@ -33,6 +33,17 @@ CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE)
 
 
 template <class T>
+CUDAStream<T>::~CUDAStream()
+{
+  cudaFree(d_a);
+  check_error();
+  cudaFree(d_b);
+  check_error();
+  cudaFree(d_c);
+  check_error();
+}
+
+template <class T>
 void CUDAStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
 {
   // Copy host memory to device
