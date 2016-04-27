@@ -4,6 +4,7 @@
 #include <numeric>
 #include <cmath>
 #include <limits>
+#include <chrono>
 
 #include "common.h"
 #include "Stream.h"
@@ -11,6 +12,7 @@
 
 
 const unsigned int ARRAY_SIZE = 52428800;
+const unsigned int ntimes = 10;
 
 #define IMPLEMENTATION_STRING "CUDA"
 
@@ -37,15 +39,44 @@ int main(int argc, char *argv[])
 
   stream->write_arrays(a, b, c);
 
-  stream->copy();
-  stream->mul();
-  stream->add();
-  stream->triad();
+  // List of times
+  std::vector< std::vector<double> > timings;
 
+  // Declare timers
+  std::chrono::high_resolution_clock::time_point t1, t2;
+
+  // Main loop
+  for (unsigned int k = 0; k < ntimes; k++)
+  {
+    std::vector<double> times;
+
+    t1 = std::chrono::high_resolution_clock::now();
+    stream->copy();
+    t2 = std::chrono::high_resolution_clock::now();
+    times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
+    t1 = std::chrono::high_resolution_clock::now();
+    stream->mul();
+    t2 = std::chrono::high_resolution_clock::now();
+    times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
+    t1 = std::chrono::high_resolution_clock::now();
+    stream->add();
+    t2 = std::chrono::high_resolution_clock::now();
+    times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
+    t1 = std::chrono::high_resolution_clock::now();
+    stream->triad();
+    t2 = std::chrono::high_resolution_clock::now();
+    times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
+    timings.push_back(times);
+
+  }
+
+  // Check solutions
   stream->read_arrays(a, b, c);
-  std::cout << a[105] << std::endl;
-
-  check_solution<double>(1, a, b, c);
+  check_solution<double>(ntimes, a, b, c);
 
   delete[] stream;
 
