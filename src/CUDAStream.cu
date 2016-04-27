@@ -16,6 +16,12 @@ CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE)
 {
   array_size = ARRAY_SIZE;
 
+  // Check buffers fit on the device
+  cudaDeviceProp props;
+  cudaGetDeviceProperties(&props, 0);
+  if (props.totalGlobalMem < 3*ARRAY_SIZE*sizeof(T))
+    throw std::runtime_error("Device does not have enough memory for all 3 buffers");
+
   // Create device buffers
   cudaMalloc(&d_a, ARRAY_SIZE*sizeof(T));
   check_error();
