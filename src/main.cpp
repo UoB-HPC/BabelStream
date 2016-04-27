@@ -3,6 +3,7 @@
 #include <vector>
 #include <numeric>
 #include <cmath>
+#include <limits>
 
 #include "common.h"
 #include "Stream.h"
@@ -71,7 +72,26 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 
   // Calculate the average error
   double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldA); });
-  
+  errA /= a.size();
+  double errB = std::accumulate(b.begin(), b.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldB); });
+  errB /= b.size();
+  double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldC); });
+  errC /= c.size();
+
+  double epsi = std::numeric_limits<T>::epsilon() * 100.0;
+
+  if (errA > epsi)
+    std::cerr
+      << "Validation failed on a[]. Average error " << errA
+      << std::endl;
+  if (errB > epsi)
+    std::cerr
+      << "Validation failed on b[]. Average error " << errB
+      << std::endl;
+  if (errC > epsi)
+    std::cerr
+      << "Validation failed on c[]. Average error " << errC
+      << std::endl;
 
 }
 
