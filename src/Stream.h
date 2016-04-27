@@ -24,3 +24,4 @@ class Stream
     static std::vector<int> getDeviceDriver();
 
 };
+
