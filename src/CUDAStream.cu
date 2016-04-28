@@ -134,11 +134,35 @@ void CUDAStream<T>::triad()
   check_error();
 }
 
+
+template <class T>
+void CUDAStream<T>::listDevices(void)
+{
+  // Get number of devices
+  int count;
+  cudaGetDeviceCount(&count);
+  check_error();
+
+  // Print device names
+  if (count == 0)
+  {
+    std::cout << "No devices found." << std::endl;
+  }
+  else
+  {
+    std::cout << std::endl;
+    std::cout << "Devices:" << std::endl;
+    for (int i = 0; i < count; i++)
+    {
+      std::cout << i << ": " << getDeviceName(i) << std::endl;
+    }
+    std::cout << std::endl;
+  }
+}
+
 template <class T>
 std::string CUDAStream<T>::getDeviceName(const int device)
 {
-  cudaSetDevice(device);
-  check_error();
   cudaDeviceProp props;
   cudaGetDeviceProperties(&props, device);
   check_error();
