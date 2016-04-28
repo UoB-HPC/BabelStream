@@ -123,14 +123,17 @@ void OCLStream<T>::triad()
 template <class T>
 void OCLStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
 {
-  
-  return;
+  cl::copy(a.begin(), a.end(), d_a);
+  cl::copy(b.begin(), b.end(), d_b);
+  cl::copy(c.begin(), c.end(), d_c);
 }
 
 template <class T>
 void OCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-  return;
+  cl::copy(d_a, a.begin(), a.end());
+  cl::copy(d_b, b.begin(), b.end());
+  cl::copy(d_c, c.begin(), c.end());
 }
 
 
