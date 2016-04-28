@@ -16,7 +16,6 @@
 const unsigned int ARRAY_SIZE = 52428800;
 const unsigned int ntimes = 10;
 
-#define IMPLEMENTATION_STRING "CUDA"
 
 template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c);
@@ -25,7 +24,7 @@ int main(int argc, char *argv[])
 {
   std::cout
     << "GPU-STREAM" << std::endl
-    << "Version:" << VERSION_STRING << std::endl
+    << "Version: " << VERSION_STRING << std::endl
     << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
 
 
