@@ -78,25 +78,41 @@ OCLStream<T>::~OCLStream()
 template <class T>
 void OCLStream<T>::copy()
 {
-  return;
+  (*copy_kernel)(
+    cl::EnqueueArgs(queue, cl::NDRange(array_size)),
+    d_a, d_c
+  );
+  queue.finish();
 }
 
 template <class T>
 void OCLStream<T>::mul()
 {
-  return;
+  (*mul_kernel)(
+    cl::EnqueueArgs(queue, cl::NDRange(array_size)),
+    d_b, d_c
+  );
+  queue.finish();
 }
 
 template <class T>
 void OCLStream<T>::add()
 {
-  return;
+  (*add_kernel)(
+    cl::EnqueueArgs(queue, cl::NDRange(array_size)),
+    d_a, d_b, d_c
+  );
+  queue.finish();
 }
 
 template <class T>
 void OCLStream<T>::triad()
 {
-  return;
+  (*triad_kernel)(
+    cl::EnqueueArgs(queue, cl::NDRange(array_size)),
+    d_a, d_b, d_c
+  );
+  queue.finish();
 }
 
 template <class T>
