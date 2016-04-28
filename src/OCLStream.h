@@ -10,6 +10,8 @@
 
 #include "Stream.h"
 
+#define IMPLEMENTATION_STRING "OpenCL"
+
 template <class T>
 class OCLStream : public Stream<T>
 {

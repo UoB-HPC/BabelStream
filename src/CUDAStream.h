@@ -4,6 +4,8 @@
 
 #include "Stream.h"
 
+#define IMPLEMENTATION_STRING "CUDA"
+
 template <class T>
 class CUDAStream : public Stream<T>
 {
