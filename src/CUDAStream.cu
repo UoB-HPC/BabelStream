@@ -134,6 +134,28 @@ void CUDAStream<T>::triad()
   check_error();
 }
 
+template <class T>
+std::string CUDAStream<T>::getDeviceName(const int device)
+{
+  cudaSetDevice(device);
+  check_error();
+  cudaDeviceProp props;
+  cudaGetDeviceProperties(&props, device);
+  check_error();
+  return std::string(props.name);
+}
+
+template <class T>
+std::string CUDAStream<T>::getDeviceDriver(const int device)
+{
+  cudaSetDevice(device);
+  check_error();
+  int driver;
+  cudaDriverGetVersion(&driver);
+  check_error();
+  return std::to_string(driver);
+}
+
 template class CUDAStream<float>;
 template class CUDAStream<double>;
 

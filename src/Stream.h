@@ -2,6 +2,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 template <class T>
 class Stream
@@ -19,9 +20,9 @@ class Stream
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) = 0;
 
     // Implementation specific device functions
-    static std::vector<int> getDeviceList();
-    static std::vector<int> getDeviceName();
-    static std::vector<int> getDeviceDriver();
+    static void listDevices(void);
+    static std::string getDeviceName(const int);
+    static std::string getDeviceDriver(const int);
 
 };
 
