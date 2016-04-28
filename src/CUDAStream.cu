@@ -146,7 +146,7 @@ void CUDAStream<T>::listDevices(void)
   // Print device names
   if (count == 0)
   {
-    std::cout << "No devices found." << std::endl;
+    std::cerr << "No devices found." << std::endl;
   }
   else
   {
