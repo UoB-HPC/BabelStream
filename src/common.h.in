@@ -1,0 +1,4 @@
+
+#define VERSION_STRING "@gpu-stream_VERSION_MAJOR@.@gpu-stream_VERSION_MINOR@"
+#define IMPLEMENTATION_STRING "@gpu-stream_IMPLEMENTATION@"
+
