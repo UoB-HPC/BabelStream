@@ -20,6 +20,9 @@ const unsigned int ntimes = 10;
 template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c);
 
+template <typename T>
+void run();
+
 int main(int argc, char *argv[])
 {
   std::cout
@@ -27,16 +30,22 @@ int main(int argc, char *argv[])
     << "Version: " << VERSION_STRING << std::endl
     << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
 
+    run<double>();
 
+}
+
+template <typename T>
+void run()
+{
   // Create host vectors
-  std::vector<double> a(ARRAY_SIZE, 1.0);
-  std::vector<double> b(ARRAY_SIZE, 2.0);
-  std::vector<double> c(ARRAY_SIZE, 0.0);
+  std::vector<T> a(ARRAY_SIZE, 1.0);
+  std::vector<T> b(ARRAY_SIZE, 2.0);
+  std::vector<T> c(ARRAY_SIZE, 0.0);
 
-  Stream<double> *stream;
+  Stream<T> *stream;
 
   // Use the CUDA implementation
-  stream = new CUDAStream<double>(ARRAY_SIZE);
+  stream = new CUDAStream<T>(ARRAY_SIZE);
 
   stream->write_arrays(a, b, c);
 
@@ -77,7 +86,7 @@ int main(int argc, char *argv[])
 
   // Check solutions
   stream->read_arrays(a, b, c);
-  check_solution<double>(ntimes, a, b, c);
+  check_solution<T>(ntimes, a, b, c);
 
   // Display timing results
   std::cout
@@ -91,10 +100,10 @@ int main(int argc, char *argv[])
 
   std::string labels[4] = {"Copy", "Mul", "Add", "Triad"};
   size_t sizes[4] = {
-    2 * sizeof(double) * ARRAY_SIZE,
-    2 * sizeof(double) * ARRAY_SIZE,
-    3 * sizeof(double) * ARRAY_SIZE,
-    3 * sizeof(double) * ARRAY_SIZE
+    2 * sizeof(T) * ARRAY_SIZE,
+    2 * sizeof(T) * ARRAY_SIZE,
+    3 * sizeof(T) * ARRAY_SIZE,
+    3 * sizeof(T) * ARRAY_SIZE
   };
 
   for (int i = 0; i < 4; i++)
