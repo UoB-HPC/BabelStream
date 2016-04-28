@@ -10,7 +10,8 @@
 
 #include "common.h"
 #include "Stream.h"
-#include "CUDAStream.h"
+
+#include "OCLStream.h"
 
 
 const unsigned int ARRAY_SIZE = 52428800;
@@ -45,7 +46,10 @@ void run()
   Stream<T> *stream;
 
   // Use the CUDA implementation
-  stream = new CUDAStream<T>(ARRAY_SIZE);
+  //stream = new CUDAStream<T>(ARRAY_SIZE);
+
+  // Use the OpenCL implementation
+  stream = new OCLStream<T>(ARRAY_SIZE);
 
   stream->write_arrays(a, b, c);
 
