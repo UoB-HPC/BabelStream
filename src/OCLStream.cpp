@@ -64,6 +64,11 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE)
   add_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "add");
   triad_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "triad");
 
+  // Create buffers
+  d_a = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
+  d_b = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
+  d_c = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
+
 }
 
 template <class T>
@@ -118,6 +123,7 @@ void OCLStream<T>::triad()
 template <class T>
 void OCLStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
 {
+  
   return;
 }
 
