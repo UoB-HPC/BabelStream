@@ -26,6 +26,11 @@ class OCLStream : public Stream<T>
     cl::Context context;
     cl::CommandQueue queue;
 
+    cl::KernelFunctor<cl::Buffer, cl::Buffer> *copy_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer> * mul_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *add_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *triad_kernel;
+
   public:
 
     OCLStream(const unsigned int);

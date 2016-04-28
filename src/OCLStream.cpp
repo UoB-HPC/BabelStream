@@ -1,6 +1,47 @@
 
 #include "OCLStream.h"
 
+std::string kernels{R"CLC(
+
+  constant TYPE scalar = 3.0;
+
+  kernel void copy(
+    global const TYPE * restrict a,
+    global TYPE * restrict c)
+  {
+    const size_t i = get_global_id(0);
+    c[i] = a[i];
+  }
+
+  kernel void mul(
+    global TYPE * restrict b,
+    global const TYPE * restrict c)
+  {
+    const size_t i = get_global_id(0);
+    b[i] = scalar * c[i];
+  }
+
+  kernel void add(
+    global const TYPE * restrict a,
+    global const TYPE * restrict b,
+    global TYPE * restrict c)
+  {
+    const size_t i = get_global_id(0);
+    c[i] = a[i] + b[i];
+  }
+
+  kernel void triad(
+    global TYPE * restrict a,
+    global const TYPE * restrict b,
+    global const TYPE * restrict c)
+  {
+    const size_t i = get_global_id(0);
+    a[i] = b[i] + scalar * c[i];
+  }
+
+)CLC"};
+
+
 template <class T>
 OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE)
 {
@@ -8,31 +49,30 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE)
 
   // Setup default OpenCL GPU
   context = cl::Context::getDefault();
-  //queue = cl::CommandQueue::getDefault();
+  queue = cl::CommandQueue::getDefault();
 
   // Create program
+  cl::Program program(kernels);
+  if (sizeof(T) == sizeof(double))
+    program.build("-DTYPE=double");
+  else if (sizeof(T) == sizeof(float))
+    program.build("-DTYPE=float");
 
-  std::string kernels{R"CLC(
+  // Create kernels
+  copy_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "copy");
+  mul_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "mul");
+  add_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "add");
+  triad_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "triad");
 
-    const double scalar = 3.0;
+}
 
-    kernel void copy(
-      global const double * restrict a,
-      global double * restrict c)
-    {
-      const size_t i = get_global_id(0);
-      c[i] = a[i];
-    }
-  )CLC"};
- 
-std::cout << kernels << std::endl;
- 
-  //cl::Program program(kernels);
-  //program.build();
-
-exit(-1);
-
-
+template <class T>
+OCLStream<T>::~OCLStream()
+{
+  delete[] copy_kernel;
+  delete[] mul_kernel;
+  delete[] add_kernel;
+  delete[] triad_kernel;
 }
 
 template <class T>
