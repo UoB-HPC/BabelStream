@@ -7,7 +7,7 @@
 #include <chrono>
 #include <algorithm>
 #include <iomanip>
-#include <string>
+#include <cstring>
 
 #include "common.h"
 #include "Stream.h"
@@ -194,9 +194,9 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 
 int parseUInt(const char *str, unsigned int *output)
 {
-  std::size_t next;
-  *output = std::stoul(str, &next);
-  return !next;
+  char *next;
+  *output = strtoul(str, &next, 10);
+  return !strlen(next);
 }
 
 void parseArguments(int argc, char *argv[])
