@@ -7,6 +7,7 @@
 #include <chrono>
 #include <algorithm>
 #include <iomanip>
+#include <string>
 
 #include "common.h"
 #include "Stream.h"
@@ -20,6 +21,7 @@
 
 const unsigned int ARRAY_SIZE = 52428800;
 const unsigned int ntimes = 10;
+unsigned int deviceIndex = 0;
 
 
 template <typename T>
@@ -28,6 +30,8 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 template <typename T>
 void run();
 
+void parseArguments(int argc, char *argv[]);
+
 int main(int argc, char *argv[])
 {
   std::cout
@@ -35,7 +39,9 @@ int main(int argc, char *argv[])
     << "Version: " << VERSION_STRING << std::endl
     << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
 
-    run<double>();
+  parseArguments(argc, argv);
+
+  run<double>();
 
 }
 
@@ -184,5 +190,36 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
       << "Validation failed on c[]. Average error " << errC
       << std::endl;
 
+}
+
+int parseUInt(const char *str, unsigned int *output)
+{
+  std::size_t next;
+  *output = std::stoul(str, &next);
+  return !next;
+}
+
+void parseArguments(int argc, char *argv[])
+{
+  for (int i = 1; i < argc; i++)
+  {
+    if (!std::string("--list").compare(argv[i]))
+    {
+      #if defined(CUDA)
+        CUDAStream<double>::listDevices();
+      #elif defined(OCL)
+        OCLStream<double>::listDevices();
+      #endif
+      exit(EXIT_SUCCESS);
+    }
+    else if (!std::string("--device").compare(argv[i]))
+    {
+      if (++i >= argc || !parseUInt(argv[i], &deviceIndex))
+      {
+        std::cerr << "Invalid device index." << std::endl;
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
 }
 
