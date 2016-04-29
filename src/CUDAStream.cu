@@ -135,8 +135,7 @@ void CUDAStream<T>::triad()
 }
 
 
-template <class T>
-void CUDAStream<T>::listDevices(void)
+void listDevices(void)
 {
   // Get number of devices
   int count;
@@ -160,8 +159,8 @@ void CUDAStream<T>::listDevices(void)
   }
 }
 
-template <class T>
-std::string CUDAStream<T>::getDeviceName(const int device)
+
+std::string getDeviceName(const int device)
 {
   cudaDeviceProp props;
   cudaGetDeviceProperties(&props, device);
@@ -169,8 +168,8 @@ std::string CUDAStream<T>::getDeviceName(const int device)
   return std::string(props.name);
 }
 
-template <class T>
-std::string CUDAStream<T>::getDeviceDriver(const int device)
+
+std::string getDeviceDriver(const int device)
 {
   cudaSetDevice(device);
   check_error();

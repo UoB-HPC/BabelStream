@@ -31,9 +31,5 @@ class CUDAStream : public Stream<T>
     virtual void write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
 
-    static void listDevices(void);
-    static std::string getDeviceName(const int device);
-    static std::string getDeviceDriver(const int device);
-
 };
 

@@ -205,11 +205,7 @@ void parseArguments(int argc, char *argv[])
   {
     if (!std::string("--list").compare(argv[i]))
     {
-      #if defined(CUDA)
-        CUDAStream<double>::listDevices();
-      #elif defined(OCL)
-        OCLStream<double>::listDevices();
-      #endif
+      listDevices();
       exit(EXIT_SUCCESS);
     }
     else if (!std::string("--device").compare(argv[i]))
