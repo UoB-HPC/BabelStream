@@ -19,9 +19,10 @@
 #endif
 
 
-const unsigned int ARRAY_SIZE = 52428800;
-const unsigned int ntimes = 10;
+unsigned int ARRAY_SIZE = 52428800;
+unsigned int num_times = 10;
 unsigned int deviceIndex = 0;
+bool use_float = false;
 
 
 template <typename T>
@@ -74,7 +75,7 @@ void run()
   std::chrono::high_resolution_clock::time_point t1, t2;
 
   // Main loop
-  for (unsigned int k = 0; k < ntimes; k++)
+  for (unsigned int k = 0; k < num_times; k++)
   {
     // Execute Copy
     t1 = std::chrono::high_resolution_clock::now();
@@ -104,7 +105,7 @@ void run()
 
   // Check solutions
   stream->read_arrays(a, b, c);
-  check_solution<T>(ntimes, a, b, c);
+  check_solution<T>(num_times, a, b, c);
 
   // Display timing results
   std::cout
@@ -130,7 +131,7 @@ void run()
     auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
 
     // Calculate average; ignore the first result
-    double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(ntimes - 1);
+    double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
 
     // Display results
     std::cout
@@ -215,6 +216,50 @@ void parseArguments(int argc, char *argv[])
         std::cerr << "Invalid device index." << std::endl;
         exit(EXIT_FAILURE);
       }
+    }
+    else if (!std::string("--arraysize").compare(argv[i]) ||
+             !std::string("-s").compare(argv[i]))
+    {
+      if (++i >= argc || !parseUInt(argv[i], &ARRAY_SIZE))
+      {
+        std::cerr << "Invalid array size." << std::endl;
+        exit(EXIT_FAILURE);
+      }
+    }
+    else if (!std::string("--numtimes").compare(argv[i]) ||
+             !std::string("-n").compare(argv[i]))
+    {
+      if (++i >= argc || !parseUInt(argv[i], &num_times))
+      {
+        std::cerr << "Invalid number of times." << std::endl;
+        exit(EXIT_FAILURE);
+      }
+    }
+    else if (!std::string("--float").compare(argv[i]))
+    {
+      use_float = true;
+      std::cout << "Warning: If number of iterations set >= 8, expect rounding errors with single precision" << std::endl;
+    }
+    else if (!std::string("--help").compare(argv[i]) ||
+             !std::string("-h").compare(argv[i]))
+    {
+      std::cout << std::endl;
+      std::cout << "Usage: " << argv[0] << " [OPTIONS]" << std::endl << std::endl;
+      std::cout << "Options:" << std::endl;
+      std::cout << "  -h  --help               Print the message" << std::endl;
+      std::cout << "      --list               List available devices" << std::endl;
+      std::cout << "      --device     INDEX   Select device at INDEX" << std::endl;
+      std::cout << "  -s  --arraysize  SIZE    Use SIZE elements in the array" << std::endl;
+      std::cout << "  -n  --numtimes   NUM     Run the test NUM times (NUM >= 2)" << std::endl;
+      std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
+      std::cout << std::endl;
+      exit(EXIT_SUCCESS);
+    }
+    else
+    {
+      std::cerr << "Unrecognized argument '" << argv[i] << "' (try '--help')"
+                << std::endl;
+      exit(EXIT_FAILURE);
     }
   }
 }
