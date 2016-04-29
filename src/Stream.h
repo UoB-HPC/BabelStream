@@ -23,6 +23,6 @@ class Stream
 
 
 // Implementation specific device functions
-static void listDevices(void);
-static std::string getDeviceName(const int);
-static std::string getDeviceDriver(const int);
+void listDevices(void);
+std::string getDeviceName(const int);
+std::string getDeviceDriver(const int);
