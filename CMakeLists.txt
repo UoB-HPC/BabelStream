@@ -1,12 +1,13 @@
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.2)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(gpu-stream)
 
 set(gpu-stream_VERSION_MAJOR 2)
 set(gpu-stream_VERSION_MINOR 0)
-
-list(APPEND CMAKE_CXX_FLAGS --std=c++11)
 
 configure_file(common.h.in common.h)
 
