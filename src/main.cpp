@@ -42,7 +42,10 @@ int main(int argc, char *argv[])
 
   parseArguments(argc, argv);
 
-  run<double>();
+  if (use_float)
+    run<float>();
+  else
+    run<double>();
 
 }
 
