@@ -53,8 +53,6 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   if (!cached)
     getDeviceList();
 
-  array_size = ARRAY_SIZE;
-
   // Setup default OpenCL GPU
   if (device_index >= devices.size())
     throw std::runtime_error("Invalid device index");
@@ -84,6 +82,16 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   mul_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "mul");
   add_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "add");
   triad_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "triad");
+
+  array_size = ARRAY_SIZE;
+
+  // Check buffers fit on the device
+  cl_ulong totalmem = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
+  cl_ulong maxbuffer = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
+  if (maxbuffer < sizeof(T)*ARRAY_SIZE)
+    throw std::runtime_error("Device cannot allocate a buffer big enough");
+  if (totalmem < 3*sizeof(T)*ARRAY_SIZE)
+    throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
   // Create buffers
   d_a = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
