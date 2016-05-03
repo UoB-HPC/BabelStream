@@ -103,10 +103,10 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 template <class T>
 OCLStream<T>::~OCLStream()
 {
-  delete[] copy_kernel;
-  delete[] mul_kernel;
-  delete[] add_kernel;
-  delete[] triad_kernel;
+  delete copy_kernel;
+  delete mul_kernel;
+  delete add_kernel;
+  delete triad_kernel;
 }
 
 template <class T>

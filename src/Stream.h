@@ -8,6 +8,9 @@ template <class T>
 class Stream
 {
   public:
+
+    virtual ~Stream(){}
+
     // Kernels
     // These must be blocking calls
     virtual void copy() = 0;

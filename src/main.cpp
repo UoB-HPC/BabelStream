@@ -154,7 +154,7 @@ void run()
 
   }
 
-  delete[] stream;
+  delete stream;
 
 }
 
