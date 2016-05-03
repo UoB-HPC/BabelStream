@@ -22,7 +22,7 @@ class ACCStream : public Stream<T>
     T *c;
 
   public:
-    ACCStream(const unsigned int, T*, T*, T*);
+    ACCStream(const unsigned int, T*, T*, T*, int);
     ~ACCStream();
 
     virtual void copy() override;

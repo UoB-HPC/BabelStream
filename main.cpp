@@ -86,7 +86,7 @@ void run()
 
 #elif defined(ACC)
   // Use the OpenACC implementation
-  stream = new ACCStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data());
+  stream = new ACCStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
 
 #elif defined(SYCL)
   // Use the SYCL implementation

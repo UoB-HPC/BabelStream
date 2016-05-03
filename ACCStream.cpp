@@ -2,8 +2,11 @@
 #include "ACCStream.h"
 
 template <class T>
-ACCStream<T>::ACCStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c)
+ACCStream<T>::ACCStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int device)
 {
+
+  acc_set_device_num(device, acc_device_nvidia);
+
   array_size = ARRAY_SIZE;
 
   // Set up data region on device
@@ -106,8 +109,28 @@ void ACCStream<T>::triad()
 void listDevices(void)
 {
   // Get number of devices
+  int count = acc_get_num_devices(acc_device_nvidia);
+
+  // Print device list
+  if (count == 0)
+  {
+    std::cerr << "No devices found." << std::endl;
+  }
+  else
+  {
+    std::cout << "There are " << count << " devices." << std::endl;
+  }
 }
 
+std::string getDeviceName(const int)
+{
+  return std::string("Device name unavailable");
+}
+
+std::string getDeviceDriver(const int)
+{
+  return std::string("Device driver unavailable");
+}
 template class ACCStream<float>;
 template class ACCStream<double>;
 
