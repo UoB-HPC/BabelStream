@@ -1,6 +1,11 @@
 
 #include "OCLStream.h"
 
+// Cache list of devices
+bool cached = false;
+std::vector<cl::Device> devices;
+void getDeviceList(void);
+
 std::string kernels{R"CLC(
 
   constant TYPE scalar = 3.0;
@@ -43,16 +48,27 @@ std::string kernels{R"CLC(
 
 
 template <class T>
-OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE)
+OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 {
+  if (!cached)
+    getDeviceList();
+
   array_size = ARRAY_SIZE;
 
   // Setup default OpenCL GPU
-  context = cl::Context::getDefault();
-  queue = cl::CommandQueue::getDefault();
+  if (device_index >= devices.size())
+    throw std::runtime_error("Invalid device index");
+  device = devices[device_index];
+
+  // Print out device information
+  std::cout << "Using OpenCL device " << getDeviceName(device_index) << std::endl;
+  std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+
+  context = cl::Context(device);
+  queue = cl::CommandQueue(context);
 
   // Create program
-  cl::Program program(kernels);
+  cl::Program program(context, kernels);
   if (sizeof(T) == sizeof(double))
     program.build("-DTYPE=double");
   else if (sizeof(T) == sizeof(float))
@@ -123,22 +139,18 @@ void OCLStream<T>::triad()
 template <class T>
 void OCLStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
 {
-  cl::copy(a.begin(), a.end(), d_a);
-  cl::copy(b.begin(), b.end(), d_b);
-  cl::copy(c.begin(), c.end(), d_c);
+  cl::copy(queue, a.begin(), a.end(), d_a);
+  cl::copy(queue, b.begin(), b.end(), d_b);
+  cl::copy(queue, c.begin(), c.end(), d_c);
 }
 
 template <class T>
 void OCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-  cl::copy(d_a, a.begin(), a.end());
-  cl::copy(d_b, b.begin(), b.end());
-  cl::copy(d_c, c.begin(), c.end());
+  cl::copy(queue, d_a, a.begin(), a.end());
+  cl::copy(queue, d_b, b.begin(), b.end());
+  cl::copy(queue, d_c, c.begin(), c.end());
 }
-
-// Cache list of devices
-bool cached = false;
-std::vector<cl::Device> devices;
 
 void getDeviceList(void)
 {

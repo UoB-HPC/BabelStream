@@ -61,11 +61,11 @@ void run()
 
 #if defined(CUDA)
   // Use the CUDA implementation
-  stream = new CUDAStream<T>(ARRAY_SIZE);
+  stream = new CUDAStream<T>(ARRAY_SIZE, deviceIndex);
 
 #elif defined(OCL)
   // Use the OpenCL implementation
-  stream = new OCLStream<T>(ARRAY_SIZE);
+  stream = new OCLStream<T>(ARRAY_SIZE, deviceIndex);
 
 #endif
 
@@ -144,7 +144,6 @@ void run()
       << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
       << std::left << std::setw(12) << std::setprecision(5) << average
       << std::endl;
-    
 
   }
 

@@ -27,6 +27,7 @@ class OCLStream : public Stream<T>
     cl::Buffer d_c;
 
     // OpenCL objects
+    cl::Device device;
     cl::Context context;
     cl::CommandQueue queue;
 
@@ -37,7 +38,7 @@ class OCLStream : public Stream<T>
 
   public:
 
-    OCLStream(const unsigned int);
+    OCLStream(const unsigned int, const int);
     ~OCLStream();
 
     virtual void copy() override;
