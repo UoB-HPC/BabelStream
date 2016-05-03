@@ -13,6 +13,7 @@ configure_file(common.h.in common.h)
 
 find_package(CUDA 7.0 QUIET)
 if (${CUDA_FOUND})
+  list(APPEND CUDA_NVCC_FLAGS --std=c++11)
   cuda_add_executable(gpu-stream-cuda main.cpp CUDAStream.cu)
   target_compile_definitions(gpu-stream-cuda PUBLIC CUDA)
 else (${CUDA_FOUND})
