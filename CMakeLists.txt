@@ -28,6 +28,15 @@ else (${OpenCL_FOUND})
   message("Skipping OpenCL...")
 endif (${OpenCL_FOUND})
 
+# TODO: Find OpenACC implementations somehow
+if (true)
+  add_executable(gpu-stream-acc main.cpp ACCStream.cpp)
+  target_compile_definitions(gpu-stream-acc PUBLIC ACC)
+  target_compile_options(gpu-stream-acc PUBLIC "-hstd=c++11")
+else ()
+  message("Skipping OpenACC...")
+endif ()
+
 # TODO: Find SYCL implementations somehow
 if (true)
   add_executable(gpu-stream-sycl main.cpp SYCLStream.cpp)
