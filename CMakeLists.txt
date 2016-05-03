@@ -30,3 +30,11 @@ else (${OpenCL_FOUND})
   message("Skipping OpenCL...")
 endif (${OpenCL_FOUND})
 
+# TODO: Find SYCL implementations somehow
+if (true)
+  add_executable(gpu-stream-sycl main.cpp SYCLStream.cpp)
+  target_compile_definitions(gpu-stream-sycl PUBLIC SYCL)
+  set_property(TARGET gpu-stream-sycl PROPERTY CXX_STANDARD 14)
+else ()
+  message("Skipping SYCL...")
+endif ()

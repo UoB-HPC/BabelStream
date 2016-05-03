@@ -24,7 +24,8 @@
 #include "OCLStream.h"
 #elif defined(ACC)
 #include "ACCStream.h"
-
+#elif defined(SYCL)
+#include "SYCLStream.h"
 #endif
 
 
@@ -86,6 +87,10 @@ void run()
 #elif defined(ACC)
   // Use the OpenACC implementation
   stream = new ACCStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data());
+
+#elif defined(SYCL)
+  // Use the SYCL implementation
+  stream = new SYCLStream<T>(ARRAY_SIZE, deviceIndex);
 
 #endif
 
@@ -285,4 +290,3 @@ void parseArguments(int argc, char *argv[])
     }
   }
 }
-
