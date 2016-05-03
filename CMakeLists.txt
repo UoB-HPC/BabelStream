@@ -9,8 +9,6 @@ project(gpu-stream)
 set(gpu-stream_VERSION_MAJOR 2)
 set(gpu-stream_VERSION_MINOR 0)
 
-list(APPEND CMAKE_CXX_FLAGS --std=c++11)
-
 configure_file(common.h.in common.h)
 
 find_package(CUDA 7.0 QUIET)
