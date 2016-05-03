@@ -56,6 +56,13 @@ void run()
   std::vector<T> a(ARRAY_SIZE, 1.0);
   std::vector<T> b(ARRAY_SIZE, 2.0);
   std::vector<T> c(ARRAY_SIZE, 0.0);
+  std::streamsize ss = std::cout.precision();
+  std::cout << std::setprecision(1) << std::fixed
+    << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
+    << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
+  std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
+    << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
+  std::cout.precision(ss);
 
   Stream<T> *stream;
 
