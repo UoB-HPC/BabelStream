@@ -22,6 +22,9 @@
 #include "CUDAStream.h"
 #elif defined(OCL)
 #include "OCLStream.h"
+#elif defined(ACC)
+#include "ACCStream.h"
+
 #endif
 
 
@@ -79,6 +82,10 @@ void run()
 #elif defined(OCL)
   // Use the OpenCL implementation
   stream = new OCLStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(ACC)
+  // Use the OpenACC implementation
+  stream = new ACCStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data());
 
 #endif
 
