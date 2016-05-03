@@ -12,8 +12,22 @@ void check_error(void)
 }
 
 template <class T>
-CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE)
+CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE, const int device_index)
 {
+
+  // Set device
+  int count;
+  cudaGetDeviceCount(&count);
+  check_error();
+  if (device_index >= count)
+    throw std::runtime_error("Invalid device index");
+  cudaSetDevice(device_index);
+  check_error();
+
+  // Print out device information
+  std::cout << "Using OpenCL device " << getDeviceName(device_index) << std::endl;
+  std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+
   array_size = ARRAY_SIZE;
 
   // Check buffers fit on the device

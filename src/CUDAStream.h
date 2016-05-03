@@ -20,7 +20,7 @@ class CUDAStream : public Stream<T>
 
   public:
 
-    CUDAStream(const unsigned int);
+    CUDAStream(const unsigned int, const int);
     ~CUDAStream();
 
     virtual void copy() override;
