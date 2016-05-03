@@ -136,6 +136,89 @@ void OCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector
   cl::copy(d_c, c.begin(), c.end());
 }
 
+// Cache list of devices
+bool cached = false;
+std::vector<cl::Device> devices;
+
+void getDeviceList(void)
+{
+  // Get list of platforms
+  std::vector<cl::Platform> platforms;
+  cl::Platform::get(&platforms);
+
+  // Enumerate devices
+  for (unsigned i = 0; i < platforms.size(); i++)
+  {
+    std::vector<cl::Device> plat_devices;
+    platforms[i].getDevices(CL_DEVICE_TYPE_ALL, &plat_devices);
+    devices.insert(devices.end(), plat_devices.begin(), plat_devices.end());
+  }
+  cached = true;
+}
+
+void listDevices(void)
+{
+  getDeviceList();
+
+  // Print device names
+  if (devices.size() == 0)
+  {
+    std::cerr << "No devices found." << std::endl;
+  }
+  else
+  {
+    std::cout << std::endl;
+    std::cout << "Devices:" << std::endl;
+    for (int i = 0; i < devices.size(); i++)
+    {
+      std::cout << i << ": " << getDeviceName(i) << std::endl;
+    }
+    std::cout << std::endl;
+  }
+
+
+}
+
+std::string getDeviceName(const int device)
+{
+  if (!cached)
+    getDeviceList();
+
+  std::string name;
+  cl_device_info info = CL_DEVICE_NAME;
+
+  if (device < devices.size())
+  {
+    devices[device].getInfo(info, &name);
+  }
+  else
+  {
+    throw std::runtime_error("Error asking for name for non-existant device");
+  }
+
+  return name;
+
+}
+
+std::string getDeviceDriver(const int device)
+{
+  if (!cached)
+    getDeviceList();
+
+  std::string driver;
+
+  if (device < devices.size())
+  {
+    devices[device].getInfo(CL_DRIVER_VERSION, &driver);
+  }
+  else
+  {
+    throw std::runtime_error("Error asking for driver for non-existant device");
+  }
+
+  return driver;
+}
+
 
 template class OCLStream<float>;
 template class OCLStream<double>;

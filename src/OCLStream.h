@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include <iostream>
 #include <stdexcept>
 
@@ -48,3 +50,5 @@ class OCLStream : public Stream<T>
 
 };
 
+// Populate the devices list
+void getDeviceList(void);
