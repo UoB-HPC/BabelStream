@@ -26,6 +26,8 @@
 #include "ACCStream.h"
 #elif defined(SYCL)
 #include "SYCLStream.h"
+#elif defined(OMP3)
+#include "OMP3Stream.h"
 #endif
 
 
@@ -91,6 +93,11 @@ void run()
 #elif defined(SYCL)
   // Use the SYCL implementation
   stream = new SYCLStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(OMP3)
+  // Use the "reference" OpenMP 3 implementation
+  stream = new OMP3Stream<T>(ARRAY_SIZE, a.data(), b.data(), c.data());
+
 
 #endif
 
