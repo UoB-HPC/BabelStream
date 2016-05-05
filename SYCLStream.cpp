@@ -17,14 +17,17 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   array_size = ARRAY_SIZE;
 
   // Create buffers
-  d_a = buffer<T>(array_size);
-  d_b = buffer<T>(array_size);
-  d_c = buffer<T>(array_size);
+  d_a = new buffer<T>(array_size);
+  d_b = new buffer<T>(array_size);
+  d_c = new buffer<T>(array_size);
 }
 
 template <class T>
 SYCLStream<T>::~SYCLStream()
 {
+  delete d_a;
+  delete d_b;
+  delete d_c;
 }
 
 template <class T>
@@ -32,9 +35,9 @@ void SYCLStream<T>::copy()
 {
   queue.submit([&](handler &cgh)
   {
-    auto ka = d_a.template get_access<access::read>(cgh);
-    auto kc = d_c.template get_access<access::write>(cgh);
-    cgh.parallel_for(range<1>{array_size}, [=](id<1> index)
+    auto ka = d_a->template get_access<access::mode::read>(cgh);
+    auto kc = d_c->template get_access<access::mode::write>(cgh);
+    cgh.parallel_for<class copy>(range<1>{array_size}, [=](id<1> index)
     {
       kc[index] = ka[index];
     });
@@ -48,9 +51,9 @@ void SYCLStream<T>::mul()
   const T scalar = 3.0;
   queue.submit([&](handler &cgh)
   {
-    auto kb = d_b.template get_access<access::write>(cgh);
-    auto kc = d_c.template get_access<access::read>(cgh);
-    cgh.parallel_for(range<1>{array_size}, [=](id<1> index)
+    auto kb = d_b->template get_access<access::mode::write>(cgh);
+    auto kc = d_c->template get_access<access::mode::read>(cgh);
+    cgh.parallel_for<class mul>(range<1>{array_size}, [=](id<1> index)
     {
       kb[index] = scalar * kc[index];
     });
@@ -63,10 +66,10 @@ void SYCLStream<T>::add()
 {
   queue.submit([&](handler &cgh)
   {
-    auto ka = d_a.template get_access<access::read>(cgh);
-    auto kb = d_b.template get_access<access::read>(cgh);
-    auto kc = d_c.template get_access<access::write>(cgh);
-    cgh.parallel_for(range<1>{array_size}, [=](id<1> index)
+    auto ka = d_a->template get_access<access::mode::read>(cgh);
+    auto kb = d_b->template get_access<access::mode::read>(cgh);
+    auto kc = d_c->template get_access<access::mode::write>(cgh);
+    cgh.parallel_for<class add>(range<1>{array_size}, [=](id<1> index)
     {
       kc[index] = ka[index] + kb[index];
     });
@@ -80,10 +83,10 @@ void SYCLStream<T>::triad()
   const T scalar = 3.0;
   queue.submit([&](handler &cgh)
   {
-    auto ka = d_a.template get_access<access::write>(cgh);
-    auto kb = d_b.template get_access<access::read>(cgh);
-    auto kc = d_c.template get_access<access::read>(cgh);
-    cgh.parallel_for(range<1>{array_size}, [=](id<1> index){
+    auto ka = d_a->template get_access<access::mode::write>(cgh);
+    auto kb = d_b->template get_access<access::mode::read>(cgh);
+    auto kc = d_c->template get_access<access::mode::read>(cgh);
+    cgh.parallel_for<class triad>(range<1>{array_size}, [=](id<1> index){
       ka[index] = kb[index] + scalar * kc[index];
     });
   });
@@ -93,9 +96,9 @@ void SYCLStream<T>::triad()
 template <class T>
 void SYCLStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
 {
-  auto _a = d_a.template get_access<access::write>();
-  auto _b = d_b.template get_access<access::write>();
-  auto _c = d_c.template get_access<access::write>();
+  auto _a = d_a->template get_access<access::mode::write, access::target::host_buffer>();
+  auto _b = d_b->template get_access<access::mode::write, access::target::host_buffer>();
+  auto _c = d_c->template get_access<access::mode::write, access::target::host_buffer>();
   for (int i = 0; i < array_size; i++)
   {
     _a[i] = a[i];
@@ -107,9 +110,9 @@ void SYCLStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& 
 template <class T>
 void SYCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-  auto _a = d_a.template get_access<access::read>();
-  auto _b = d_b.template get_access<access::read>();
-  auto _c = d_c.template get_access<access::read>();
+  auto _a = d_a->template get_access<access::mode::read, access::target::host_buffer>();
+  auto _b = d_b->template get_access<access::mode::read, access::target::host_buffer>();
+  auto _c = d_c->template get_access<access::mode::read, access::target::host_buffer>();
   for (int i = 0; i < array_size; i++)
   {
     a[i] = _a[i];
@@ -140,5 +143,6 @@ std::string getDeviceDriver(const int device)
 }
 
 
-template class SYCLStream<float>;
+// TODO: Fix kernel names to allow multiple template specializations
+//template class SYCLStream<float>;
 template class SYCLStream<double>;
