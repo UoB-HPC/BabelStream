@@ -9,12 +9,11 @@ project(gpu-stream)
 set(gpu-stream_VERSION_MAJOR 2)
 set(gpu-stream_VERSION_MINOR 0)
 
-list(APPEND CMAKE_CXX_FLAGS --std=c++11)
-
 configure_file(common.h.in common.h)
 
 find_package(CUDA 7.0 QUIET)
 if (${CUDA_FOUND})
+  list(APPEND CUDA_NVCC_FLAGS --std=c++11)
   cuda_add_executable(gpu-stream-cuda main.cpp CUDAStream.cu)
   target_compile_definitions(gpu-stream-cuda PUBLIC CUDA)
 else (${CUDA_FOUND})
@@ -30,3 +29,20 @@ else (${OpenCL_FOUND})
   message("Skipping OpenCL...")
 endif (${OpenCL_FOUND})
 
+# TODO: Find OpenACC implementations somehow
+if (true)
+  add_executable(gpu-stream-acc main.cpp ACCStream.cpp)
+  target_compile_definitions(gpu-stream-acc PUBLIC ACC)
+  target_compile_options(gpu-stream-acc PUBLIC "-hstd=c++11")
+else ()
+  message("Skipping OpenACC...")
+endif ()
+
+# TODO: Find SYCL implementations somehow
+if (true)
+  add_executable(gpu-stream-sycl main.cpp SYCLStream.cpp)
+  target_compile_definitions(gpu-stream-sycl PUBLIC SYCL)
+  set_property(TARGET gpu-stream-sycl PROPERTY CXX_STANDARD 14)
+else ()
+  message("Skipping SYCL...")
+endif ()

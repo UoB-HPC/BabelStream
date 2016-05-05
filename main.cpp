@@ -26,6 +26,12 @@
 #include "RAJAStream.hpp"
 #elif defined(KOKKOS)
 #include "KOKKOSStream.hpp"
+#elif defined(ACC)
+#include "ACCStream.h"
+#elif defined(SYCL)
+#include "SYCLStream.h"
+#elif defined(OMP3)
+#include "OMP3Stream.h"
 #endif
 
 unsigned int ARRAY_SIZE = 52428800;
@@ -90,6 +96,18 @@ void run()
 #elif defined(KOKKOS)
   // Use the Kokkos implementation
   stream = new KOKKOSStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(ACC)
+  // Use the OpenACC implementation
+  stream = new ACCStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+
+#elif defined(SYCL)
+  // Use the SYCL implementation
+  stream = new SYCLStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(OMP3)
+  // Use the "reference" OpenMP 3 implementation
+  stream = new OMP3Stream<T>(ARRAY_SIZE, a.data(), b.data(), c.data());
 
 #endif
 
@@ -289,4 +307,3 @@ void parseArguments(int argc, char *argv[])
     }
   }
 }
-
