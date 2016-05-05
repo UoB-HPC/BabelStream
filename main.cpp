@@ -22,8 +22,11 @@
 #include "CUDAStream.h"
 #elif defined(OCL)
 #include "OCLStream.h"
+#elif defined(RAJA)
+#include "RAJAStream.hpp"
+#elif defined(KOKKOS)
+#include "KOKKOSStream.hpp"
 #endif
-
 
 unsigned int ARRAY_SIZE = 52428800;
 unsigned int num_times = 10;
@@ -79,6 +82,14 @@ void run()
 #elif defined(OCL)
   // Use the OpenCL implementation
   stream = new OCLStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(RAJA)
+  // Use the RAJA implementation
+  stream = new RAJAStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(KOKKOS)
+  // Use the Kokkos implementation
+  stream = new KOKKOSStream<T>(ARRAY_SIZE, deviceIndex);
 
 #endif
 
