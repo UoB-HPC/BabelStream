@@ -11,6 +11,8 @@
 
 using namespace cl::sycl;
 
+#define WGSIZE 64
+
 template <class T>
 SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 {
@@ -37,9 +39,9 @@ void SYCLStream<T>::copy()
   {
     auto ka = d_a->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::write>(cgh);
-    cgh.parallel_for<class copy>(range<1>{array_size}, [=](id<1> index)
+    cgh.parallel_for<class copy>(nd_range<1>{array_size, WGSIZE}, [=](nd_item<1> item)
     {
-      kc[index] = ka[index];
+      kc[item.get_global()] = ka[item.get_global()];
     });
   });
   queue.wait();
@@ -53,9 +55,9 @@ void SYCLStream<T>::mul()
   {
     auto kb = d_b->template get_access<access::mode::write>(cgh);
     auto kc = d_c->template get_access<access::mode::read>(cgh);
-    cgh.parallel_for<class mul>(range<1>{array_size}, [=](id<1> index)
+    cgh.parallel_for<class mul>(nd_range<1>{array_size, WGSIZE}, [=](nd_item<1> item)
     {
-      kb[index] = scalar * kc[index];
+      kb[item.get_global()] = scalar * kc[item.get_global()];
     });
   });
   queue.wait();
@@ -69,9 +71,9 @@ void SYCLStream<T>::add()
     auto ka = d_a->template get_access<access::mode::read>(cgh);
     auto kb = d_b->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::write>(cgh);
-    cgh.parallel_for<class add>(range<1>{array_size}, [=](id<1> index)
+    cgh.parallel_for<class add>(nd_range<1>{array_size, WGSIZE}, [=](nd_item<1> item)
     {
-      kc[index] = ka[index] + kb[index];
+      kc[item.get_global()] = ka[item.get_global()] + kb[item.get_global()];
     });
   });
   queue.wait();
@@ -86,8 +88,9 @@ void SYCLStream<T>::triad()
     auto ka = d_a->template get_access<access::mode::write>(cgh);
     auto kb = d_b->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::read>(cgh);
-    cgh.parallel_for<class triad>(range<1>{array_size}, [=](id<1> index){
-      ka[index] = kb[index] + scalar * kc[index];
+    cgh.parallel_for<class triad>(nd_range<1>{array_size, WGSIZE}, [=](nd_item<1> item)
+    {
+      ka[item.get_global()] = kb[item.get_global()] + scalar * kc[item.get_global()];
     });
   });
   queue.wait();
