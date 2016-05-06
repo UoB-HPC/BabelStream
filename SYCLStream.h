@@ -22,9 +22,9 @@ class SYCLStream : public Stream<T>
 
     // SYCL objects
     cl::sycl::queue queue;
-    cl::sycl::buffer<T> d_a;
-    cl::sycl::buffer<T> d_b;
-    cl::sycl::buffer<T> d_c;
+    cl::sycl::buffer<T> *d_a;
+    cl::sycl::buffer<T> *d_b;
+    cl::sycl::buffer<T> *d_c;
 
   public:
 

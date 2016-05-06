@@ -40,9 +40,18 @@ endif ()
 
 # TODO: Find SYCL implementations somehow
 if (true)
-  add_executable(gpu-stream-sycl main.cpp SYCLStream.cpp)
-  target_compile_definitions(gpu-stream-sycl PUBLIC SYCL)
-  set_property(TARGET gpu-stream-sycl PROPERTY CXX_STANDARD 14)
+  # ComputeCpp
+  # TODO: Sort this out properly!
+  add_custom_target(gpu-stream-sycl
+                    COMMAND compute++ ${CMAKE_CURRENT_SOURCE_DIR}/SYCLStream.cpp -sycl -O2 -emit-llvm -o SYCLStream.bc -c
+                    COMMAND /usr/bin/c++ ${CMAKE_CURRENT_SOURCE_DIR}/SYCLStream.cpp -O2 -std=c++11 -include SYCLStream.sycl -o SYCLStream.o -c
+                    COMMAND /usr/bin/c++ ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp -O2 -std=c++11 SYCLStream.o -include SYCLStream.sycl -lSYCL -lOpenCL -o gpu-stream-sycl -DSYCL
+                    )
+
+  # triSYCL
+  #add_executable(gpu-stream-sycl main.cpp SYCLStream.cpp)
+  #target_compile_definitions(gpu-stream-sycl PUBLIC SYCL)
+  #set_property(TARGET gpu-stream-sycl PROPERTY CXX_STANDARD 14)
 else ()
   message("Skipping SYCL...")
 endif ()

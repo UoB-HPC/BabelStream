@@ -57,9 +57,12 @@ int main(int argc, char *argv[])
 
   parseArguments(argc, argv);
 
+  // TODO: Fix SYCL to allow multiple template specializations
+#ifndef SYCL
   if (use_float)
     run<float>();
   else
+#endif
     run<double>();
 
 }
