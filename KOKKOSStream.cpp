@@ -74,6 +74,7 @@ void KOKKOSStream<T>::copy()
   {
     c[index] = a[index];
   });
+  cudaDeviceSynchronize();
 }
 
 template <class T>
@@ -88,6 +89,7 @@ void KOKKOSStream<T>::mul()
   {
     b[index] = scalar*c[index];
   });
+  cudaDeviceSynchronize();
 }
 
 template <class T>
@@ -101,6 +103,8 @@ void KOKKOSStream<T>::add()
   {
     c[index] = a[index] + b[index];
   });
+
+  cudaDeviceSynchronize();
 }
 
 template <class T>
@@ -115,6 +119,8 @@ void KOKKOSStream<T>::triad()
   {
     a[index] = b[index] + scalar*c[index];
   });
+
+  cudaDeviceSynchronize();
 }
 
 void listDevices(void)
