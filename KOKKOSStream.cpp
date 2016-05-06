@@ -43,18 +43,18 @@ void KOKKOSStream<T>::write_arrays(
     (*hm_b)(ii) = b[ii];
     (*hm_c)(ii) = c[ii];
   }
-  deep_copy(*hm_a, *d_a);
-  deep_copy(*hm_b, *d_b);
-  deep_copy(*hm_c, *d_c);
+  deep_copy(*d_a, *hm_a);
+  deep_copy(*d_b, *hm_b);
+  deep_copy(*d_c, *hm_c);
 }
 
 template <class T>
 void KOKKOSStream<T>::read_arrays(
         std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-  deep_copy(*d_a, *hm_a);
-  deep_copy(*d_b, *hm_b);
-  deep_copy(*d_c, *hm_c);
+  deep_copy(*hm_a, *d_a);
+  deep_copy(*hm_b, *d_b);
+  deep_copy(*hm_c, *d_c);
   for(int ii = 0; ii < array_size; ++ii)
   {
     a[ii] = (*hm_a)(ii);
