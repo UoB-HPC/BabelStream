@@ -59,9 +59,11 @@ int main(int argc, char *argv[])
 
   // TODO: Fix SYCL to allow multiple template specializations
 #ifndef SYCL
+#ifndef KOKKOS
   if (use_float)
     run<float>();
   else
+#endif
 #endif
     run<double>();
 
