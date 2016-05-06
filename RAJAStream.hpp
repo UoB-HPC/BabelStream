@@ -14,15 +14,15 @@
 
 #define IMPLEMENTATION_STRING "RAJA"
 
-#ifdef RAJA_USE_CUDA
-const size_t block_size = 128;
-typedef RAJA::IndexSet::ExecPolicy<
-        RAJA::seq_segit,
-        RAJA::cuda_exec_async<block_size>> policy;
-#else
+#ifdef RAJA_TARGET_CPU
 typedef RAJA::IndexSet::ExecPolicy<
         RAJA::seq_segit,
         RAJA::omp_parallel_for_exec> policy;
+#else
+const size_t block_size = 128;
+typedef RAJA::IndexSet::ExecPolicy<
+        RAJA::seq_segit,
+        RAJA::cuda_exec<block_size>> policy;
 #endif
 
 template <class T>
