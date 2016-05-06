@@ -22,7 +22,7 @@
 #include "CUDAStream.h"
 #elif defined(OCL)
 #include "OCLStream.h"
-#elif defined(RAJA)
+#elif defined(USE_RAJA)
 #include "RAJAStream.hpp"
 #elif defined(KOKKOS)
 #include "KOKKOSStream.hpp"
@@ -89,7 +89,7 @@ void run()
   // Use the OpenCL implementation
   stream = new OCLStream<T>(ARRAY_SIZE, deviceIndex);
 
-#elif defined(RAJA)
+#elif defined(USE_RAJA)
   // Use the RAJA implementation
   stream = new RAJAStream<T>(ARRAY_SIZE, deviceIndex);
 
