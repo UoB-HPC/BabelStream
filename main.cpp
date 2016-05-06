@@ -22,6 +22,10 @@
 #include "CUDAStream.h"
 #elif defined(OCL)
 #include "OCLStream.h"
+#elif defined(USE_RAJA)
+#include "RAJAStream.hpp"
+#elif defined(KOKKOS)
+#include "KOKKOSStream.hpp"
 #elif defined(ACC)
 #include "ACCStream.h"
 #elif defined(SYCL)
@@ -29,7 +33,6 @@
 #elif defined(OMP3)
 #include "OMP3Stream.h"
 #endif
-
 
 unsigned int ARRAY_SIZE = 52428800;
 unsigned int num_times = 10;
@@ -56,9 +59,11 @@ int main(int argc, char *argv[])
 
   // TODO: Fix SYCL to allow multiple template specializations
 #ifndef SYCL
+#ifndef KOKKOS
   if (use_float)
     run<float>();
   else
+#endif
 #endif
     run<double>();
 
@@ -89,6 +94,14 @@ void run()
   // Use the OpenCL implementation
   stream = new OCLStream<T>(ARRAY_SIZE, deviceIndex);
 
+#elif defined(USE_RAJA)
+  // Use the RAJA implementation
+  stream = new RAJAStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(KOKKOS)
+  // Use the Kokkos implementation
+  stream = new KOKKOSStream<T>(ARRAY_SIZE, deviceIndex);
+
 #elif defined(ACC)
   // Use the OpenACC implementation
   stream = new ACCStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
@@ -100,7 +113,6 @@ void run()
 #elif defined(OMP3)
   // Use the "reference" OpenMP 3 implementation
   stream = new OMP3Stream<T>(ARRAY_SIZE, a.data(), b.data(), c.data());
-
 
 #endif
 
