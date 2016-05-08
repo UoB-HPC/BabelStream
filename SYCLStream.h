@@ -21,7 +21,7 @@ class SYCLStream : public Stream<T>
     unsigned int array_size;
 
     // SYCL objects
-    cl::sycl::queue queue;
+    cl::sycl::queue *queue;
     cl::sycl::buffer<T> *d_a;
     cl::sycl::buffer<T> *d_b;
     cl::sycl::buffer<T> *d_c;
