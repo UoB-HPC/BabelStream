@@ -13,10 +13,19 @@ using namespace cl::sycl;
 
 #define WGSIZE 64
 
+// Cache list of devices
+bool cached = false;
+std::vector<device> devices;
+void getDeviceList(void);
+
 template <class T>
 SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 {
   array_size = ARRAY_SIZE;
+
+  // Print out device information
+  std::cout << "Using SYCL device " << getDeviceName(device_index) << std::endl;
+  std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
 
   // Create buffers
   d_a = new buffer<T>(array_size);
@@ -124,25 +133,78 @@ void SYCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vecto
   }
 }
 
+void getDeviceList(void)
+{
+  // Get list of platforms
+  std::vector<platform> platforms = platform::get_platforms();
+
+  // Enumerate devices
+  for (unsigned i = 0; i < platforms.size(); i++)
+  {
+    std::vector<device> plat_devices = platforms[i].get_devices();
+    devices.insert(devices.end(), plat_devices.begin(), plat_devices.end());
+  }
+  cached = true;
+}
+
 void listDevices(void)
 {
-  // TODO: Get actual list of devices
-  std::cout << std::endl;
-  std::cout << "Devices:" << std::endl;
-  std::cout << "0: " << "triSYCL" << std::endl;
-  std::cout << std::endl;
+  getDeviceList();
+
+  // Print device names
+  if (devices.size() == 0)
+  {
+    std::cerr << "No devices found." << std::endl;
+  }
+  else
+  {
+    std::cout << std::endl;
+    std::cout << "Devices:" << std::endl;
+    for (int i = 0; i < devices.size(); i++)
+    {
+      std::cout << i << ": " << getDeviceName(i) << std::endl;
+    }
+    std::cout << std::endl;
+  }
 }
 
 std::string getDeviceName(const int device)
 {
-  // TODO: Implement properly
-  return "triSYCL";
+  if (!cached)
+    getDeviceList();
+
+  std::string name;
+  cl_device_info info = CL_DEVICE_NAME;
+
+  if (device < devices.size())
+  {
+    name = devices[device].get_info<info::device::name>();
+  }
+  else
+  {
+    throw std::runtime_error("Error asking for name for non-existant device");
+  }
+
+  return name;
 }
 
 std::string getDeviceDriver(const int device)
 {
-  // TODO: Implement properly
-  return "triSCYL";
+  if (!cached)
+    getDeviceList();
+
+  std::string driver;
+
+  if (device < devices.size())
+  {
+    driver = devices[device].get_info<info::device::driver_version>();
+  }
+  else
+  {
+    throw std::runtime_error("Error asking for driver for non-existant device");
+  }
+
+  return driver;
 }
 
 
