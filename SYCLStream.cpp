@@ -185,7 +185,6 @@ std::string getDeviceName(const int device)
     getDeviceList();
 
   std::string name;
-  cl_device_info info = CL_DEVICE_NAME;
 
   if (device < devices.size())
   {
