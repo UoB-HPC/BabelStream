@@ -48,8 +48,11 @@ extern void parseArguments(int argc, char *argv[]);
 extern void listDevices(void);
 
 extern unsigned int ARRAY_SIZE;
+extern size_t       ARRAY_PAD_BYTES;
 extern unsigned int NTIMES;
 
+extern unsigned int  groups;
+extern unsigned int  groupSize;
 extern bool useFloat;
 
 extern unsigned int deviceIndex;

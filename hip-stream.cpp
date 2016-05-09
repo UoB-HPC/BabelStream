@@ -1,3 +1,4 @@
+#include "hip_runtime.h"
 /*=============================================================================
 *------------------------------------------------------------------------------
 * Copyright 2015: Tom Deakin, Simon McIntosh-Smith, University of Bristol HPC
@@ -42,7 +43,7 @@
 #include <cfloat>
 #include <cmath>
 
-#include <cuda.h>
+//#include <cuda.h>
 #include "common.h"
 
 std::string getDeviceName(int device);
@@ -51,25 +52,27 @@ int getDriver(void);
 // Code to check CUDA errors
 void check_cuda_error(void)
 {
-    cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess)
+    hipError_t err = hipGetLastError();
+    if (err != hipSuccess)
     {
         std::cerr
             << "Error: "
-            << cudaGetErrorString(err)
+            << hipGetErrorString(err)
             << std::endl;
             exit(err);
     }
 }
 
+
+
 // looper function place more work inside each work item.
 // Goal is reduce the dispatch overhead for each group, and also give more controlover the order of memory operations
 template <typename T>
 __global__ void
-copy_looper(const T * a, T * c, int ARRAY_SIZE)
+copy_looper(hipLaunchParm lp,  const T * a, T * c, int ARRAY_SIZE)
 {
-    int offset = (blockDim.x * blockIdx.x + threadIdx.x);
-    int stride = blockDim.x * gridDim.x;
+    int offset = (hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x);
+    int stride = hipBlockDim_x * hipGridDim_x;
 
     for (int i=offset; i<ARRAY_SIZE; i+=stride) {
         c[i] = a[i];
@@ -78,10 +81,10 @@ copy_looper(const T * a, T * c, int ARRAY_SIZE)
 
 template <typename T>
 __global__ void
-mul_looper(T * b, const T * c, int ARRAY_SIZE)
+mul_looper(hipLaunchParm lp,  T * b, const T * c, int ARRAY_SIZE)
 {
-    int offset = blockDim.x * blockIdx.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
+    int offset = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
+    int stride = hipBlockDim_x * hipGridDim_x;
     const T scalar = 3.0;
 
     for (int i=offset; i<ARRAY_SIZE; i+=stride) {
@@ -91,10 +94,10 @@ mul_looper(T * b, const T * c, int ARRAY_SIZE)
 
 template <typename T>
 __global__ void
-add_looper(const T * a, const T * b, T * c, int ARRAY_SIZE)
+add_looper(hipLaunchParm lp,  const T * a, const T * b, T * c, int ARRAY_SIZE)
 {
-    int offset = blockDim.x * blockIdx.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
+    int offset = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
+    int stride = hipBlockDim_x * hipGridDim_x;
 
     for (int i=offset; i<ARRAY_SIZE; i+=stride) {
         c[i] = a[i] + b[i];
@@ -103,10 +106,10 @@ add_looper(const T * a, const T * b, T * c, int ARRAY_SIZE)
 
 template <typename T>
 __global__ void
-triad_looper( T * a, const T * b, const T * c, int ARRAY_SIZE)
+triad_looper(hipLaunchParm lp,  T * a, const T * b, const T * c, int ARRAY_SIZE)
 {
-    int offset = blockDim.x * blockIdx.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
+    int offset = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
+    int stride = hipBlockDim_x * hipGridDim_x;
     const T scalar = 3.0;
 
     for (int i=offset; i<ARRAY_SIZE; i+=stride) {
@@ -115,33 +118,40 @@ triad_looper( T * a, const T * b, const T * c, int ARRAY_SIZE)
 }
 
 
+
+
 template <typename T>
-__global__ void copy(const T * a, T * c)
+__global__ void
+copy(hipLaunchParm lp,  const T * a, T * c)
 {
-    const int i = blockDim.x * blockIdx.x + threadIdx.x;
+    const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     c[i] = a[i];
 }
 
+
 template <typename T>
-__global__ void mul(T * b, const T * c)
+__global__ void
+mul(hipLaunchParm lp,  T * b, const T * c)
 {
     const T scalar = 3.0;
-    const int i = blockDim.x * blockIdx.x + threadIdx.x;
+    const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     b[i] = scalar * c[i];
 }
 
 template <typename T>
-__global__ void add(const T * a, const T * b, T * c)
+__global__ void
+add(hipLaunchParm lp,  const T * a, const T * b, T * c)
 {
-    const int i = blockDim.x * blockIdx.x + threadIdx.x;
+    const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     c[i] = a[i] + b[i];
 }
 
 template <typename T>
-__global__ void triad(T * a, const T * b, const T * c)
+__global__ void
+triad(hipLaunchParm lp,  T * a, const T * b, const T * c)
 {
     const T scalar = 3.0;
-    const int i = blockDim.x * blockIdx.x + threadIdx.x;
+    const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     a[i] = b[i] + scalar * c[i];
 }
 
@@ -152,7 +162,7 @@ int main(int argc, char *argv[])
     std::cout
         << "GPU-STREAM" << std::endl
         << "Version: " << VERSION_STRING << std::endl
-        << "Implementation: CUDA" << std::endl;
+        << "Implementation: HIP" << std::endl;
 
     parseArguments(argc, argv);
 
@@ -210,9 +220,10 @@ int main(int argc, char *argv[])
     std::cout << std::setprecision(1) << std::fixed
         << "Array size: " << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
         << " (=" << ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
+		<< " " << ARRAY_PAD_BYTES << " bytes padding"
         << std::endl;
-    std::cout << "Total size: " << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0 << " MB"
-        << " (=" << 3.0*ARRAY_SIZE*DATATYPE_SIZE/1024.0/1024.0/1024.0 << " GB)"
+    std::cout << "Total size: " << 3.0*(ARRAY_SIZE*DATATYPE_SIZE + ARRAY_PAD_BYTES) /1024.0/1024.0 << " MB"
+        << " (=" << 3.0*(ARRAY_SIZE*DATATYPE_SIZE + ARRAY_PAD_BYTES) /1024.0/1024.0/1024.0 << " GB)"
         << std::endl;
 
     // Reset precision
@@ -220,31 +231,38 @@ int main(int argc, char *argv[])
 
     // Check device index is in range
     int count;
-    cudaGetDeviceCount(&count);
+    hipGetDeviceCount(&count);
     check_cuda_error();
     if (deviceIndex >= count)
         throw std::runtime_error("Chosen device index is invalid");
-    cudaSetDevice(deviceIndex);
+    hipSetDevice(deviceIndex);
     check_cuda_error();
 
-    // Print out device name
-    std::cout << "Using CUDA device " << getDeviceName(deviceIndex) << std::endl;
 
-    // Print out device CUDA driver version
+    hipDeviceProp_t props;
+    hipGetDeviceProperties(&props, deviceIndex);
+
+    // Print out device name
+    std::cout << "Using HIP device " << getDeviceName(deviceIndex) <<  " (compute_units=" << props.multiProcessorCount << ")" << std::endl;
+
+    // Print out device HIP driver version
     std::cout << "Driver: " << getDriver() << std::endl;
 
+
+
+
     // Check buffers fit on the device
-    cudaDeviceProp props;
-    cudaGetDeviceProperties(&props, deviceIndex);
     if (props.totalGlobalMem < 3*DATATYPE_SIZE*ARRAY_SIZE)
         throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
-    // Create host vectors
-    void * h_a = malloc(ARRAY_SIZE*DATATYPE_SIZE);
-    void * h_b = malloc(ARRAY_SIZE*DATATYPE_SIZE);
-    void * h_c = malloc(ARRAY_SIZE*DATATYPE_SIZE);
+    //int cus = props.multiProcessorCount;
 
-    // Initilise arrays
+    // Create host vectors
+    void * h_a = malloc(ARRAY_SIZE*DATATYPE_SIZE );
+    void * h_b = malloc(ARRAY_SIZE*DATATYPE_SIZE );
+    void * h_c = malloc(ARRAY_SIZE*DATATYPE_SIZE );
+
+    // Initialise arrays
     for (unsigned int i = 0; i < ARRAY_SIZE; i++)
     {
         if (useFloat)
@@ -262,29 +280,34 @@ int main(int argc, char *argv[])
     }
 
     // Create device buffers
-    void * d_a, * d_b, *d_c;
-    cudaMalloc(&d_a, ARRAY_SIZE*DATATYPE_SIZE);
+    char * d_a, * d_b, *d_c;
+    hipMalloc(&d_a, ARRAY_SIZE*DATATYPE_SIZE + ARRAY_PAD_BYTES);
     check_cuda_error();
-    cudaMalloc(&d_b, ARRAY_SIZE*DATATYPE_SIZE);
+    hipMalloc(&d_b, ARRAY_SIZE*DATATYPE_SIZE + ARRAY_PAD_BYTES);
+    d_b += ARRAY_PAD_BYTES;
     check_cuda_error();
-    cudaMalloc(&d_c, ARRAY_SIZE*DATATYPE_SIZE);
+    hipMalloc(&d_c, ARRAY_SIZE*DATATYPE_SIZE + ARRAY_PAD_BYTES);
+    d_c += ARRAY_PAD_BYTES;
     check_cuda_error();
 
     // Copy host memory to device
-    cudaMemcpy(d_a, h_a, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyHostToDevice);
+    hipMemcpy(d_a, h_a, ARRAY_SIZE*DATATYPE_SIZE, hipMemcpyHostToDevice);
     check_cuda_error();
-    cudaMemcpy(d_b, h_b, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyHostToDevice);
+    hipMemcpy(d_b, h_b, ARRAY_SIZE*DATATYPE_SIZE, hipMemcpyHostToDevice);
     check_cuda_error();
-    cudaMemcpy(d_c, h_c, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyHostToDevice);
+    hipMemcpy(d_c, h_c, ARRAY_SIZE*DATATYPE_SIZE, hipMemcpyHostToDevice);
     check_cuda_error();
+
 
     std::cout << "d_a=" << (void*)d_a << std::endl;
 	std::cout << "d_b=" << (void*)d_b << std::endl;
 	std::cout << "d_c=" << (void*)d_c << std::endl;
-    
+
     // Make sure the copies are finished
-    cudaDeviceSynchronize();
+    hipDeviceSynchronize();
     check_cuda_error();
+
+
 
     // List of times
     std::vector< std::vector<double> > timings;
@@ -299,18 +322,17 @@ int main(int argc, char *argv[])
         t1 = std::chrono::high_resolution_clock::now();
         if (groups) {
             if (useFloat)
-                copy_looper<float><<<gridSize,groupSize>>>((float*)d_a, (float*)d_c, ARRAY_SIZE);
+                hipLaunchKernel(HIP_KERNEL_NAME(copy_looper<float>), dim3(gridSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_c, ARRAY_SIZE);
             else
-                copy_looper<double><<<gridSize,groupSize>>>((double*)d_a, (double*)d_c, ARRAY_SIZE);
+                hipLaunchKernel(HIP_KERNEL_NAME(copy_looper<double>), dim3(gridSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_c, ARRAY_SIZE);
         } else {
             if (useFloat)
-                copy<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_c);
+                hipLaunchKernel(HIP_KERNEL_NAME(copy), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_c);
             else
-                copy<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_c);
+                hipLaunchKernel(HIP_KERNEL_NAME(copy), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_c);
         }
-        
         check_cuda_error();
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         check_cuda_error();
         t2 = std::chrono::high_resolution_clock::now();
         times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
@@ -319,17 +341,17 @@ int main(int argc, char *argv[])
         t1 = std::chrono::high_resolution_clock::now();
         if (groups) {
             if (useFloat)
-                mul_looper<float><<<gridSize,groupSize>>>((float*)d_b, (float*)d_c, ARRAY_SIZE);
+                hipLaunchKernel(HIP_KERNEL_NAME(mul_looper), dim3(gridSize), dim3(groupSize), 0, 0, (float*)d_b, (float*)d_c, ARRAY_SIZE);
             else
-                mul_looper<double><<<gridSize,groupSize>>>((double*)d_b, (double*)d_c, ARRAY_SIZE);
+                hipLaunchKernel(HIP_KERNEL_NAME(mul_looper), dim3(gridSize), dim3(groupSize), 0, 0, (double*)d_b, (double*)d_c, ARRAY_SIZE);
         } else {
             if (useFloat)
-                mul<<<ARRAY_SIZE/1024, 1024>>>((float*)d_b, (float*)d_c);
+                hipLaunchKernel(HIP_KERNEL_NAME(mul), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (float*)d_b, (float*)d_c);
             else
-                mul<<<ARRAY_SIZE/1024, 1024>>>((double*)d_b, (double*)d_c);
+                hipLaunchKernel(HIP_KERNEL_NAME(mul), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (double*)d_b, (double*)d_c);
         }
         check_cuda_error();
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         check_cuda_error();
         t2 = std::chrono::high_resolution_clock::now();
         times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
@@ -338,17 +360,17 @@ int main(int argc, char *argv[])
         t1 = std::chrono::high_resolution_clock::now();
         if (groups) {
             if (useFloat)
-                add_looper<float><<<gridSize,groupSize>>>((float*)d_a, (float*)d_b, (float*)d_c, ARRAY_SIZE);
+                hipLaunchKernel(HIP_KERNEL_NAME(add_looper), dim3(gridSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_b, (float*)d_c, ARRAY_SIZE);
             else
-                add_looper<double><<<gridSize,groupSize>>>((double*)d_a, (double*)d_b, (double*)d_c, ARRAY_SIZE);
+                hipLaunchKernel(HIP_KERNEL_NAME(add_looper), dim3(gridSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_b, (double*)d_c, ARRAY_SIZE);
         } else {
             if (useFloat)
-                add<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_b, (float*)d_c);
+                hipLaunchKernel(HIP_KERNEL_NAME(add), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_b, (float*)d_c);
             else
-                add<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_b, (double*)d_c);
+                hipLaunchKernel(HIP_KERNEL_NAME(add), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_b, (double*)d_c);
         }
         check_cuda_error();
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         check_cuda_error();
         t2 = std::chrono::high_resolution_clock::now();
         times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
@@ -357,17 +379,18 @@ int main(int argc, char *argv[])
         t1 = std::chrono::high_resolution_clock::now();
         if (groups) {
             if (useFloat)
-                triad_looper<float><<<gridSize,groupSize>>>((float*)d_a, (float*)d_b, (float*)d_c, ARRAY_SIZE);
+                hipLaunchKernel(HIP_KERNEL_NAME(triad_looper), dim3(gridSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_b, (float*)d_c, ARRAY_SIZE);
             else
-                triad_looper<double><<<gridSize,groupSize>>>((double*)d_a, (double*)d_b, (double*)d_c, ARRAY_SIZE);
+                hipLaunchKernel(HIP_KERNEL_NAME(triad_looper), dim3(gridSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_b, (double*)d_c, ARRAY_SIZE);
         } else {
             if (useFloat)
-                triad<<<ARRAY_SIZE/1024, 1024>>>((float*)d_a, (float*)d_b, (float*)d_c);
+                hipLaunchKernel(HIP_KERNEL_NAME(triad), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (float*)d_a, (float*)d_b, (float*)d_c);
             else
-                triad<<<ARRAY_SIZE/1024, 1024>>>((double*)d_a, (double*)d_b, (double*)d_c);
+                hipLaunchKernel(HIP_KERNEL_NAME(triad), dim3(ARRAY_SIZE/groupSize), dim3(groupSize), 0, 0, (double*)d_a, (double*)d_b, (double*)d_c);
         }
+
         check_cuda_error();
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         check_cuda_error();
         t2 = std::chrono::high_resolution_clock::now();
         times.push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
@@ -377,11 +400,11 @@ int main(int argc, char *argv[])
     }
 
     // Check solutions
-    cudaMemcpy(h_a, d_a, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyDeviceToHost);
+    hipMemcpy(h_a, d_a, ARRAY_SIZE*DATATYPE_SIZE, hipMemcpyDeviceToHost);
     check_cuda_error();
-    cudaMemcpy(h_b, d_b, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyDeviceToHost);
+    hipMemcpy(h_b, d_b, ARRAY_SIZE*DATATYPE_SIZE, hipMemcpyDeviceToHost);
     check_cuda_error();
-    cudaMemcpy(h_c, d_c, ARRAY_SIZE*DATATYPE_SIZE, cudaMemcpyDeviceToHost);
+    hipMemcpy(h_c, d_c, ARRAY_SIZE*DATATYPE_SIZE, hipMemcpyDeviceToHost);
     check_cuda_error();
 
     if (useFloat)
@@ -415,15 +438,16 @@ int main(int argc, char *argv[])
         }
     }
 
-    for (int j = 0; j < 4; j++)
+    for (int j = 0; j < 4; j++) {
         avg[j] /= (double)(NTIMES-1);
+    }
 
     double geomean = 1.0;
     for (int j = 0; j < 4; j++) {
         geomean *= (sizes[j]/min[j]);
     }
     geomean = pow(geomean, 0.25);
-    
+
     // Display results
     std::string labels[] = {"Copy", "Mul", "Add", "Triad"};
     std::cout
@@ -455,19 +479,19 @@ int main(int argc, char *argv[])
     free(h_c);
 
     // Free cuda buffers
-    cudaFree(d_a);
+    hipFree(d_a);
     check_cuda_error();
-    cudaFree(d_b);
+    hipFree(d_b);
     check_cuda_error();
-    cudaFree(d_c);
+    hipFree(d_c);
     check_cuda_error();
 
 }
 
 std::string getDeviceName(int device)
 {
-    struct cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, device);
+    struct hipDeviceProp_t prop;
+    hipGetDeviceProperties(&prop, device);
     check_cuda_error();
     return std::string(prop.name);
 }
@@ -475,7 +499,7 @@ std::string getDeviceName(int device)
 int getDriver(void)
 {
     int driver;
-    cudaDriverGetVersion(&driver);
+    hipDriverGetVersion(&driver);
     check_cuda_error();
     return driver;
 }
@@ -484,7 +508,7 @@ void listDevices(void)
 {
     // Get number of devices
     int count;
-    cudaGetDeviceCount(&count);
+    hipGetDeviceCount(&count);
     check_cuda_error();
 
     // Print device names
