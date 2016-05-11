@@ -32,6 +32,8 @@
 #include "SYCLStream.h"
 #elif defined(OMP3)
 #include "OMP3Stream.h"
+#elif defined(OMP45)
+#include "OMP45Stream.h"
 #endif
 
 // Default size of 2^26
@@ -121,6 +123,10 @@ void run()
 #elif defined(OMP3)
   // Use the "reference" OpenMP 3 implementation
   stream = new OMP3Stream<T>(ARRAY_SIZE, a.data(), b.data(), c.data());
+
+#elif defined(OMP45)
+  // Use the "reference" OpenMP 3 implementation
+  stream = new OMP45Stream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
 
 #endif
 
