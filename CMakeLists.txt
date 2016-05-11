@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(gpu-stream)
 
+include(CheckIncludeFileCXX)
+
 set(gpu-stream_VERSION_MAJOR 2)
 set(gpu-stream_VERSION_MINOR 0)
 
@@ -108,20 +110,24 @@ endif ()
 #-------------------------------------------------------------------------------
 # SYCL
 #-------------------------------------------------------------------------------
-# TODO: Find SYCL implementations somehow
-if (true)
-  # ComputeCpp
-  # TODO: Sort this out properly!
-  add_custom_target(gpu-stream-sycl
-                    COMMAND compute++ ${CMAKE_CURRENT_SOURCE_DIR}/SYCLStream.cpp -sycl -no-serial-memop -O2 -emit-llvm -o SYCLStream.bc -c
-                    COMMAND /usr/bin/c++ ${CMAKE_CURRENT_SOURCE_DIR}/SYCLStream.cpp -O2 -std=c++11 -include SYCLStream.sycl -o SYCLStream.o -c
-                    COMMAND /usr/bin/c++ ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp -O2 -std=c++11 SYCLStream.o -include SYCLStream.sycl -lSYCL -lOpenCL -o gpu-stream-sycl -DSYCL
-                    )
-
-  # triSYCL
-  #add_executable(gpu-stream-sycl main.cpp SYCLStream.cpp)
-  #target_compile_definitions(gpu-stream-sycl PUBLIC SYCL)
-  #set_property(TARGET gpu-stream-sycl PROPERTY CXX_STANDARD 14)
+set(CMAKE_REQUIRED_FLAGS "-std=c++11")
+check_include_file_cxx("CL/sycl.hpp" HAS_SYCL)
+if (HAS_SYCL)
+  find_program(COMPUTECPP "compute++")
+  if (COMPUTECPP)
+    message(STATUS "Using ComputeCpp for SYCL compilation")
+    add_custom_target(SYCLStream.sycl COMMAND ${COMPUTECPP} ${CMAKE_CURRENT_SOURCE_DIR}/SYCLStream.cpp -sycl -no-serial-memop -O2 -emit-llvm -c)
+    add_executable(gpu-stream-sycl main.cpp SYCLStream.cpp)
+    add_dependencies(gpu-stream-sycl SYCLStream.sycl)
+    target_compile_definitions(gpu-stream-sycl PUBLIC SYCL)
+    target_compile_options(gpu-stream-sycl PUBLIC -include SYCLStream.sycl)
+    target_link_libraries(gpu-stream-sycl SYCL OpenCL)
+  else()
+    message(STATUS "Using header-only SYCL implementation")
+    add_executable(gpu-stream-sycl main.cpp SYCLStream.cpp)
+    target_compile_definitions(gpu-stream-sycl PUBLIC SYCL)
+    set_property(TARGET gpu-stream-sycl PROPERTY CXX_STANDARD 14)
+  endif(COMPUTECPP)
 else ()
   message("Skipping SYCL...")
-endif ()
+endif (HAS_SYCL)
