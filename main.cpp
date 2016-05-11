@@ -306,7 +306,6 @@ void parseArguments(int argc, char *argv[])
     else if (!std::string("--float").compare(argv[i]))
     {
       use_float = true;
-      std::cout << "Warning: If number of iterations set >= 8, expect rounding errors with single precision" << std::endl;
     }
     else if (!std::string("--help").compare(argv[i]) ||
              !std::string("-h").compare(argv[i]))
