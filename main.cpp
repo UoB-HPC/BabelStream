@@ -72,6 +72,11 @@ int main(int argc, char *argv[])
 template <typename T>
 void run()
 {
+  if (sizeof(T) == sizeof(float))
+    std::cout << "Precision: float" << std::endl;
+  else
+    std::cout << "Precision: double" << std::endl;
+
   // Create host vectors
   std::vector<T> a(ARRAY_SIZE, 1.0);
   std::vector<T> b(ARRAY_SIZE, 2.0);
