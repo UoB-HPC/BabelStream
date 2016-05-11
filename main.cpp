@@ -72,6 +72,8 @@ int main(int argc, char *argv[])
 template <typename T>
 void run()
 {
+  std::cout << "Running kernels " << num_times << " times" << std::endl;
+
   if (sizeof(T) == sizeof(float))
     std::cout << "Precision: float" << std::endl;
   else
