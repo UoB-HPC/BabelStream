@@ -14,7 +14,7 @@ void getDeviceList(void);
 
 std::string kernels{R"CLC(
 
-  constant TYPE scalar = 3.0;
+  constant TYPE scalar = 0.3;
 
   kernel void copy(
     global const TYPE * restrict a,
@@ -253,4 +253,3 @@ std::string getDeviceDriver(const int device)
 
 template class OCLStream<float>;
 template class OCLStream<double>;
-

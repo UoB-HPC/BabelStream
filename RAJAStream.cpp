@@ -66,7 +66,7 @@ void RAJAStream<T>::copy()
 {
   T* a = d_a;
   T* c = d_c;
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index) 
+  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
   {
     c[index] = a[index];
   });
@@ -77,8 +77,8 @@ void RAJAStream<T>::mul()
 {
   T* b = d_b;
   T* c = d_c;
-  const T scalar = 3.0;
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index) 
+  const T scalar = 0.3;
+  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
   {
     b[index] = scalar*c[index];
   });
@@ -90,7 +90,7 @@ void RAJAStream<T>::add()
   T* a = d_a;
   T* b = d_b;
   T* c = d_c;
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index) 
+  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
   {
     c[index] = a[index] + b[index];
   });
@@ -102,8 +102,8 @@ void RAJAStream<T>::triad()
   T* a = d_a;
   T* b = d_b;
   T* c = d_c;
-  const T scalar = 3.0;
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index) 
+  const T scalar = 0.3;
+  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
   {
     a[index] = b[index] + scalar*c[index];
   });
@@ -128,4 +128,3 @@ std::string getDeviceDriver(const int device)
 
 template class RAJAStream<float>;
 template class RAJAStream<double>;
-

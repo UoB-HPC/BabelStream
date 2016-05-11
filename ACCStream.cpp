@@ -65,7 +65,7 @@ void ACCStream<T>::copy()
 template <class T>
 void ACCStream<T>::mul()
 {
-  const T scalar = 3.0;
+  const T scalar = 0.3;
 
   unsigned int array_size = this->array_size;
   T *b = this->b;
@@ -94,7 +94,7 @@ void ACCStream<T>::add()
 template <class T>
 void ACCStream<T>::triad()
 {
-  const T scalar = 3.0;
+  const T scalar = 0.3;
 
   unsigned int array_size = this->array_size;
   T *a = this->a;
@@ -133,4 +133,3 @@ std::string getDeviceDriver(const int)
 }
 template class ACCStream<float>;
 template class ACCStream<double>;
-

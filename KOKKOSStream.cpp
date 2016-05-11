@@ -70,7 +70,7 @@ void KOKKOSStream<T>::copy()
   View<double*, DEVICE> b(*d_b);
   View<double*, DEVICE> c(*d_c);
 
-  parallel_for(array_size, KOKKOS_LAMBDA (const int index) 
+  parallel_for(array_size, KOKKOS_LAMBDA (const int index)
   {
     c[index] = a[index];
   });
@@ -84,8 +84,8 @@ void KOKKOSStream<T>::mul()
   View<double*, DEVICE> b(*d_b);
   View<double*, DEVICE> c(*d_c);
 
-  const T scalar = 3.0;
-  parallel_for(array_size, KOKKOS_LAMBDA (const int index) 
+  const T scalar = 0.3;
+  parallel_for(array_size, KOKKOS_LAMBDA (const int index)
   {
     b[index] = scalar*c[index];
   });
@@ -99,7 +99,7 @@ void KOKKOSStream<T>::add()
   View<double*, DEVICE> b(*d_b);
   View<double*, DEVICE> c(*d_c);
 
-  parallel_for(array_size, KOKKOS_LAMBDA (const int index) 
+  parallel_for(array_size, KOKKOS_LAMBDA (const int index)
   {
     c[index] = a[index] + b[index];
   });
@@ -114,8 +114,8 @@ void KOKKOSStream<T>::triad()
   View<double*, DEVICE> b(*d_b);
   View<double*, DEVICE> c(*d_c);
 
-  const T scalar = 3.0;
-  parallel_for(array_size, KOKKOS_LAMBDA (const int index) 
+  const T scalar = 0.3;
+  parallel_for(array_size, KOKKOS_LAMBDA (const int index)
   {
     a[index] = b[index] + scalar*c[index];
   });
@@ -142,4 +142,3 @@ std::string getDeviceDriver(const int device)
 
 //template class KOKKOSStream<float>;
 template class KOKKOSStream<double>;
-

@@ -83,8 +83,8 @@ void run()
     std::cout << "Precision: double" << std::endl;
 
   // Create host vectors
-  std::vector<T> a(ARRAY_SIZE, 1.0);
-  std::vector<T> b(ARRAY_SIZE, 2.0);
+  std::vector<T> a(ARRAY_SIZE, 0.1);
+  std::vector<T> b(ARRAY_SIZE, 0.2);
   std::vector<T> c(ARRAY_SIZE, 0.0);
   std::streamsize ss = std::cout.precision();
   std::cout << std::setprecision(1) << std::fixed
@@ -216,11 +216,11 @@ template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
   // Generate correct solution
-  T goldA = 1.0;
-  T goldB = 2.0;
+  T goldA = 0.1;
+  T goldB = 0.2;
   T goldC = 0.0;
 
-  const T scalar = 3.0;
+  const T scalar = 0.3;
 
   for (unsigned int i = 0; i < ntimes; i++)
   {
