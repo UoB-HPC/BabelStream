@@ -75,8 +75,13 @@ endif ()
 #-------------------------------------------------------------------------------
 # OpenMP 3.0
 #-------------------------------------------------------------------------------
-
-# TODO
+find_package(OpenMP QUIET)
+if (${OpenMP_FOUND})
+  add_executable(gpu-stream-omp3 main.cpp OMP3Stream.cpp)
+  target_compile_definitions(gpu-stream-omp3 PUBLIC OMP3)
+else ()
+  message("Skipping OpenMP 3...")
+endif ()
 
 #-------------------------------------------------------------------------------
 # OpenMP 4.5
