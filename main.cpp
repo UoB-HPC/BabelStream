@@ -290,6 +290,11 @@ void parseArguments(int argc, char *argv[])
         std::cerr << "Invalid number of times." << std::endl;
         exit(EXIT_FAILURE);
       }
+      if (num_times < 2)
+      {
+        std::cerr << "Number of times must be 2 or more" << std::endl;
+        exit(EXIT_FAILURE);
+      }
     }
     else if (!std::string("--float").compare(argv[i]))
     {
