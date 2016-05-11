@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <sstream>
 
 #include "Stream.h"
 
@@ -40,4 +41,3 @@ class CUDAStream : public Stream<T>
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
 
 };
-

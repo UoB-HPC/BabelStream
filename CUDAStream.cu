@@ -8,6 +8,8 @@
 
 #include "CUDAStream.h"
 
+#define TBSIZE 1024
+
 void check_error(void)
 {
   cudaError_t err = cudaGetLastError();
@@ -21,6 +23,14 @@ void check_error(void)
 template <class T>
 CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE, const int device_index)
 {
+
+  // The array size must be divisible by TBSIZE for kernel launches
+  if (ARRAY_SIZE % TBSIZE != 0)
+  {
+    std::stringstream ss;
+    ss << "Array size must be a multiple of " << TBSIZE;
+    throw std::runtime_error(ss.str());
+  }
 
   // Set device
   int count;
@@ -99,7 +109,7 @@ __global__ void copy_kernel(const T * a, T * c)
 template <class T>
 void CUDAStream<T>::copy()
 {
-  copy_kernel<<<array_size/1024, 1024>>>(d_a, d_c);
+  copy_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_c);
   check_error();
   cudaDeviceSynchronize();
   check_error();
@@ -116,7 +126,7 @@ __global__ void mul_kernel(T * b, const T * c)
 template <class T>
 void CUDAStream<T>::mul()
 {
-  mul_kernel<<<array_size/1024, 1024>>>(d_b, d_c);
+  mul_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_b, d_c);
   check_error();
   cudaDeviceSynchronize();
   check_error();
@@ -132,7 +142,7 @@ __global__ void add_kernel(const T * a, const T * b, T * c)
 template <class T>
 void CUDAStream<T>::add()
 {
-  add_kernel<<<array_size/1024, 1024>>>(d_a, d_b, d_c);
+  add_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c);
   check_error();
   cudaDeviceSynchronize();
   check_error();
@@ -149,7 +159,7 @@ __global__ void triad_kernel(T * a, const T * b, const T * c)
 template <class T>
 void CUDAStream<T>::triad()
 {
-  triad_kernel<<<array_size/1024, 1024>>>(d_a, d_b, d_c);
+  triad_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c);
   check_error();
   cudaDeviceSynchronize();
   check_error();
@@ -202,4 +212,3 @@ std::string getDeviceDriver(const int device)
 
 template class CUDAStream<float>;
 template class CUDAStream<double>;
-
