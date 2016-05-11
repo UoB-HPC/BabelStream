@@ -15,7 +15,7 @@ configure_file(common.h.in common.h)
 # standard through CMake as above doesn't set this flag with Cray
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Cray")
   list(APPEND CMAKE_CXX_FLAGS -hstd=c++11)
-endif()
+endif ()
 
 #-------------------------------------------------------------------------------
 # CUDA
@@ -27,15 +27,15 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
   if ("${XCODE_VERSION}" MATCHES "Xcode 7.3.1")
     message("Xcode version not supported by CUDA")
     set(FLAG False)
-  endif ("${XCODE_VERSION}" MATCHES "Xcode 7.3.1")
-endif ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+  endif ()
+endif ()
 if (${FLAG} AND ${CUDA_FOUND})
   list(APPEND CUDA_NVCC_FLAGS --std=c++11)
   cuda_add_executable(gpu-stream-cuda main.cpp CUDAStream.cu)
   target_compile_definitions(gpu-stream-cuda PUBLIC CUDA)
-else (${FLAG} AND ${CUDA_FOUND})
+else ()
   message("Skipping CUDA...")
-endif (${FLAG} AND ${CUDA_FOUND})
+endif ()
 
 #-------------------------------------------------------------------------------
 # OpenCL
@@ -45,9 +45,9 @@ if (${OpenCL_FOUND})
   add_executable(gpu-stream-ocl main.cpp OCLStream.cpp)
   target_compile_definitions(gpu-stream-ocl PUBLIC OCL)
   target_link_libraries(gpu-stream-ocl ${OpenCL_LIBRARY})
-else (${OpenCL_FOUND})
+else ()
   message("Skipping OpenCL...")
-endif (${OpenCL_FOUND})
+endif ()
 
 #-------------------------------------------------------------------------------
 # OpenACC
@@ -60,7 +60,8 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "PGI")
   CHECK_CXX_COMPILER_FLAG(-acc OPENACC)
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Cray")
   CHECK_CXX_COMPILER_FLAG(-hacc=openacc OPENACC)
-endif()
+endif ()
+
 if (OPENACC)
   add_executable(gpu-stream-acc main.cpp ACCStream.cpp)
   target_compile_definitions(gpu-stream-acc PUBLIC ACC)
