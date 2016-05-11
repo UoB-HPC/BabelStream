@@ -12,7 +12,7 @@ OMP45Stream<T>::OMP45Stream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int
   this->a = a;
   this->b = b;
   this->c = c;
-  #pragma omp target enter data map(alloc: a[0:array_size], b[0:array_size], c[0:array_size])
+  #pragma omp target enter data map(to: a[0:array_size], b[0:array_size], c[0:array_size])
   {}
 }
 
@@ -54,7 +54,7 @@ void OMP45Stream<T>::copy()
   unsigned int array_size = this->array_size;
   T *a = this->a;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd
+  #pragma omp target teams distribute parallel for simd map(to: a[0:array_size], c[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     c[i] = a[i];
@@ -69,7 +69,7 @@ void OMP45Stream<T>::mul()
   unsigned int array_size = this->array_size;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd
+  #pragma omp target teams distribute parallel for simd map(to: b[0:array_size], c[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     b[i] = scalar * c[i];
@@ -83,7 +83,7 @@ void OMP45Stream<T>::add()
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd
+  #pragma omp target teams distribute parallel for simd map(to: a[0:array_size], b[0:array_size], c[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     c[i] = a[i] + b[i];
@@ -99,7 +99,7 @@ void OMP45Stream<T>::triad()
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd
+  #pragma omp target teams distribute parallel for simd map(to: a[0:array_size], b[0:array_size], c[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     a[i] = b[i] + scalar * c[i];
