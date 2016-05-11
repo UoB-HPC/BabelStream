@@ -46,7 +46,6 @@ endif (${OpenCL_FOUND})
 
 # Check compiler supports an OpenACC flag
 include(CheckCXXCompilerFlag)
-message("${CMAKE_CXX_COMPILER_ID}")
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   CHECK_CXX_COMPILER_FLAG(-fopenacc OPENACC)
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "PGI")
