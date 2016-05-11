@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <sstream>
+
 #include "Stream.h"
 
 #include "CL/sycl.hpp"

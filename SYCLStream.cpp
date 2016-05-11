@@ -24,6 +24,14 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   if (!cached)
     getDeviceList();
 
+  // The array size must be divisible by WGSIZE
+  if (ARRAY_SIZE % WGSIZE != 0)
+  {
+    std::stringstream ss;
+    ss << "Array size must be a multiple of " << WGSIZE;
+    throw std::runtime_error(ss.str());
+  }
+
   array_size = ARRAY_SIZE;
 
   if (device_index >= devices.size())
