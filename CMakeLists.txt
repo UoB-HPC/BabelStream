@@ -17,7 +17,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Cray")
   list(APPEND CMAKE_CXX_FLAGS -hstd=c++11)
 endif()
 
-
+#-------------------------------------------------------------------------------
+# CUDA
+#-------------------------------------------------------------------------------
 find_package(CUDA 7.0 QUIET)
 set(FLAG True)
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
@@ -35,6 +37,9 @@ else (${FLAG} AND ${CUDA_FOUND})
   message("Skipping CUDA...")
 endif (${FLAG} AND ${CUDA_FOUND})
 
+#-------------------------------------------------------------------------------
+# OpenCL
+#-------------------------------------------------------------------------------
 find_package(OpenCL QUIET)
 if (${OpenCL_FOUND})
   add_executable(gpu-stream-ocl main.cpp OCLStream.cpp)
@@ -44,6 +49,9 @@ else (${OpenCL_FOUND})
   message("Skipping OpenCL...")
 endif (${OpenCL_FOUND})
 
+#-------------------------------------------------------------------------------
+# OpenACC
+#-------------------------------------------------------------------------------
 # Check compiler supports an OpenACC flag
 include(CheckCXXCompilerFlag)
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
@@ -61,6 +69,9 @@ else ()
   message("Skipping OpenACC...")
 endif ()
 
+#-------------------------------------------------------------------------------
+# SYCL
+#-------------------------------------------------------------------------------
 # TODO: Find SYCL implementations somehow
 if (true)
   # ComputeCpp
