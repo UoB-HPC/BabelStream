@@ -107,7 +107,7 @@ endif ()
 #-------------------------------------------------------------------------------
 if (KOKKOS_PATH)
   if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-    add_custom_target(gpu-stream-kokkos COMMAND make -f KokkosMakefile)
+    add_custom_target(gpu-stream-kokkos COMMAND make -f KokkosMakefile KOKKOS_PATH=${KOKKOS_PATH})
   else()
     message("Skipping Kokkos (requires Linux)")
   endif()
