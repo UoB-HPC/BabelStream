@@ -1,7 +1,7 @@
 
 default: gpu-stream-kokkos
 
-include /modules/modules/kokkos/Makefile.kokkos
+include $(KOKKOS_PATH)/Makefile.kokkos
 
 gpu-stream-kokkos: main.o KOKKOSStream.o
         $(CXX) $(KOKKOS_LDFLAGS) $^ $(KOKKOS_LIBS) -o $@ -DKOKKOS
