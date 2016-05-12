@@ -1,4 +1,10 @@
 
+// Copyright (c) 2015-16 Tom Deakin, Simon McIntosh-Smith,
+// University of Bristol HPC
+//
+// For full license terms please see the LICENSE file distributed with this
+// source code
+
 #pragma once
 
 #include <iostream>
@@ -34,6 +40,5 @@ class ACCStream : public Stream<T>
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
 
 
-  
-};
 
+};
