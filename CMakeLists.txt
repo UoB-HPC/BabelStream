@@ -99,8 +99,20 @@ endif ()
 #-------------------------------------------------------------------------------
 # RAJA
 #-------------------------------------------------------------------------------
-
-# TODO
+if (RAJA_PATH)
+  find_package(OpenMP)
+  find_package(CUDA 7.5)
+  list(APPEND CUDA_NVCC_FLAGS "-arch compute_35")
+  list(APPEND CUDA_NVCC_FLAGS --expt-extended-lambda)
+  list(APPEND CUDA_NVCC_FLAGS -Xcompiler ${OpenMP_CXX_FLAGS})
+  list(APPEND CUDA_NVCC_FLAGS -DUSE_RAJA)
+  cuda_include_directories(${RAJA_PATH}/include)
+  set_source_files_properties(main.cpp RAJAStream.cpp PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+  cuda_add_executable(gpu-stream-raja main.cpp RAJAStream.cpp)
+  target_link_libraries(gpu-stream-raja "-L${RAJA_PATH}/lib -lRAJA")
+else()
+  message("Skipping RAJA... (use -DRAJA_PATH=/path/to/raja to opt in)")
+endif()
 
 #-------------------------------------------------------------------------------
 # Kokkos
