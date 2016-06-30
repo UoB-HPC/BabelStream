@@ -13,6 +13,7 @@ set(gpu-stream_VERSION_MAJOR 2)
 set(gpu-stream_VERSION_MINOR 0)
 
 configure_file(common.h.in common.h)
+include_directories(${CMAKE_BINARY_DIR})
 
 # If using the Cray compiler, manually add the C++11 flag because setting the
 # standard through CMake as above doesn't set this flag with Cray
