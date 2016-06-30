@@ -59,8 +59,8 @@ template <class T>
 void ACCStream<T>::copy()
 {
   unsigned int array_size = this->array_size;
-  T *a = this->a;
-  T *c = this->c;
+  T * restrict a = this->a;
+  T * restrict c = this->c;
   #pragma acc kernels present(a[0:array_size], c[0:array_size]) wait
   for (int i = 0; i < array_size; i++)
   {
@@ -74,8 +74,8 @@ void ACCStream<T>::mul()
   const T scalar = 0.3;
 
   unsigned int array_size = this->array_size;
-  T *b = this->b;
-  T *c = this->c;
+  T * restrict b = this->b;
+  T * restrict c = this->c;
   #pragma acc kernels present(b[0:array_size], c[0:array_size]) wait
   for (int i = 0; i < array_size; i++)
   {
@@ -87,9 +87,9 @@ template <class T>
 void ACCStream<T>::add()
 {
   unsigned int array_size = this->array_size;
-  T *a = this->a;
-  T *b = this->b;
-  T *c = this->c;
+  T * restrict a = this->a;
+  T * restrict b = this->b;
+  T * restrict c = this->c;
   #pragma acc kernels present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
   for (int i = 0; i < array_size; i++)
   {
@@ -103,9 +103,9 @@ void ACCStream<T>::triad()
   const T scalar = 0.3;
 
   unsigned int array_size = this->array_size;
-  T *a = this->a;
-  T *b = this->b;
-  T *c = this->c;
+  T * restrict a = this->a;
+  T * restrict b = this->b;
+  T * restrict c = this->c;
   #pragma acc kernels present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
   for (int i = 0; i < array_size; i++)
   {
