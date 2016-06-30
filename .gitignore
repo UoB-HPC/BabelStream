@@ -1,8 +1,20 @@
 
+common.h
+
 gpu-stream-cuda
 gpu-stream-ocl
+gpu-stream-acc
+gpu-stream-omp3
+gpu-stream-omp45
+gpu-stream-sycl
+
 *.o
-
 *.tar
-
 *.gz
+
+.DS_Store
+
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile

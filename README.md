@@ -6,24 +6,26 @@ This benchmark is similar in spirit, and based on, the STREAM benchmark [1] for 
 
 Unlike other GPU memory bandwidth benchmarks this does *not* include the PCIe transfer time.
 
+There are multiple implementations of this benchmark in a variety of programming models.
+Currently implemented are:
+  - OpenCL
+  - CUDA
+  - OpenACC
+  - OpenMP 3 and 4.5
+  - Kokkos
+  - RAJA
+  - SYCL
+
 Usage
 -----
 
-Build the OpenCL and CUDA binaries with `make` (CUDA version requires CUDA >= v6.5)
+CMake 3.2 or above is required.
+Drivers, compiler and software applicable to whichever implementation you would like to build against. Our build system is designed to only build implementations in programming models that your system supports.
 
-Run the OpenCL version with `./gpu-stream-ocl` and the CUDA version with `./gpu-stream-cuda`
+Generate the Makefile with `cmake .`
 
-For HIP version, follow the instructions on the following blog to properly install ROCK and ROCR drivers:
-http://gpuopen.com/getting-started-with-boltzmann-components-platforms-installation/
-Install the HCC compiler:
-https://bitbucket.org/multicoreware/hcc/wiki/Home
-Install HIP:
-https://github.com/GPUOpen-ProfessionalCompute-Tools/HIP
-
-Build the HIP binaries with make gpu-stream-hip, run it with './gpu-stream-hip'
-
-Android
--------
+Android (outdated instructions)
+------------------
 
 Assuming you have a recent Android NDK available, you can use the
 toolchain that it provides to build GPU-STREAM. You should first
@@ -56,6 +58,7 @@ Run GPU-STREAM from an adb shell:
 
     # Use float if device doesn't support double, and reduce array size
     ./gpu-stream-ocl --float -n 6 -s 10000000
+
 
 Results
 -------
