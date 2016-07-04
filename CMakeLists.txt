@@ -15,6 +15,12 @@ set(gpu-stream_VERSION_MINOR 0)
 configure_file(common.h.in common.h)
 include_directories(${CMAKE_BINARY_DIR})
 
+# Use 'Release' if no build type specified
+if (NOT CMAKE_BUILD_TYPE)
+   message("No CMAKE_BUILD_TYPE specified, defaulting to 'Release'")
+   set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 # If using the Cray compiler, manually add the C++11 flag because setting the
 # standard through CMake as above doesn't set this flag with Cray
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Cray")
