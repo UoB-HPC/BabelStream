@@ -11,7 +11,7 @@
 
 using namespace cl::sycl;
 
-#define WGSIZE 64
+#define WGSIZE 256
 
 // Cache list of devices
 bool cached = false;
