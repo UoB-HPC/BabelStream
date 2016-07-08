@@ -32,11 +32,12 @@ cat << EOF
 Usage: $0 [ OPTIONS ]
 
 OPTIONS : 
-   -b, --begin       INTEGER       Begin range of nb_elements (default=$BEGIN)
-   -e, --end         INTEGER       End range of nb_elements (default=$END)
-   -s, --step        INTEGER       Step range of nb_elements (default=$STEP)
-   -d, --device-id   INTEGER       Device ID to use (default=$DEVICE_ID)
-       --timeout     INTEGER       Timeout of each test launch
+   -b, --begin       SIZE          Begin range of nb_elements (default=$BEGIN)
+   -e, --end         SIZE          End range of nb_elements (default=$END)
+   -s, --step        SIZE          Step range of nb_elements (default=$STEP)
+   -d, --device-id  INDEX          Device ID to use (default=$DEVICE_ID)
+   -n, --numtimes    NUM           Run the test NUM times (NUM >= 2)
+       --timeout     NUM           Timeout of each test launch (default=$TIMEOUT)
    -t, --exec     BINARY_NAME      Executable to run (default=$BINARY_NAME)
    -p, --precision {double|float}  Precision (default=$PRECISION)
    -h, --help                      Print this help and quit
@@ -52,8 +53,8 @@ if [[ $# -le 0 ]];then
 	exit 1
 fi
 
-ARGS=$(getopt -o b:e:s:d:t:p:h \
-	-l "begin:,end:,step:,device-id:,timeout:,exec:,precision:" \
+ARGS=$(getopt -o b:e:s:d:n:t:p:h \
+	-l "begin:,end:,step:,device-id:numtimes:,timeout:,exec:,precision:" \
 	-n "$0" -- "$@");
 
 if [ $? -ne 0 ];then
@@ -93,6 +94,13 @@ while true; do
 			shift
 			if [ -n "$1" ]; then
 				DEVICE_ID=$1
+				shift
+			fi
+			;;
+		-n|--numtimes)
+			shift
+			if [ -n "$1" ]; then
+				NUMTIMES=$1
 				shift
 			fi
 			;;
@@ -142,12 +150,10 @@ do
 	# Run benchmark and get results on Copy, Add, Mul and Triad
 	# I observed a kernel bug of Intel driver, freeze sometimes on Xeon Phi, 
 	# so command is wrapped by timeout and repeated until it passed
-	timeout $TIMEOUT ./$BINARY_NAME $OPTS -s $nb_elem -n $NUMTIMES --device $DEVICE_ID | \
-		grep -e Copy -e Mul -e Add -e Triad -e error > $tmp
+	timeout $TIMEOUT bash -c "./$BINARY_NAME $OPTS -s $nb_elem -n $NUMTIMES --device $DEVICE_ID | grep -E \"|Copy|Mul|Add|Triad|error\" > $tmp"
 	while [ $? -ne 0 ]
 	do
-		timeout $TIMEOUT ./$BINARY_NAME $OPTS -s $nb_elem -n $NUMTIMES --device $DEVICE_ID | \
-			grep -e Copy -e Mul -e Add -e Triad -e error > $tmp
+		timeout $TIMEOUT bash -c "./$BINARY_NAME $OPTS -s $nb_elem -n $NUMTIMES --device $DEVICE_ID | grep -E \"|Copy|Mul|Add|Triad|error\" > $tmp"
 	done
 
 	# Loop on results and print in column
@@ -174,7 +180,7 @@ do
 	rm -f $tmp
 
 	# sleep some seconds to cool down device
-	sleep 5
+	sleep 2
 done
 
 exit 0
