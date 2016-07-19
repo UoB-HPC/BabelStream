@@ -78,7 +78,18 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
     // Check device can do double
     if (!device.getInfo<CL_DEVICE_DOUBLE_FP_CONFIG>())
       throw std::runtime_error("Device does not support double precision, please use --float");
-    program.build("-DTYPE=double");
+    try
+    {
+      program.build("-DTYPE=double");
+    }
+    catch (cl::Error& err)
+    {
+      if (err.err() == CL_BUILD_PROGRAM_FAILURE)
+      {
+        std::cout << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>()[0].second << std::endl;
+        throw err;
+      }
+    }
   }
   else if (sizeof(T) == sizeof(float))
     program.build("-DTYPE=float");
