@@ -1,0 +1,15 @@
+GPU-STREAM
+Version: 2.0
+Implementation: OpenCL
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using OpenCL device Intel(R) Xeon(R) CPU E5-2699 v4 @ 2.20GHz
+Driver: 1.2.0.57
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        43567.760   0.01232     0.01257     0.01247     
+Mul         42995.296   0.01249     0.01257     0.01253     
+Add         48537.031   0.01659     0.01672     0.01664     
+Triad       49238.925   0.01636     0.01652     0.01645     
+Application 1407386 resources: utime ~130s, stime ~1s, Rss ~1647432, inblocks ~817, outblocks ~464

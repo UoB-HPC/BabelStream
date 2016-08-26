@@ -1,0 +1,12 @@
+GPU-STREAM
+Version: 2.0
+Implementation: Reference OpenMP
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        56676.385   0.00947     0.01567     0.01040     
+Mul         55505.151   0.00967     0.01513     0.01075     
+Add         61874.931   0.01302     0.01930     0.01435     
+Triad       62073.488   0.01297     0.01899     0.01420  

@@ -1,0 +1,14 @@
+GPU-STREAM
+Version: 2.0
+Implementation: OpenCL
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using OpenCL device Intel(R) Xeon Phi(TM) CPU 7210 @ 1.30GHz
+Driver: 1.2.0.10002
+Function    MBytes/sec  Min (sec)   Max         Average
+Copy        218490.851  0.00246     0.00431     0.00257
+Mul         216827.480  0.00248     0.00276     0.00258
+Add         233472.011  0.00345     0.00365     0.00354
+Triad       236852.515  0.00340     0.00365     0.00351

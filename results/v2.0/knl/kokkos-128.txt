@@ -1,0 +1,13 @@
+ OMP_NUM_THREADS=128 numactl -m 1 ./gpu-stream-kokkos
+GPU-STREAM
+Version: 2.0
+Implementation: KOKKOS
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Function    MBytes/sec  Min (sec)   Max         Average
+Copy        284255.707  0.00189     0.00209     0.00199
+Mul         259925.621  0.00207     0.00483     0.00426
+Add         301882.418  0.00267     0.00295     0.00279
+Triad       293037.412  0.00275     0.00314     0.00293

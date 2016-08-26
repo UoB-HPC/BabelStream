@@ -1,0 +1,12 @@
+GPU-STREAM
+Version: 2.0
+Implementation: RAJA
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        182375.663  0.00294     0.00296     0.00295     
+Mul         182515.909  0.00294     0.00296     0.00295     
+Add         181695.649  0.00443     0.00445     0.00444     
+Triad       181436.686  0.00444     0.00445     0.00445  

@@ -1,0 +1,14 @@
+GPU-STREAM
+Version: 2.0
+Implementation: CUDA
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using OpenCL device DEVICE EMULATION MODE
+Driver: PGI
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        21626.429   0.02482     0.03784     0.02526     
+Mul         21321.415   0.02518     0.02603     0.02551     
+Add         23394.375   0.03442     0.03588     0.03506     
+Triad       23527.878   0.03423     0.03550     0.03486  

@@ -1,0 +1,14 @@
+GPU-STREAM
+Version: 2.0
+Implementation: SYCL
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using SYCL device       Intel(R) Xeon(R) CPU E5-2697 v2 @ 2.70GHz
+Driver: 1.2.0.92
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        39756.124   0.01350     0.02534     0.01567     
+Mul         38899.994   0.01380     0.02237     0.01554     
+Add         46878.810   0.01718     0.02802     0.01919     
+Triad       51324.819   0.01569     0.02555     0.01748  

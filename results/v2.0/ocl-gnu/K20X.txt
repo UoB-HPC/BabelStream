@@ -1,0 +1,15 @@
+GPU-STREAM
+Version: 2.0
+Implementation: OpenCL
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using OpenCL device Tesla K20X
+Driver: 352.68
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        182194.259  0.00295     0.00298     0.00296     
+Mul         182081.736  0.00295     0.00296     0.00296     
+Add         182723.055  0.00441     0.00443     0.00442     
+Triad       182719.573  0.00441     0.00443     0.00442     
+Application 1396458 resources: utime ~3s, stime ~1s, Rss ~1670780, inblocks ~2549, outblocks ~464

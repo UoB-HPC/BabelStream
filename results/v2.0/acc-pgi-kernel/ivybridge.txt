@@ -1,0 +1,12 @@
+GPU-STREAM
+Version: 2.0
+Implementation: OpenACC
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Function    MBytes/sec  Min (sec)   Max         Average
+Copy        82520.672   0.00651     0.01660     0.00835
+Mul         80283.532   0.00669     0.01680     0.00862
+Add         84622.881   0.00952     0.02310     0.01205
+Triad       83561.609   0.00964     0.02359     0.01253

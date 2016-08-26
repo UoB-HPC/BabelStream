@@ -1,0 +1,14 @@
+GPU-STREAM
+Version: 2.0
+Implementation: SYCL
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using SYCL device Intel(R) Xeon Phi(TM) CPU 7210 @ 1.30GHz
+Driver: 1.2.0.10002
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        188284.193  0.00285     0.00447     0.00298     
+Mul         185567.824  0.00289     0.00762     0.00307     
+Add         207104.230  0.00389     0.00614     0.00404     
+Triad       207078.189  0.00389     0.01483     0.00415 

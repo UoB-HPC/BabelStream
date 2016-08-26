@@ -1,0 +1,14 @@
+GPU-STREAM
+Version: 2.0
+Implementation: SYCL
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using SYCL device Fiji
+Driver: 1912.5 (VM)
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        419830.223  0.00128     0.00141     0.00130     
+Mul         419811.510  0.00128     0.00136     0.00130     
+Add         432957.387  0.00186     0.00193     0.00188     
+Triad       430761.906  0.00187     0.00194     0.00189 

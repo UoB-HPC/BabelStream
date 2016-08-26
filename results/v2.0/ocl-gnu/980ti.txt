@@ -1,0 +1,14 @@
+GPU-STREAM
+Version: 2.0
+Implementation: OpenCL
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using OpenCL device GeForce GTX 980 Ti
+Driver: 352.21
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        262864.310  0.00204     0.00206     0.00205     
+Mul         262886.578  0.00204     0.00205     0.00205     
+Add         268781.736  0.00300     0.00300     0.00300     
+Triad       268727.204  0.00300     0.00301     0.00300

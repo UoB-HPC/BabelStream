@@ -1,0 +1,12 @@
+GPU-STREAM
+Version: 2.0
+Implementation: KOKKOS
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        56720.246   0.00947     0.01173     0.00999     
+Mul         55256.554   0.00972     0.03029     0.01052     
+Add         62562.358   0.01287     0.03304     0.01384     
+Triad       62965.518   0.01279     0.02534     0.01364  
