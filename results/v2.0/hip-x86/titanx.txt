@@ -1,0 +1,14 @@
+GPU-STREAM
+Version: 2.0
+Implementation: HIP
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using HIP device GeForce GTX TITAN X
+Driver: 4
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        263048.615  0.00204     0.00205     0.00205     
+Mul         262831.366  0.00204     0.00205     0.00205     
+Add         268754.019  0.00300     0.00301     0.00300     
+Triad       268630.840  0.00300     0.00301     0.00300     

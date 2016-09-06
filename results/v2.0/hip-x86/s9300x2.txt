@@ -1,0 +1,14 @@
+GPU-STREAM
+Version: 2.0
+Implementation: HIP
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using HIP device Fiji
+Driver: 4
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        442194.067  0.00121     0.03320     0.00331     
+Mul         442500.583  0.00121     0.00195     0.00149     
+Add         459234.293  0.00175     0.00355     0.00248     
+Triad       458682.906  0.00176     0.00357     0.00246     
