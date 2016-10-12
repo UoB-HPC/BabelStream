@@ -155,17 +155,22 @@ if (HAS_SYCL)
   add_executable(gpu-stream-sycl main.cpp SYCLStream.cpp)
   target_compile_definitions(gpu-stream-sycl PUBLIC SYCL)
 
-  find_program(COMPUTECPP "compute++")
-  if (COMPUTECPP)
+  # The user must define this in order to use FindComputeCpp
+  if (COMPUTECPP_PACKAGE_ROOT_DIR)
     message(STATUS "Using ComputeCpp for SYCL compilation")
-    add_custom_target(SYCLStream.sycl COMMAND ${COMPUTECPP} ${CMAKE_CURRENT_SOURCE_DIR}/SYCLStream.cpp -sycl -no-serial-memop -O2 -emit-llvm -c)
-    add_dependencies(gpu-stream-sycl SYCLStream.sycl)
-    target_compile_options(gpu-stream-sycl PUBLIC -include SYCLStream.sycl)
-    target_link_libraries(gpu-stream-sycl SYCL OpenCL)
+    include(FindComputeCpp)
+
+    include_directories(${COMPUTECPP_INCLUDE_DIRECTORY})
+
+    set(SOURCE_NAME "SYCLStream")
+
+    target_compile_options(gpu-stream-sycl PUBLIC ${HOST_COMPILER_OPTIONS})
+    add_sycl_to_target(gpu-stream-sycl ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_NAME}.cpp 
+                      ${CMAKE_CURRENT_BINARY_DIR})
   else()
     message(STATUS "Using header-only SYCL implementation")
     set_property(TARGET gpu-stream-sycl PROPERTY CXX_STANDARD 14)
-  endif(COMPUTECPP)
+  endif()
 else ()
   message("Skipping SYCL...")
 endif (HAS_SYCL)
