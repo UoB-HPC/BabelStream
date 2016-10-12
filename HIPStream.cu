@@ -1,5 +1,3 @@
-#include "hip/hip_runtime.h"
-
 // Copyright (c) 2015-16 Tom Deakin, Simon McIntosh-Smith,
 // University of Bristol HPC
 //
@@ -8,6 +6,7 @@
 
 
 #include "HIPStream.h"
+#include "hip/hip_runtime.h"
 
 #define TBSIZE 1024
 
