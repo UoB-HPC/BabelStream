@@ -229,7 +229,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   T goldA = 0.1;
   T goldB = 0.2;
   T goldC = 0.0;
-  T golSum = 0.0;
+  T goldSum = 0.0;
 
   const T scalar = 0.3;
 
