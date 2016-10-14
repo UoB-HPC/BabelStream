@@ -91,6 +91,21 @@ void OMP3Stream<T>::triad()
   }
 }
 
+template <class T>
+T OMP3Stream<T>::dot()
+{
+  T sum = 0.0;
+
+  #pragma omp parallel for reduction(+:sum)
+  for (int i = 0; i < array_size; i++)
+  {
+    sum += a[i] * b[i];
+  }
+
+  return sum;
+}
+
+
 void listDevices(void)
 {
   std::cout << "0: CPU" << std::endl;
