@@ -111,6 +111,26 @@ void OMP45Stream<T>::triad()
     a[i] = b[i] + scalar * c[i];
   }
 }
+
+template <class T>
+T OMP45Stream<T>::dot()
+{
+  T sum = 0.0;
+
+  unsigned int array_size = this->array_size;
+  T *a = this->a;
+  T *b = this->b;
+  #pragma omp target teams distribute parallel for simd reduction(+:sum) map(tofrom: sum)
+  for (int i = 0; i < array_size; i++)
+  {
+    sum += a[i] * b[i];
+  }
+
+  return sum;
+}
+
+
+
 void listDevices(void)
 {
   // Get number of devices
