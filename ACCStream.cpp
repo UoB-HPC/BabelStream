@@ -112,6 +112,24 @@ void ACCStream<T>::triad()
     a[i] = b[i] + scalar * c[i];
   }
 }
+
+template <class T>
+T ACCStream<T>::dot()
+{
+  T sum = 0.0;
+
+  unsigned int array_size = this->array_size;
+  T * restrict a = this->a;
+  T * restrict b = this->b;
+  #pragma acc kernels present(a[0:array_size], b[0:array_size]) wait
+  for (int i = 0; i < array_size; i++)
+  {
+    sum += a[i] * b[i];
+  }
+
+  return sum;
+}
+
 void listDevices(void)
 {
   // Get number of devices
