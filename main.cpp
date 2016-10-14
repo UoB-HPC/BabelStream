@@ -44,7 +44,7 @@ bool use_float = false;
 
 
 template <typename T>
-void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c);
+void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
 
 template <typename T>
 void run();
@@ -93,6 +93,9 @@ void run()
   std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
     << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
   std::cout.precision(ss);
+
+  // Result of the Dot kernel
+  T sum;
 
   Stream<T> *stream;
 
@@ -167,7 +170,7 @@ void run()
 
     // Execute Dot
     t1 = std::chrono::high_resolution_clock::now();
-    stream->dot();
+    sum = stream->dot();
     t2 = std::chrono::high_resolution_clock::now();
     timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
@@ -175,7 +178,7 @@ void run()
 
   // Check solutions
   stream->read_arrays(a, b, c);
-  check_solution<T>(num_times, a, b, c);
+  check_solution<T>(num_times, a, b, c, sum);
 
   // Display timing results
   std::cout
@@ -220,12 +223,13 @@ void run()
 }
 
 template <typename T>
-void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
+void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum)
 {
   // Generate correct solution
   T goldA = 0.1;
   T goldB = 0.2;
   T goldC = 0.0;
+  T golSum = 0.0;
 
   const T scalar = 0.3;
 
@@ -238,6 +242,9 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
     goldA = goldB + scalar * goldC;
   }
 
+  // Do the reduction
+  goldSum = goldA * goldB * ntimes;
+
   // Calculate the average error
   double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldA); });
   errA /= a.size();
@@ -245,6 +252,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   errB /= b.size();
   double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldC); });
   errC /= c.size();
+  double errSum = fabs(sum - goldSum);
 
   double epsi = std::numeric_limits<T>::epsilon() * 100.0;
 
@@ -259,6 +267,10 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   if (errC > epsi)
     std::cerr
       << "Validation failed on c[]. Average error " << errC
+      << std::endl;
+  if (errSum > epsi)
+    std::cerr
+      << "Validation failed on sum. Error " << errSum
       << std::endl;
 
 }
