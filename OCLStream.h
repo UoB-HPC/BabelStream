@@ -20,17 +20,24 @@
 
 #define IMPLEMENTATION_STRING "OpenCL"
 
+// Local work-group size for dot kernel
+#define WGSIZE 1024
+
 template <class T>
 class OCLStream : public Stream<T>
 {
   protected:
     // Size of arrays
     unsigned int array_size;
+    
+    // Host array for partial sums for dot kernel
+    std::vector<T> sums;
 
     // Device side pointers to arrays
     cl::Buffer d_a;
     cl::Buffer d_b;
     cl::Buffer d_c;
+    cl::Buffer d_sum;
 
     // OpenCL objects
     cl::Device device;
@@ -41,6 +48,7 @@ class OCLStream : public Stream<T>
     cl::KernelFunctor<cl::Buffer, cl::Buffer> * mul_kernel;
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *add_kernel;
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *triad_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg> *dot_kernel;
 
   public:
 
@@ -51,6 +59,7 @@ class OCLStream : public Stream<T>
     virtual void add() override;
     virtual void mul() override;
     virtual void triad() override;
+    virtual T dot() override;
 
     virtual void write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;

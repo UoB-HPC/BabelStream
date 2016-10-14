@@ -50,6 +50,29 @@ std::string kernels{R"CLC(
     a[i] = b[i] + scalar * c[i];
   }
 
+  kernel void stream_dot(
+    global const TYPE * restrict a,
+    global const TYPE * restrict b,
+    global TYPE * restrict sum,
+    local TYPE * restrict wg_sum)
+  {
+    const size_t i = get_global_id(0);
+    const size_t local_i = get_local_id(0);
+    wg_sum[local_i] = a[i] * b[i];
+
+    for (int offset = get_local_size(0) / 2; offset > 0; offset /= 2)
+    {
+      barrier(CLK_LOCAL_MEM_FENCE);
+      if (local_i < offset)
+      {
+        wg_sum[local_i] += wg_sum[local_i+offset];
+      }
+    }
+
+    if (local_i == 0)
+      sum[get_group_id(0)] = wg_sum[local_i];
+  }
+
 )CLC"};
 
 
@@ -99,6 +122,7 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   mul_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "mul");
   add_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "add");
   triad_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "triad");
+  dot_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg>(program, "stream_dot");
 
   array_size = ARRAY_SIZE;
 
@@ -114,6 +138,7 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   d_a = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
   d_b = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
   d_c = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
+  d_sum = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(T) * WGSIZE);
 
 }
 
@@ -164,6 +189,22 @@ void OCLStream<T>::triad()
     d_a, d_b, d_c
   );
   queue.finish();
+}
+
+template <class T>
+T OCLStream<T>::dot()
+{
+  (*dot_kernel)(
+    cl::EnqueueArgs(queue, cl::NDRange(array_size), cl::NDRange(WGSIZE)),
+    d_a, d_b, d_sum, cl::Local(sizeof(T) * WGSIZE)
+  );
+  cl::copy(queue, d_sum, sums.begin(), sums.end());
+
+  T sum = 0.0;
+  for (T val : sums)
+    sum += val;
+
+  return sum;
 }
 
 template <class T>
