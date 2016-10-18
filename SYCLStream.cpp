@@ -11,26 +11,26 @@
 
 using namespace cl::sycl;
 
-#define WGSIZE 256
 
 // Cache list of devices
 bool cached = false;
 std::vector<device> devices;
 void getDeviceList(void);
+program * p;
+
+/* Forward declaration of SYCL kernels */
+namespace kernels {
+  class copy;
+  class mul;
+  class add;
+  class triad;
+}
 
 template <class T>
 SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 {
   if (!cached)
     getDeviceList();
-
-  // The array size must be divisible by WGSIZE
-  if (ARRAY_SIZE % WGSIZE != 0)
-  {
-    std::stringstream ss;
-    ss << "Array size must be a multiple of " << WGSIZE;
-    throw std::runtime_error(ss.str());
-  }
 
   array_size = ARRAY_SIZE;
 
@@ -43,6 +43,14 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
 
   queue = new cl::sycl::queue(dev);
+
+  /* Pre-build the kernels */
+  p = new program(queue->get_context());
+  p->build_from_kernel_name<kernels::copy>();
+  p->build_from_kernel_name<kernels::mul>();
+  p->build_from_kernel_name<kernels::add>();
+  p->build_from_kernel_name<kernels::triad>();
+
 
   // Create buffers
   d_a = new buffer<T>(array_size);
@@ -57,6 +65,7 @@ SYCLStream<T>::~SYCLStream()
   delete d_b;
   delete d_c;
 
+  delete p;
   delete queue;
 }
 
@@ -67,9 +76,11 @@ void SYCLStream<T>::copy()
   {
     auto ka = d_a->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::write>(cgh);
-    cgh.parallel_for<class copy>(nd_range<1>{array_size, WGSIZE}, [=](nd_item<1> item)
+    cgh.parallel_for<kernels::copy>(p->get_kernel<kernels::copy>(),
+          range<1>{array_size}, [=](item<1> item)
     {
-      kc[item.get_global()] = ka[item.get_global()];
+      auto id = item.get();
+      kc[id[0]] = ka[id[0]];
     });
   });
   queue->wait();
@@ -83,9 +94,11 @@ void SYCLStream<T>::mul()
   {
     auto kb = d_b->template get_access<access::mode::write>(cgh);
     auto kc = d_c->template get_access<access::mode::read>(cgh);
-    cgh.parallel_for<class mul>(nd_range<1>{array_size, WGSIZE}, [=](nd_item<1> item)
+    cgh.parallel_for<kernels::mul>(p->get_kernel<kernels::mul>(),
+      range<1>{array_size}, [=](item<1> item)
     {
-      kb[item.get_global()] = scalar * kc[item.get_global()];
+      auto id = item.get();
+      kb[id[0]] = scalar * kc[id[0]];
     });
   });
   queue->wait();
@@ -99,9 +112,11 @@ void SYCLStream<T>::add()
     auto ka = d_a->template get_access<access::mode::read>(cgh);
     auto kb = d_b->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::write>(cgh);
-    cgh.parallel_for<class add>(nd_range<1>{array_size, WGSIZE}, [=](nd_item<1> item)
+    cgh.parallel_for<kernels::add>(p->get_kernel<kernels::add>(),
+      range<1>{array_size}, [=](item<1> item)
     {
-      kc[item.get_global()] = ka[item.get_global()] + kb[item.get_global()];
+      auto id = item.get();
+      kc[id[0]] = ka[id[0]] + kb[id[0]];
     });
   });
   queue->wait();
@@ -116,9 +131,11 @@ void SYCLStream<T>::triad()
     auto ka = d_a->template get_access<access::mode::write>(cgh);
     auto kb = d_b->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::read>(cgh);
-    cgh.parallel_for<class triad>(nd_range<1>{array_size, WGSIZE}, [=](nd_item<1> item)
+    cgh.parallel_for<kernels::triad>(p->get_kernel<kernels::triad>(),
+      range<1>{array_size}, [=](item<1> item)
     {
-      ka[item.get_global()] = kb[item.get_global()] + scalar * kc[item.get_global()];
+      auto id = item.get();
+      ka[id] = kb[id[0]] + scalar * kc[id[0]];
     });
   });
   queue->wait();
