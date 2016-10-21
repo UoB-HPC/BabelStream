@@ -1,6 +1,16 @@
 
 cmake_minimum_required(VERSION 3.2)
 
+if(NOT DEFINED HIP_PATH)
+    if(NOT DEFINED ENV{HIP_PATH})
+        set(HIP_PATH "/opt/rocm/hip" CACHE PATH "Path to which HIP has been installed")
+    else()
+        set(HIP_PATH $ENV{HIP_PATH} CACHE PATH "Path to which HIP has been installed")
+    endif()
+endif()
+set(CMAKE_MODULE_PATH "${HIP_PATH}/cmake" ${CMAKE_MODULE_PATH})
+
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -26,6 +36,18 @@ endif()
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Cray")
   list(APPEND CMAKE_CXX_FLAGS -hstd=c++11)
 endif ()
+
+#-------------------------------------------------------------------------------
+# HIP
+#-------------------------------------------------------------------------------
+find_package(HIP QUIET)
+if(${HIP_FOUND})
+  list(APPEND HIP_HIPCC_FLAGS --std=c++11)
+  hip_add_executable(gpu-stream-hip main.cpp HIPStream.cu)
+  target_compile_definitions(gpu-stream-hip PUBLIC HIP)
+else()
+  message("Skipping HIP...")
+endif()
 
 #-------------------------------------------------------------------------------
 # CUDA
