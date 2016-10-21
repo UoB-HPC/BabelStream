@@ -47,6 +47,7 @@ class KOKKOSStream : public Stream<T>
     virtual void add() override;
     virtual void mul() override;
     virtual void triad() override;
+    virtual T dot() override;
 
     virtual void write_arrays(
             const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c) override;

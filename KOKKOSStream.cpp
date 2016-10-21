@@ -121,6 +121,23 @@ void KOKKOSStream<T>::triad()
   Kokkos::fence();
 }
 
+template <class T>
+T KOKKOSStream<T>::dot()
+{
+  View<double *, DEVICE> a(*d_a);
+  View<double *, DEVICE> b(*d_b);
+
+  T sum = 0.0;
+
+  parallel_reduce(array_size, KOKKOS_LAMBDA (const int index, double &tmp)
+  {
+    tmp += a[index] * b[index];
+  }, sum);
+
+  return sum;
+
+}
+
 void listDevices(void)
 {
   std::cout << "This is not the device you are looking for.";
