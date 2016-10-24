@@ -20,6 +20,8 @@
 
 #if defined(CUDA)
 #include "CUDAStream.h"
+#elif defined(HIP)
+#include "HIPStream.h"
 #elif defined(OCL)
 #include "OCLStream.h"
 #elif defined(USE_RAJA)
@@ -102,6 +104,10 @@ void run()
 #if defined(CUDA)
   // Use the CUDA implementation
   stream = new CUDAStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(HIP)
+  // Use the HIP implementation
+  stream = new HIPStream<T>(ARRAY_SIZE, deviceIndex);
 
 #elif defined(OCL)
   // Use the OpenCL implementation
