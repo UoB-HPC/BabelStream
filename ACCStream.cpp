@@ -71,7 +71,7 @@ void ACCStream<T>::copy()
 template <class T>
 void ACCStream<T>::mul()
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
 
   unsigned int array_size = this->array_size;
   T * restrict b = this->b;
@@ -100,7 +100,7 @@ void ACCStream<T>::add()
 template <class T>
 void ACCStream<T>::triad()
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
 
   unsigned int array_size = this->array_size;
   T * restrict a = this->a;
