@@ -10,6 +10,12 @@
 #include <vector>
 #include <string>
 
+// Array values
+#define startA (0.1)
+#define startB (0.2)
+#define startC (0.0)
+#define startScalar (0.4)
+
 template <class T>
 class Stream
 {
@@ -35,3 +41,4 @@ class Stream
 void listDevices(void);
 std::string getDeviceName(const int);
 std::string getDeviceDriver(const int);
+
