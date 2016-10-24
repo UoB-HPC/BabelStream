@@ -44,7 +44,6 @@ unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
 
-
 template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
 
@@ -85,9 +84,9 @@ void run()
     std::cout << "Precision: double" << std::endl;
 
   // Create host vectors
-  std::vector<T> a(ARRAY_SIZE, 0.1);
-  std::vector<T> b(ARRAY_SIZE, 0.2);
-  std::vector<T> c(ARRAY_SIZE, 0.0);
+  std::vector<T> a(ARRAY_SIZE, startA);
+  std::vector<T> b(ARRAY_SIZE, startB);
+  std::vector<T> c(ARRAY_SIZE, startC);
   std::streamsize ss = std::cout.precision();
   std::cout << std::setprecision(1) << std::fixed
     << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
@@ -232,12 +231,12 @@ template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum)
 {
   // Generate correct solution
-  T goldA = 0.1;
-  T goldB = 0.2;
-  T goldC = 0.0;
+  T goldA = startA;
+  T goldB = startB;
+  T goldC = startC;
   T goldSum = 0.0;
 
-  const T scalar = 0.3;
+  const T scalar = startScalar;
 
   for (unsigned int i = 0; i < ntimes; i++)
   {

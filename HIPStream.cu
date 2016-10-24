@@ -118,7 +118,7 @@ void HIPStream<T>::copy()
 template <typename T>
 __global__ void mul_kernel(hipLaunchParm lp, T * b, const T * c)
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
   b[i] = scalar * c[i];
 }
@@ -151,7 +151,7 @@ void HIPStream<T>::add()
 template <typename T>
 __global__ void triad_kernel(hipLaunchParm lp, T * a, const T * b, const T * c)
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
   a[i] = b[i] + scalar * c[i];
 }

@@ -70,7 +70,7 @@ void OMP45Stream<T>::copy()
 template <class T>
 void OMP45Stream<T>::mul()
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
 
   unsigned int array_size = this->array_size;
   T *b = this->b;
@@ -99,7 +99,7 @@ void OMP45Stream<T>::add()
 template <class T>
 void OMP45Stream<T>::triad()
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
 
   unsigned int array_size = this->array_size;
   T *a = this->a;

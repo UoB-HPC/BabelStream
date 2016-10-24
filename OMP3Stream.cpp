@@ -62,7 +62,7 @@ void OMP3Stream<T>::copy()
 template <class T>
 void OMP3Stream<T>::mul()
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   #pragma omp parallel for
   for (int i = 0; i < array_size; i++)
   {
@@ -83,7 +83,7 @@ void OMP3Stream<T>::add()
 template <class T>
 void OMP3Stream<T>::triad()
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   #pragma omp parallel for
   for (int i = 0; i < array_size; i++)
   {

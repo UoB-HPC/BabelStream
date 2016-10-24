@@ -14,7 +14,7 @@ void getDeviceList(void);
 
 std::string kernels{R"CLC(
 
-  constant TYPE scalar = 0.3;
+  constant TYPE scalar = startScalar;
 
   kernel void copy(
     global const TYPE * restrict a,
@@ -96,14 +96,17 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 
   // Create program
   cl::Program program(context, kernels);
+  std::ostringstream args;
+  args << "-DstartScalar=" << startScalar << " ";
   if (sizeof(T) == sizeof(double))
   {
+    args << "-DTYPE=double";
     // Check device can do double
     if (!device.getInfo<CL_DEVICE_DOUBLE_FP_CONFIG>())
       throw std::runtime_error("Device does not support double precision, please use --float");
     try
     {
-      program.build("-DTYPE=double");
+      program.build(args.str().c_str());
     }
     catch (cl::Error& err)
     {
@@ -115,7 +118,10 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
     }
   }
   else if (sizeof(T) == sizeof(float))
-    program.build("-DTYPE=float");
+  {
+    args << "-DTYPE=float";
+    program.build(args.str().c_str());
+  }
 
   // Create kernels
   copy_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "copy");

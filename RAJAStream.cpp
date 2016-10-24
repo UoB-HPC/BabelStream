@@ -77,7 +77,7 @@ void RAJAStream<T>::mul()
 {
   T* b = d_b;
   T* c = d_c;
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   forall<policy>(index_set, [=] RAJA_DEVICE (int index)
   {
     b[index] = scalar*c[index];
@@ -102,7 +102,7 @@ void RAJAStream<T>::triad()
   T* a = d_a;
   T* b = d_b;
   T* c = d_c;
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   forall<policy>(index_set, [=] RAJA_DEVICE (int index)
   {
     a[index] = b[index] + scalar*c[index];
