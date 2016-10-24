@@ -21,8 +21,9 @@
 
 #define IMPLEMENTATION_STRING "OpenCL"
 
-// Local work-group size for dot kernel
-#define WGSIZE 256
+// NDRange configuration for the dot kernel
+#define DOT_WGSIZE 256
+#define DOT_NUM_GROUPS 256
 
 template <class T>
 class OCLStream : public Stream<T>
@@ -30,7 +31,7 @@ class OCLStream : public Stream<T>
   protected:
     // Size of arrays
     unsigned int array_size;
-    
+
     // Host array for partial sums for dot kernel
     std::vector<T> sums;
 
@@ -49,7 +50,7 @@ class OCLStream : public Stream<T>
     cl::KernelFunctor<cl::Buffer, cl::Buffer> * mul_kernel;
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *add_kernel;
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *triad_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg> *dot_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_int> *dot_kernel;
 
   public:
 
