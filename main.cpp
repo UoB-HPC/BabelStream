@@ -249,7 +249,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   }
 
   // Do the reduction
-  goldSum = goldA * goldB * ntimes;
+  goldSum = goldA * goldB * ARRAY_SIZE;
 
   // Calculate the average error
   double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldA); });
