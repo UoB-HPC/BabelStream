@@ -46,7 +46,7 @@ CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE, const int device_index)
   array_size = ARRAY_SIZE;
 
   // Allocate the host array for partial sums for dot kernels
-  sums = (T*)malloc(sizeof(T) * TBSIZE);
+  sums = (T*)malloc(sizeof(T) * (ARRAY_SIZE/TBSIZE));
 
   // Check buffers fit on the device
   cudaDeviceProp props;
@@ -61,7 +61,7 @@ CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE, const int device_index)
   check_error();
   cudaMalloc(&d_c, ARRAY_SIZE*sizeof(T));
   check_error();
-  cudaMalloc(&d_sum, TBSIZE*sizeof(T));
+  cudaMalloc(&d_sum, (ARRAY_SIZE/TBSIZE)*sizeof(T));
   check_error();
 }
 
@@ -201,11 +201,11 @@ T CUDAStream<T>::dot()
   dot_kernel<<<array_size/TBSIZE, TBSIZE, sizeof(T)*TBSIZE>>>(d_a, d_b, d_sum);
   check_error();
 
-  cudaMemcpy(sums, d_sum, TBSIZE*sizeof(T), cudaMemcpyDeviceToHost);
+  cudaMemcpy(sums, d_sum, (array_size/TBSIZE)*sizeof(T), cudaMemcpyDeviceToHost);
   check_error();
 
   T sum = 0.0;
-  for (int i = 0; i < TBSIZE; i++)
+  for (int i = 0; i < (array_size/TBSIZE); i++)
     sum += sums[i];
 
   return sum;
