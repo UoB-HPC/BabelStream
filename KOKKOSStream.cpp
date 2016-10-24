@@ -84,7 +84,7 @@ void KOKKOSStream<T>::mul()
   View<double*, DEVICE> b(*d_b);
   View<double*, DEVICE> c(*d_c);
 
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   parallel_for(array_size, KOKKOS_LAMBDA (const int index)
   {
     b[index] = scalar*c[index];
@@ -113,7 +113,7 @@ void KOKKOSStream<T>::triad()
   View<double*, DEVICE> b(*d_b);
   View<double*, DEVICE> c(*d_c);
 
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   parallel_for(array_size, KOKKOS_LAMBDA (const int index)
   {
     a[index] = b[index] + scalar*c[index];
