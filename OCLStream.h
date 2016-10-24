@@ -8,6 +8,7 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 #define CL_HPP_ENABLE_EXCEPTIONS
