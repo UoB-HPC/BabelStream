@@ -118,7 +118,7 @@ void CUDAStream<T>::copy()
 template <typename T>
 __global__ void mul_kernel(T * b, const T * c)
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   const int i = blockDim.x * blockIdx.x + threadIdx.x;
   b[i] = scalar * c[i];
 }
@@ -151,7 +151,7 @@ void CUDAStream<T>::add()
 template <typename T>
 __global__ void triad_kernel(T * a, const T * b, const T * c)
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   const int i = blockDim.x * blockIdx.x + threadIdx.x;
   a[i] = b[i] + scalar * c[i];
 }
