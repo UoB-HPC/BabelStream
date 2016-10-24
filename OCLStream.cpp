@@ -138,8 +138,9 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   d_a = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
   d_b = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
   d_c = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
-  d_sum = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(T) * WGSIZE);
+  d_sum = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(T) * (ARRAY_SIZE/WGSIZE));
 
+  sums = std::vector<T>(ARRAY_SIZE/WGSIZE);
 }
 
 template <class T>
