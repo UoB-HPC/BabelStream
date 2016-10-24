@@ -109,6 +109,23 @@ void RAJAStream<T>::triad()
   });
 }
 
+template <class T>
+T RAJAStream<T>::dot()
+{
+  T* a = d_a;
+  T* b = d_b;
+
+  RAJA::ReduceSum<reduce_policy, T> sum(0.0);
+
+  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
+  {
+    sum += a[index] * b[index];
+  });
+
+  return T(sum);
+}
+
+
 void listDevices(void)
 {
   std::cout << "This is not the device you are looking for.";
