@@ -273,9 +273,12 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
     std::cerr
       << "Validation failed on c[]. Average error " << errC
       << std::endl;
-  if (errSum > epsi)
+  // Check sum to 8 decimal places
+  if (errSum > 1.0E-8)
     std::cerr
       << "Validation failed on sum. Error " << errSum
+      << std::endl << std::setprecision(15)
+      << "Sum was " << sum << " but should be " << goldSum
       << std::endl;
 
 }
