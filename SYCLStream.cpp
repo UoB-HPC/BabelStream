@@ -78,7 +78,7 @@ void SYCLStream<T>::copy()
 template <class T>
 void SYCLStream<T>::mul()
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   queue->submit([&](handler &cgh)
   {
     auto kb = d_b->template get_access<access::mode::write>(cgh);
@@ -110,7 +110,7 @@ void SYCLStream<T>::add()
 template <class T>
 void SYCLStream<T>::triad()
 {
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   queue->submit([&](handler &cgh)
   {
     auto ka = d_a->template get_access<access::mode::write>(cgh);
