@@ -46,7 +46,7 @@ CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE, const int device_index)
   array_size = ARRAY_SIZE;
 
   // Allocate the host array for partial sums for dot kernels
-  sums = (T*)malloc(sizeof(T) * (ARRAY_SIZE/TBSIZE));
+  sums = (T*)malloc(sizeof(T) * DOT_NUM_BLOCKS);
 
   // Check buffers fit on the device
   cudaDeviceProp props;
@@ -61,7 +61,7 @@ CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE, const int device_index)
   check_error();
   cudaMalloc(&d_c, ARRAY_SIZE*sizeof(T));
   check_error();
-  cudaMalloc(&d_sum, (ARRAY_SIZE/TBSIZE)*sizeof(T));
+  cudaMalloc(&d_sum, DOT_NUM_BLOCKS*sizeof(T));
   check_error();
 }
 
@@ -171,16 +171,18 @@ void CUDAStream<T>::triad()
 }
 
 template <class T>
-__global__ void dot_kernel(const T * a, const T * b, T * sum)
+__global__ void dot_kernel(const T * a, const T * b, T * sum, unsigned int array_size)
 {
 
   extern __shared__ __align__(sizeof(T)) unsigned char smem[];
   T *tb_sum = reinterpret_cast<T*>(smem);
 
-  const int i = blockDim.x * blockIdx.x + threadIdx.x;
+  int i = blockDim.x * blockIdx.x + threadIdx.x;
   const size_t local_i = threadIdx.x;
 
-  tb_sum[local_i] = a[i] * b[i];
+  tb_sum[local_i] = 0.0;
+  for (; i < array_size; i += blockDim.x*gridDim.x)
+    tb_sum[local_i] += a[i] * b[i];
 
   for (int offset = blockDim.x / 2; offset > 0; offset /= 2)
   {
@@ -198,14 +200,14 @@ __global__ void dot_kernel(const T * a, const T * b, T * sum)
 template <class T>
 T CUDAStream<T>::dot()
 {
-  dot_kernel<<<array_size/TBSIZE, TBSIZE, sizeof(T)*TBSIZE>>>(d_a, d_b, d_sum);
+  dot_kernel<<<DOT_NUM_BLOCKS, TBSIZE, sizeof(T)*TBSIZE>>>(d_a, d_b, d_sum, array_size);
   check_error();
 
-  cudaMemcpy(sums, d_sum, (array_size/TBSIZE)*sizeof(T), cudaMemcpyDeviceToHost);
+  cudaMemcpy(sums, d_sum, DOT_NUM_BLOCKS*sizeof(T), cudaMemcpyDeviceToHost);
   check_error();
 
   T sum = 0.0;
-  for (int i = 0; i < (array_size/TBSIZE); i++)
+  for (int i = 0; i < DOT_NUM_BLOCKS; i++)
     sum += sums[i];
 
   return sum;
