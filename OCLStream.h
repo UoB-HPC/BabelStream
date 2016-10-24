@@ -21,7 +21,7 @@
 #define IMPLEMENTATION_STRING "OpenCL"
 
 // Local work-group size for dot kernel
-#define WGSIZE 1024
+#define WGSIZE 256
 
 template <class T>
 class OCLStream : public Stream<T>
