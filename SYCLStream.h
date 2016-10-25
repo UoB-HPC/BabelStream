@@ -27,6 +27,7 @@ class SYCLStream : public Stream<T>
     cl::sycl::buffer<T> *d_a;
     cl::sycl::buffer<T> *d_b;
     cl::sycl::buffer<T> *d_c;
+    cl::sycl::buffer<T> *d_sum;
 
   public:
 
@@ -37,6 +38,7 @@ class SYCLStream : public Stream<T>
     virtual void add() override;
     virtual void mul() override;
     virtual void triad() override;
+    virtual T    dot() override;
 
     virtual void write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
