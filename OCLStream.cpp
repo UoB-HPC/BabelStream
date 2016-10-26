@@ -90,9 +90,22 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
     throw std::runtime_error("Invalid device index");
   device = devices[device_index];
 
+  // Determine sensible dot kernel NDRange configuration
+  if (device.getInfo<CL_DEVICE_TYPE>() & CL_DEVICE_TYPE_CPU)
+  {
+    dot_num_groups = device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
+    dot_wgsize     = device.getInfo<CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE>() * 2;
+  }
+  else
+  {
+    dot_num_groups = device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() * 4;
+    dot_wgsize     = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+  }
+
   // Print out device information
   std::cout << "Using OpenCL device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+  std::cout << "Dot kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
 
   context = cl::Context(device);
   queue = cl::CommandQueue(context);
@@ -147,9 +160,9 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   d_a = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
   d_b = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
   d_c = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
-  d_sum = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(T) * DOT_NUM_GROUPS);
+  d_sum = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(T) * dot_num_groups);
 
-  sums = std::vector<T>(DOT_NUM_GROUPS);
+  sums = std::vector<T>(dot_num_groups);
 }
 
 template <class T>
@@ -205,8 +218,8 @@ template <class T>
 T OCLStream<T>::dot()
 {
   (*dot_kernel)(
-    cl::EnqueueArgs(queue, cl::NDRange(DOT_NUM_GROUPS*DOT_WGSIZE), cl::NDRange(DOT_WGSIZE)),
-    d_a, d_b, d_sum, cl::Local(sizeof(T) * DOT_WGSIZE), array_size
+    cl::EnqueueArgs(queue, cl::NDRange(dot_num_groups*dot_wgsize), cl::NDRange(dot_wgsize)),
+    d_a, d_b, d_sum, cl::Local(sizeof(T) * dot_wgsize), array_size
   );
   cl::copy(queue, d_sum, sums.begin(), sums.end());
 
