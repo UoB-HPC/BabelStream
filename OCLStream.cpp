@@ -105,7 +105,7 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   // Print out device information
   std::cout << "Using OpenCL device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
-  std::cout << "Dot kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
+  std::cout << "Reduction kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
 
   context = cl::Context(device);
   queue = cl::CommandQueue(context);
