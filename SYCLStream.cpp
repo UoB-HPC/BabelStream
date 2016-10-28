@@ -24,6 +24,7 @@ namespace kernels {
   class mul;
   class add;
   class triad;
+  class dot;
 }
 
 template <class T>
@@ -63,7 +64,7 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   p->build_from_kernel_name<kernels::mul>();
   p->build_from_kernel_name<kernels::add>();
   p->build_from_kernel_name<kernels::triad>();
-
+  p->build_from_kernel_name<kernels::dot>();
 
   // Create buffers
   d_a = new buffer<T>(array_size);
@@ -169,7 +170,7 @@ T SYCLStream<T>::dot()
 
     size_t N = array_size;
 
-    cgh.parallel_for<class dot>(nd_range<1>(dot_num_groups*dot_wgsize, dot_wgsize), [=](nd_item<1> item)
+    cgh.parallel_for<kernels::dot>(nd_range<1>(dot_num_groups*dot_wgsize, dot_wgsize), [=](nd_item<1> item)
     {
       size_t i = item.get_global(0);
       size_t li = item.get_local(0);
