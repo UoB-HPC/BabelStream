@@ -21,6 +21,12 @@ RAJAStream<T>::RAJAStream(const unsigned int ARRAY_SIZE, const int device_index)
   d_a = new T[ARRAY_SIZE];
   d_b = new T[ARRAY_SIZE];
   d_c = new T[ARRAY_SIZE];
+  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
+  {
+    d_a[index] = 0.0;
+    d_b[index] = 0.0;
+    d_c[index] = 0.0;
+  });
 #else
   cudaMallocManaged((void**)&d_a, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
   cudaMallocManaged((void**)&d_b, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
