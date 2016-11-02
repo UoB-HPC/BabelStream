@@ -74,15 +74,21 @@ HIPStream<T>::~HIPStream()
   check_error();
 }
 
-template <class T>
-void HIPStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
+template <typename T>
+__global__ void init_kernel(hipLaunchParm lp, T * a, T * b, T * c, T initA, T initB, T initC)
 {
-  // Copy host memory to device
-  hipMemcpy(d_a, a.data(), a.size()*sizeof(T), hipMemcpyHostToDevice);
+  const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+  a[i] = initA;
+  b[i] = initB;
+  c[i] = initC;
+}
+
+template <class T>
+void HIPStream<T>::init_arrays(T initA, T initB, T initC)
+{
+  hipLaunchKernel(HIP_KERNEL_NAME(init_kernel), dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0, d_a, d_b, d_c, initA, initB, initC);
   check_error();
-  hipMemcpy(d_b, b.data(), b.size()*sizeof(T), hipMemcpyHostToDevice);
-  check_error();
-  hipMemcpy(d_c, c.data(), c.size()*sizeof(T), hipMemcpyHostToDevice);
+  hipDeviceSynchronize();
   check_error();
 }
 

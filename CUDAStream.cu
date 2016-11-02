@@ -74,15 +74,22 @@ CUDAStream<T>::~CUDAStream()
   check_error();
 }
 
-template <class T>
-void CUDAStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
+
+template <typename T>
+__global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC)
 {
-  // Copy host memory to device
-  cudaMemcpy(d_a, a.data(), a.size()*sizeof(T), cudaMemcpyHostToDevice);
+  const int i = blockDim.x * blockIdx.x + threadIdx.x;
+  a[i] = initA;
+  b[i] = initB;
+  c[i] = initC;
+}
+
+template <class T>
+void CUDAStream<T>::init_arrays(T initA, T initB, T initC)
+{
+  init_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, initA, initB, initC);
   check_error();
-  cudaMemcpy(d_b, b.data(), b.size()*sizeof(T), cudaMemcpyHostToDevice);
-  check_error();
-  cudaMemcpy(d_c, c.data(), c.size()*sizeof(T), cudaMemcpyHostToDevice);
+  cudaDeviceSynchronize();
   check_error();
 }
 

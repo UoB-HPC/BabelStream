@@ -36,13 +36,19 @@ ACCStream<T>::~ACCStream()
 }
 
 template <class T>
-void ACCStream<T>::write_arrays(const std::vector<T>& h_a, const std::vector<T>& h_b, const std::vector<T>& h_c)
+void ACCStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  T *a = this->a;
-  T *b = this->b;
-  T *c = this->c;
-  #pragma acc update device(a[0:array_size], b[0:array_size], c[0:array_size])
-  {}
+  unsigned int array_size = this->array_size;
+  T * restrict a = this->a;
+  T * restrict b = this->b;
+  T * restrict c = this->c;
+  #pragma acc kernels present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
+  for (int i = 0; i < array_size; i++)
+  {
+    a[i] = initA;
+    b[i] = initB;
+    c[i] = initC;
+  }
 }
 
 template <class T>
