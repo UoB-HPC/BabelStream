@@ -34,18 +34,18 @@ KOKKOSStream<T>::~KOKKOSStream()
 }
 
 template <class T>
-void KOKKOSStream<T>::write_arrays(
-        const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
+void KOKKOSStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  for(int ii = 0; ii < array_size; ++ii)
+  View<double*, DEVICE> a(*d_a);
+  View<double*, DEVICE> b(*d_b);
+  View<double*, DEVICE> c(*d_c);
+  parallel_for(array_size, KOKKOS_LAMBDA (const int index)
   {
-    (*hm_a)(ii) = a[ii];
-    (*hm_b)(ii) = b[ii];
-    (*hm_c)(ii) = c[ii];
-  }
-  deep_copy(*d_a, *hm_a);
-  deep_copy(*d_b, *hm_b);
-  deep_copy(*d_c, *hm_c);
+    a[index] = initA;
+    b[index] - initB;
+    c[index] = initC;
+  });
+  Kokkos::fence();
 }
 
 template <class T>

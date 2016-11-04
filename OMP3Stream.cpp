@@ -26,14 +26,14 @@ OMP3Stream<T>::~OMP3Stream()
 
 
 template <class T>
-void OMP3Stream<T>::write_arrays(const std::vector<T>& h_a, const std::vector<T>& h_b, const std::vector<T>& h_c)
+void OMP3Stream<T>::init_arrays(T initA, T initB, T initC)
 {
   #pragma omp parallel for
   for (int i = 0; i < array_size; i++)
   {
-    a[i] = h_a[i];
-    b[i] = h_b[i];
-    c[i] = h_c[i];
+    a[i] = initA;
+    b[i] = initB;
+    c[i] = initC;
   }
 }
 

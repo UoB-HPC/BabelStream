@@ -84,9 +84,9 @@ void run()
     std::cout << "Precision: double" << std::endl;
 
   // Create host vectors
-  std::vector<T> a(ARRAY_SIZE, startA);
-  std::vector<T> b(ARRAY_SIZE, startB);
-  std::vector<T> c(ARRAY_SIZE, startC);
+  std::vector<T> a(ARRAY_SIZE);
+  std::vector<T> b(ARRAY_SIZE);
+  std::vector<T> c(ARRAY_SIZE);
   std::streamsize ss = std::cout.precision();
   std::cout << std::setprecision(1) << std::fixed
     << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
@@ -138,7 +138,7 @@ void run()
 
 #endif
 
-  stream->write_arrays(a, b, c);
+  stream->init_arrays(startA, startB, startC);
 
   // List of times
   std::vector<std::vector<double>> timings(5);

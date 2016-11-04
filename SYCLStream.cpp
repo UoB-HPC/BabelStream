@@ -20,6 +20,7 @@ program * p;
 
 /* Forward declaration of SYCL kernels */
 namespace kernels {
+  class init;
   class copy;
   class mul;
   class add;
@@ -60,6 +61,7 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 
   /* Pre-build the kernels */
   p = new program(queue->get_context());
+  p->build_from_kernel_name<kernels::init>();
   p->build_from_kernel_name<kernels::copy>();
   p->build_from_kernel_name<kernels::mul>();
   p->build_from_kernel_name<kernels::add>();
@@ -201,17 +203,23 @@ T SYCLStream<T>::dot()
 }
 
 template <class T>
-void SYCLStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
+void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  auto _a = d_a->template get_access<access::mode::write, access::target::host_buffer>();
-  auto _b = d_b->template get_access<access::mode::write, access::target::host_buffer>();
-  auto _c = d_c->template get_access<access::mode::write, access::target::host_buffer>();
-  for (int i = 0; i < array_size; i++)
+  queue->submit([&](handler &cgh)
   {
-    _a[i] = a[i];
-    _b[i] = b[i];
-    _c[i] = c[i];
-  }
+    auto ka = d_a->template get_access<access::mode::write>(cgh);
+    auto kb = d_b->template get_access<access::mode::write>(cgh);
+    auto kc = d_c->template get_access<access::mode::write>(cgh);
+    cgh.parallel_for<kernels::init>(p->get_kernel<kernels::init>(),
+          range<1>{array_size}, [=](item<1> item)
+    {
+      auto id = item.get();
+      ka[id[0]] = initA;
+      kb[id[0]] = initB;
+      kc[id[0]] = initC;
+    });
+  });
+  queue->wait();
 }
 
 template <class T>

@@ -16,6 +16,18 @@ std::string kernels{R"CLC(
 
   constant TYPE scalar = startScalar;
 
+  kernel void init(
+    global TYPE * restrict a,
+    global TYPE * restrict b,
+    global TYPE * restrict c,
+    TYPE initA, TYPE initB, TYPE initC)
+  {
+    const size_t i = get_global_id(0);
+    a[i] = initA;
+    b[i] = initB;
+    c[i] = initC;
+  }
+
   kernel void copy(
     global const TYPE * restrict a,
     global TYPE * restrict c)
@@ -140,6 +152,7 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   }
 
   // Create kernels
+  init_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, T, T, T>(program, "init");
   copy_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "copy");
   mul_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "mul");
   add_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "add");
@@ -168,6 +181,7 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 template <class T>
 OCLStream<T>::~OCLStream()
 {
+  delete init_kernel;
   delete copy_kernel;
   delete mul_kernel;
   delete add_kernel;
@@ -231,11 +245,13 @@ T OCLStream<T>::dot()
 }
 
 template <class T>
-void OCLStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
+void OCLStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  cl::copy(queue, a.begin(), a.end(), d_a);
-  cl::copy(queue, b.begin(), b.end(), d_b);
-  cl::copy(queue, c.begin(), c.end(), d_c);
+  (*init_kernel)(
+    cl::EnqueueArgs(queue, cl::NDRange(array_size)),
+    d_a, d_b, d_c, initA, initB, initC
+  );
+  queue.finish();
 }
 
 template <class T>
