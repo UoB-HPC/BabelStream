@@ -18,7 +18,7 @@ Currently implemented are:
 
 Website
 -------
-[uob-hpc.github.io/GPU-STREAM/](uob-hpc.github.io/GPU-STREAM/)
+[uob-hpc.github.io/GPU-STREAM/](https://uob-hpc.github.io/GPU-STREAM/)
 
 Usage
 -----
