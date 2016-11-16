@@ -18,7 +18,7 @@ OMP45Stream<T>::OMP45Stream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int
   this->a = a;
   this->b = b;
   this->c = c;
-  #pragma omp target enter data map(to: a[0:array_size], b[0:array_size], c[0:array_size])
+  #pragma omp target enter data map(alloc: a[0:array_size], b[0:array_size], c[0:array_size])
   {}
 }
 
