@@ -1,6 +1,4 @@
 
-common.h
-
 gpu-stream-cuda
 gpu-stream-ocl
 gpu-stream-acc
