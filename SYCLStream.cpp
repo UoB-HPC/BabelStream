@@ -98,7 +98,7 @@ void SYCLStream<T>::copy()
           range<1>{array_size}, [=](item<1> item)
     {
       auto id = item.get();
-      kc[id[0]] = ka[id[0]];
+      kc[id] = ka[id];
     });
   });
   queue->wait();
@@ -116,7 +116,7 @@ void SYCLStream<T>::mul()
       range<1>{array_size}, [=](item<1> item)
     {
       auto id = item.get();
-      kb[id[0]] = scalar * kc[id[0]];
+      kb[id] = scalar * kc[id];
     });
   });
   queue->wait();
@@ -134,7 +134,7 @@ void SYCLStream<T>::add()
       range<1>{array_size}, [=](item<1> item)
     {
       auto id = item.get();
-      kc[id[0]] = ka[id[0]] + kb[id[0]];
+      kc[id] = ka[id] + kb[id];
     });
   });
   queue->wait();
@@ -153,7 +153,7 @@ void SYCLStream<T>::triad()
       range<1>{array_size}, [=](item<1> item)
     {
       auto id = item.get();
-      ka[id] = kb[id[0]] + scalar * kc[id[0]];
+      ka[id] = kb[id] + scalar * kc[id];
     });
   });
   queue->wait();
