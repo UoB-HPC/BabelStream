@@ -180,7 +180,7 @@ T SYCLStream<T>::dot()
       for (; i < N; i += item.get_global_range()[0])
         wg_sum[li] += ka[i] * kb[i];
 
-      for (int offset = item.get_local_range()[0]; offset > 0; offset /= 2)
+      for (int offset = item.get_local_range()[0] / 2; offset > 0; offset /= 2)
       {
         item.barrier(cl::sycl::access::fence_space::local_space);
         if (li < offset)
