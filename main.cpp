@@ -61,13 +61,11 @@ int main(int argc, char *argv[])
 
   parseArguments(argc, argv);
 
-  // TODO: Fix SYCL to allow multiple template specializations
-#ifndef SYCL
+  // TODO: Fix Kokkos to allow multiple template specializations
 #ifndef KOKKOS
   if (use_float)
     run<float>();
   else
-#endif
 #endif
     run<double>();
 
