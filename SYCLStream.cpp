@@ -87,7 +87,7 @@ void SYCLStream<T>::copy()
     cgh.parallel_for<copy_kernel>(p->get_kernel<copy_kernel>(),
           range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get();
+      auto id = item.get()[0];
       kc[id] = ka[id];
     });
   });
@@ -105,7 +105,7 @@ void SYCLStream<T>::mul()
     cgh.parallel_for<mul_kernel>(p->get_kernel<mul_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get();
+      auto id = item.get()[0];
       kb[id] = scalar * kc[id];
     });
   });
@@ -123,7 +123,7 @@ void SYCLStream<T>::add()
     cgh.parallel_for<add_kernel>(p->get_kernel<add_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get();
+      auto id = item.get()[0];
       kc[id] = ka[id] + kb[id];
     });
   });
@@ -142,7 +142,7 @@ void SYCLStream<T>::triad()
     cgh.parallel_for<triad_kernel>(p->get_kernel<triad_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get();
+      auto id = item.get()[0];
       ka[id] = kb[id] + scalar * kc[id];
     });
   });
@@ -167,11 +167,14 @@ T SYCLStream<T>::dot()
     {
       size_t i = item.get_global(0);
       size_t li = item.get_local(0);
+      size_t global_size = item.get_global_range()[0];
+
       wg_sum[li] = 0.0;
-      for (; i < N; i += item.get_global_range()[0])
+      for (; i < N; i += global_size)
         wg_sum[li] += ka[i] * kb[i];
 
-      for (int offset = item.get_local_range()[0] / 2; offset > 0; offset /= 2)
+      size_t local_size = item.get_local_range()[0];
+      for (int offset = local_size / 2; offset > 0; offset /= 2)
       {
         item.barrier(cl::sycl::access::fence_space::local_space);
         if (li < offset)
@@ -204,10 +207,10 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
     cgh.parallel_for<init_kernel>(p->get_kernel<init_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get();
-      ka[id[0]] = initA;
-      kb[id[0]] = initB;
-      kc[id[0]] = initC;
+      auto id = item.get()[0];
+      ka[id] = initA;
+      kb[id] = initB;
+      kc[id] = initC;
     });
   });
   queue->wait();
