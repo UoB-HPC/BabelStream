@@ -69,13 +69,19 @@ std::string kernels{R"CLC(
     local TYPE * restrict wg_sum,
     int array_size)
   {
-    size_t i = get_global_id(0);
     const size_t local_i = get_local_id(0);
-    wg_sum[local_i] = 0.0;
-    for (; i < array_size; i += get_global_size(0))
-      wg_sum[local_i] += a[i] * b[i];
+    const size_t local_size = get_local_size(0);
 
-    for (int offset = get_local_size(0) / 2; offset > 0; offset /= 2)
+    const int per_group = array_size / get_num_groups(0);
+    int i = get_group_id(0) * per_group + local_i;
+    int end = i + per_group;
+
+    TYPE tmp = 0.0;
+    for (; i < end; i += local_size)
+      tmp += a[i] * b[i];
+
+    wg_sum[local_i] = tmp;
+    for (int offset = local_size / 2; offset > 0; offset /= 2)
     {
       barrier(CLK_LOCAL_MEM_FENCE);
       if (local_i < offset)
