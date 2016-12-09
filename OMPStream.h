@@ -14,7 +14,7 @@
 
 #include <omp.h>
 
-#define IMPLEMENTATION_STRING "OpenMP 4.5"
+#define IMPLEMENTATION_STRING "OpenMP"
 
 template <class T>
 class OMPStream : public Stream<T>
