@@ -17,7 +17,7 @@
 #define IMPLEMENTATION_STRING "OpenMP 4.5"
 
 template <class T>
-class OMP45Stream : public Stream<T>
+class OMPStream : public Stream<T>
 {
   protected:
     // Size of arrays
@@ -29,8 +29,8 @@ class OMP45Stream : public Stream<T>
     T *c;
 
   public:
-    OMP45Stream(const unsigned int, T*, T*, T*, int);
-    ~OMP45Stream();
+    OMPStream(const unsigned int, T*, T*, T*, int);
+    ~OMPStream();
 
     virtual void copy() override;
     virtual void add() override;
