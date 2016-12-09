@@ -15,7 +15,8 @@
 #include <iomanip>
 #include <cstring>
 
-#include "common.h"
+#define VERSION_STRING "devel"
+
 #include "Stream.h"
 
 #if defined(CUDA)
