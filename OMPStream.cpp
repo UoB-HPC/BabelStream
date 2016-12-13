@@ -31,6 +31,7 @@ OMPStream<T>::OMPStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int dev
 template <class T>
 OMPStream<T>::~OMPStream()
 {
+#ifdef OMP_TARGET_GPU
   // End data region on device
   unsigned int array_size = this->array_size;
   T *a = this->a;
@@ -38,6 +39,11 @@ OMPStream<T>::~OMPStream()
   T *c = this->c;
   #pragma omp target exit data map(release: a[0:array_size], b[0:array_size], c[0:array_size])
   {}
+#else
+  free(a);
+  free(b);
+  free(c);
+#endif
 }
 
 template <class T>
