@@ -77,6 +77,8 @@ CUDAStream<T>::~CUDAStream()
   check_error();
   cudaFree(d_c);
   check_error();
+  cudaFree(d_sum);
+  check_error();
 }
 
 
