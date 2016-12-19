@@ -245,12 +245,23 @@ T CUDAStream<T>::dot()
   dot_kernel<<<DOT_NUM_BLOCKS, TBSIZE, sizeof(T)*TBSIZE>>>(d_a, d_b, d_sum, array_size);
   check_error();
 
+#if defined(MANAGED) || defined(PAGEFAULT)
+  cudaDeviceSynchronize();
+  check_error();
+#else
   cudaMemcpy(sums, d_sum, DOT_NUM_BLOCKS*sizeof(T), cudaMemcpyDeviceToHost);
   check_error();
+#endif
 
   T sum = 0.0;
   for (int i = 0; i < DOT_NUM_BLOCKS; i++)
+  {
+#if defined(MANAGED) || defined(PAGEFAULT)
+    sum += d_sum[i];
+#else
     sum += sums[i];
+#endif
+  }
 
   return sum;
 }
