@@ -10,6 +10,15 @@ if(NOT DEFINED HIP_PATH)
 endif()
 set(CMAKE_MODULE_PATH "${HIP_PATH}/cmake" ${CMAKE_MODULE_PATH})
 
+if(NOT DEFINED HCC_PATH)
+    if(NOT DEFINED ENV{HCC_PATH})
+        set(HCC_PATH "/opt/rocm/" CACHE PATH "Path to which HCC has been installed")
+    else()
+        set(HCC_PATH $ENV{HCC_PATH} CACHE PATH "Path to which HCC has been installed")
+    endif()
+endif()
+
+
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -48,6 +57,26 @@ if(${HIP_FOUND})
 else()
   message("Skipping HIP...")
 endif()
+
+#-------------------------------------------------------------------------------
+# HCC
+#-------------------------------------------------------------------------------
+find_program(HCC_BINARY hcc HINTS ${HCC_PATH}/bin PATHS ${HCC_PATH}/bin)
+if(EXISTS ${HCC_BINARY})
+  #can the following be tied to the target only?
+  set(CMAKE_CXX_COMPILER ${HCC_BINARY})
+  # list(APPEND CMAKE_CXX_FLAGS -hc -I /usr/include/c++/v1 -std=c++11 -stdlib=libc++ -I/opt/rocm/hcc-lc/include)
+  # list(APPEND CMAKE_EXE_LINKER_FLAGS -hc -std=c++11 -L/opt/rocm/hcc-lc/lib -Wl,--rpath=/opt/rocm/hcc-lc/lib -lc++ -lc++abi -ldl -lpthread -Wl,--whole-archive -lmcwamp -Wl,--no-whole-archive  -mcmodel=small )
+  add_executable(gpu-stream-hc main.cpp HCStream.cpp)
+  set_target_properties(gpu-stream-hc PROPERTIES
+    COMPILE_FLAGS "-hc -I /usr/include/c++/v1 -std=c++11 -stdlib=libc++ -I/opt/rocm/hcc-lc/include"
+    LINK_FLAGS "-hc -std=c++11 -L/opt/rocm/hcc-lc/lib -Wl,--rpath=/opt/rocm/hcc-lc/lib -lc++ -lc++abi -ldl -lpthread -Wl,--whole-archive -lmcwamp -Wl,--no-whole-archive  -mcmodel=small"
+    )
+  target_compile_definitions(gpu-stream-hc PUBLIC HC)
+else()
+  message("Skipping HC...")
+endif()
+
 
 #-------------------------------------------------------------------------------
 # CUDA
