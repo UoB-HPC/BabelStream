@@ -72,7 +72,9 @@ HCStream<T>::HCStream(const unsigned int ARRAY_SIZE, const int device_index):
   // // Set device
   std::vector<hc::accelerator> accs = hc::accelerator::get_all();
   auto current = accs[device_index];
-  
+
+  hc::accelerator::set_default(current.get_device_path());
+
   std::cout << "Using HC device " << getDeviceName(current) << std::endl;
   
   // // The array size must be divisible by TBSIZE for kernel launches
@@ -142,11 +144,15 @@ void HCStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<
 template <class T>
 void HCStream<T>::copy()
 {
+
+  hc::array<T,1>& device_a = this->d_a;
+  hc::array<T,1>& device_c = this->d_c;
+
   try{
-  // launch a GPU kernel to compute the saxpy in parallel 
+  // launch a GPU kernel to compute the saxpy in parallel
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
-								, [&](hc::index<1> i) [[hc]] {
-								  d_c[i] = d_a[i];
+								, [&](hc::index<1> index) [[hc]] {
+                                  device_c[index] = device_a[index];
 								});
     future_kernel.wait();
   }
@@ -160,11 +166,14 @@ template <class T>
 void HCStream<T>::mul()
 {
   const T scalar = 0.3;
+  hc::array<T,1>& device_b = this->d_b;
+  hc::array<T,1>& device_c = this->d_c;
+
   try{
   // launch a GPU kernel to compute the saxpy in parallel 
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
 								, [&](hc::index<1> i) [[hc]] {
-								  d_b[i] = scalar*d_c[i];
+                                  device_b[i] = scalar*device_c[i];
 								});
     future_kernel.wait();
   }
@@ -177,11 +186,16 @@ void HCStream<T>::mul()
 template <class T>
 void HCStream<T>::add()
 {
+
+  hc::array<T,1>& device_a = this->d_a;
+  hc::array<T,1>& device_b = this->d_b;
+  hc::array<T,1>& device_c = this->d_c;
+
   try{
     // launch a GPU kernel to compute the saxpy in parallel 
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
 								, [&](hc::index<1> i) [[hc]] {
-								  d_c[i] = d_a[i]+d_b[i];
+                                  device_c[i] = device_a[i]+device_b[i];
 								});
     future_kernel.wait();
   }
@@ -195,11 +209,15 @@ template <class T>
 void HCStream<T>::triad()
 {
   const T scalar = 0.3;
+  hc::array<T,1>& device_a = this->d_a;
+  hc::array<T,1>& device_b = this->d_b;
+  hc::array<T,1>& device_c = this->d_c;
+
   try{
     // launch a GPU kernel to compute the saxpy in parallel 
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
 								, [&](hc::index<1> i) [[hc]] {
-								  d_a[i] = d_b[i] + scalar*d_c[i];
+                                  device_a[i] = device_b[i] + scalar*device_c[i];
 								});
     future_kernel.wait();
   }
