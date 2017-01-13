@@ -180,25 +180,20 @@ if(EXISTS ${HCC_BINARY})
   #can the following be tied to the target only?
   set(OLD_CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER})
   set(CMAKE_CXX_COMPILER ${HCC_BINARY})
-  
-  # list(APPEND CMAKE_CXX_FLAGS -hc -I /usr/include/c++/v1 -std=c++11 -stdlib=libc++ -I/opt/rocm/hcc-lc/include)
-  # list(APPEND CMAKE_EXE_LINKER_FLAGS -hc -std=c++11 -L/opt/rocm/hcc-lc/lib -Wl,--rpath=/opt/rocm/hcc-lc/lib -lc++ -lc++abi -ldl -lpthread -Wl,--whole-archive -lmcwamp -Wl,--no-whole-archive  -mcmodel=small )
+
   add_executable(gpu-stream-hc main.cpp HCStream.cpp)
   set_target_properties(gpu-stream-hc PROPERTIES
-    COMPILE_FLAGS "-hc -I/usr/include/c++/v1 -std=c++11 -stdlib=libc++ -I/opt/rocm/hcc-lc/include"
-    LINK_FLAGS "-hc -std=c++11 -L/opt/rocm/hcc-lc/lib -Wl,--rpath=/opt/rocm/hcc-lc/lib -lc++ -lc++abi -ldl -lpthread -Wl,--whole-archive -lmcwamp -Wl,--no-whole-archive  -mcmodel=small"
+    COMPILE_FLAGS "-hc -std=c++11 -stdlib=libc++ -I/opt/rocm/hcc-lc/include"
+    LINK_FLAGS "-hc -L/opt/rocm/hcc-lc/lib -Wl,--rpath=/opt/rocm/hcc-lc/lib -lc++ -lc++abi -ldl -Wl,--whole-archive -lmcwamp -Wl,--no-whole-archive"
     )
-  message("OpenCL magic: ${OpenCL_LIBRARY} ${OpenCL_INCLUDE_DIR}")
-  set_property(TARGET gpu-stream-ocl APPEND PROPERTY COMPILE_FLAGS "-I/opt/rocm/opencl/include/ -stdlib=libc++ -I/opt/rocm/hcc-lc/include")
-  set_property(TARGET gpu-stream-ocl APPEND PROPERTY LINK_FLAGS "-L/opt/rocm/opencl/lib/x86_64 -std=c++11 -L/opt/rocm/hcc-lc/lib -Wl,--rpath=/opt/rocm/hcc-lc/lib -lc++ -lc++abi ")
-  # set_target_properties(gpu-stream-ocl PROPERTIES
-  #   # COMPILE_FLAGS "-I/opt/rocm/opencl/include/opencl1.2"
-  #   LINK_FLAGS "-I /opt/rocm/opencl/include/opencl1.2 -L /opt/rocm/opencl/lib/x86_64 -lOpenCL -std=c++11"
-  #   )
   target_compile_definitions(gpu-stream-hc PUBLIC HC)
-  if(TARGET gpu-stream-ocl)
-    unset(gpu-stream-ocl)
-  endif()
+
+  set_property(TARGET gpu-stream-ocl APPEND PROPERTY COMPILE_FLAGS "-I/opt/rocm/opencl/include/ -stdlib=libstdc++")
+  set_property(TARGET gpu-stream-ocl APPEND PROPERTY LINK_FLAGS "-L/opt/rocm/opencl/lib/x86_64 -lstdc++ ")
+
+  set_property(TARGET gpu-stream-omp3 APPEND PROPERTY COMPILE_FLAGS "-I/opt/rocm/opencl/include/ -stdlib=libstdc++")
+  set_property(TARGET gpu-stream-omp3 APPEND PROPERTY LINK_FLAGS "-L/opt/rocm/opencl/lib/x86_64 -lstdc++ ")
+
 else()
   message("Skipping HC...")
 endif()
