@@ -35,13 +35,19 @@ OMP45Stream<T>::~OMP45Stream()
 }
 
 template <class T>
-void OMP45Stream<T>::write_arrays(const std::vector<T>& h_a, const std::vector<T>& h_b, const std::vector<T>& h_c)
+void OMP45Stream<T>::init_arrays(T initA, T initB, T initC)
 {
+  unsigned int array_size = this->array_size;
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target update to(a[0:array_size], b[0:array_size], c[0:array_size])
-  {}
+  #pragma omp target teams distribute parallel for simd map(to: a[0:array_size], b[0:array_size], c[0:array_size])
+  for (int i = 0; i < array_size; i++)
+  {
+    a[i] = initA;
+    b[i] = initB;
+    c[i] = initC;
+  }
 }
 
 template <class T>
