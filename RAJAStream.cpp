@@ -21,12 +21,6 @@ RAJAStream<T>::RAJAStream(const unsigned int ARRAY_SIZE, const int device_index)
   d_a = new T[ARRAY_SIZE];
   d_b = new T[ARRAY_SIZE];
   d_c = new T[ARRAY_SIZE];
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
-  {
-    d_a[index] = 0.0;
-    d_b[index] = 0.0;
-    d_c[index] = 0.0;
-  });
 #else
   cudaMallocManaged((void**)&d_a, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
   cudaMallocManaged((void**)&d_b, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
@@ -50,12 +44,17 @@ RAJAStream<T>::~RAJAStream()
 }
 
 template <class T>
-void RAJAStream<T>::write_arrays(
-        const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
+void RAJAStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  std::copy(a.begin(), a.end(), d_a);
-  std::copy(b.begin(), b.end(), d_b);
-  std::copy(c.begin(), c.end(), d_c);
+  T* a = d_a;
+  T* b = d_b;
+  T* c = d_c;
+  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
+  {
+    a[index] = initA;
+    b[index] = initB;
+    c[index] = initC;
+  });
 }
 
 template <class T>
@@ -114,6 +113,23 @@ void RAJAStream<T>::triad()
     a[index] = b[index] + scalar*c[index];
   });
 }
+
+template <class T>
+T RAJAStream<T>::dot()
+{
+  T* a = d_a;
+  T* b = d_b;
+
+  RAJA::ReduceSum<reduce_policy, T> sum(0.0);
+
+  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
+  {
+    sum += a[index] * b[index];
+  });
+
+  return T(sum);
+}
+
 
 void listDevices(void)
 {

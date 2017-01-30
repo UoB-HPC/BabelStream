@@ -16,6 +16,18 @@ std::string kernels{R"CLC(
 
   constant TYPE scalar = startScalar;
 
+  kernel void init(
+    global TYPE * restrict a,
+    global TYPE * restrict b,
+    global TYPE * restrict c,
+    TYPE initA, TYPE initB, TYPE initC)
+  {
+    const size_t i = get_global_id(0);
+    a[i] = initA;
+    b[i] = initB;
+    c[i] = initC;
+  }
+
   kernel void copy(
     global const TYPE * restrict a,
     global TYPE * restrict c)
@@ -50,6 +62,32 @@ std::string kernels{R"CLC(
     a[i] = b[i] + scalar * c[i];
   }
 
+  kernel void stream_dot(
+    global const TYPE * restrict a,
+    global const TYPE * restrict b,
+    global TYPE * restrict sum,
+    local TYPE * restrict wg_sum,
+    int array_size)
+  {
+    size_t i = get_global_id(0);
+    const size_t local_i = get_local_id(0);
+    wg_sum[local_i] = 0.0;
+    for (; i < array_size; i += get_global_size(0))
+      wg_sum[local_i] += a[i] * b[i];
+
+    for (int offset = get_local_size(0) / 2; offset > 0; offset /= 2)
+    {
+      barrier(CLK_LOCAL_MEM_FENCE);
+      if (local_i < offset)
+      {
+        wg_sum[local_i] += wg_sum[local_i+offset];
+      }
+    }
+
+    if (local_i == 0)
+      sum[get_group_id(0)] = wg_sum[local_i];
+  }
+
 )CLC"};
 
 
@@ -64,9 +102,22 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
     throw std::runtime_error("Invalid device index");
   device = devices[device_index];
 
+  // Determine sensible dot kernel NDRange configuration
+  if (device.getInfo<CL_DEVICE_TYPE>() & CL_DEVICE_TYPE_CPU)
+  {
+    dot_num_groups = device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
+    dot_wgsize     = device.getInfo<CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE>() * 2;
+  }
+  else
+  {
+    dot_num_groups = device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() * 4;
+    dot_wgsize     = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+  }
+
   // Print out device information
   std::cout << "Using OpenCL device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+  std::cout << "Reduction kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
 
   context = cl::Context(device);
   queue = cl::CommandQueue(context);
@@ -101,10 +152,12 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   }
 
   // Create kernels
+  init_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, T, T, T>(program, "init");
   copy_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "copy");
   mul_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "mul");
   add_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "add");
   triad_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "triad");
+  dot_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_int>(program, "stream_dot");
 
   array_size = ARRAY_SIZE;
 
@@ -120,12 +173,15 @@ OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   d_a = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
   d_b = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
   d_c = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
+  d_sum = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(T) * dot_num_groups);
 
+  sums = std::vector<T>(dot_num_groups);
 }
 
 template <class T>
 OCLStream<T>::~OCLStream()
 {
+  delete init_kernel;
   delete copy_kernel;
   delete mul_kernel;
   delete add_kernel;
@@ -173,11 +229,29 @@ void OCLStream<T>::triad()
 }
 
 template <class T>
-void OCLStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
+T OCLStream<T>::dot()
 {
-  cl::copy(queue, a.begin(), a.end(), d_a);
-  cl::copy(queue, b.begin(), b.end(), d_b);
-  cl::copy(queue, c.begin(), c.end(), d_c);
+  (*dot_kernel)(
+    cl::EnqueueArgs(queue, cl::NDRange(dot_num_groups*dot_wgsize), cl::NDRange(dot_wgsize)),
+    d_a, d_b, d_sum, cl::Local(sizeof(T) * dot_wgsize), array_size
+  );
+  cl::copy(queue, d_sum, sums.begin(), sums.end());
+
+  T sum = 0.0;
+  for (T val : sums)
+    sum += val;
+
+  return sum;
+}
+
+template <class T>
+void OCLStream<T>::init_arrays(T initA, T initB, T initC)
+{
+  (*init_kernel)(
+    cl::EnqueueArgs(queue, cl::NDRange(array_size)),
+    d_a, d_b, d_c, initA, initB, initC
+  );
+  queue.finish();
 }
 
 template <class T>

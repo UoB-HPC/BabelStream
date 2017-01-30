@@ -15,7 +15,8 @@
 #include <iomanip>
 #include <cstring>
 
-#include "common.h"
+#define VERSION_STRING "3.0"
+
 #include "Stream.h"
 
 #if defined(CUDA)
@@ -34,10 +35,8 @@
 #include "ACCStream.h"
 #elif defined(SYCL)
 #include "SYCLStream.h"
-#elif defined(OMP3)
-#include "OMP3Stream.h"
-#elif defined(OMP45)
-#include "OMP45Stream.h"
+#elif defined(OMP)
+#include "OMPStream.h"
 #endif
 
 // Default size of 2^25
@@ -47,7 +46,7 @@ unsigned int deviceIndex = 0;
 bool use_float = false;
 
 template <typename T>
-void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c);
+void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
 
 template <typename T>
 void run();
@@ -63,13 +62,11 @@ int main(int argc, char *argv[])
 
   parseArguments(argc, argv);
 
-  // TODO: Fix SYCL to allow multiple template specializations
-#ifndef SYCL
+  // TODO: Fix Kokkos to allow multiple template specializations
 #ifndef KOKKOS
   if (use_float)
     run<float>();
   else
-#endif
 #endif
     run<double>();
 
@@ -86,9 +83,9 @@ void run()
     std::cout << "Precision: double" << std::endl;
 
   // Create host vectors
-  std::vector<T> a(ARRAY_SIZE, startA);
-  std::vector<T> b(ARRAY_SIZE, startB);
-  std::vector<T> c(ARRAY_SIZE, startC);
+  std::vector<T> a(ARRAY_SIZE);
+  std::vector<T> b(ARRAY_SIZE);
+  std::vector<T> c(ARRAY_SIZE);
   std::streamsize ss = std::cout.precision();
   std::cout << std::setprecision(1) << std::fixed
     << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
@@ -96,6 +93,9 @@ void run()
   std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
     << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
   std::cout.precision(ss);
+
+  // Result of the Dot kernel
+  T sum;
 
   Stream<T> *stream;
 
@@ -131,20 +131,16 @@ void run()
   // Use the SYCL implementation
   stream = new SYCLStream<T>(ARRAY_SIZE, deviceIndex);
 
-#elif defined(OMP3)
-  // Use the "reference" OpenMP 3 implementation
-  stream = new OMP3Stream<T>(ARRAY_SIZE, a.data(), b.data(), c.data());
-
-#elif defined(OMP45)
-  // Use the "reference" OpenMP 3 implementation
-  stream = new OMP45Stream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+#elif defined(OMP)
+  // Use the OpenMP implementation
+  stream = new OMPStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
 
 #endif
 
-  stream->write_arrays(a, b, c);
+  stream->init_arrays(startA, startB, startC);
 
   // List of times
-  std::vector<std::vector<double>> timings(4);
+  std::vector<std::vector<double>> timings(5);
 
   // Declare timers
   std::chrono::high_resolution_clock::time_point t1, t2;
@@ -176,11 +172,17 @@ void run()
     t2 = std::chrono::high_resolution_clock::now();
     timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
+    // Execute Dot
+    t1 = std::chrono::high_resolution_clock::now();
+    sum = stream->dot();
+    t2 = std::chrono::high_resolution_clock::now();
+    timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
   }
 
   // Check solutions
   stream->read_arrays(a, b, c);
-  check_solution<T>(num_times, a, b, c);
+  check_solution<T>(num_times, a, b, c, sum);
 
   // Display timing results
   std::cout
@@ -192,15 +194,16 @@ void run()
 
   std::cout << std::fixed;
 
-  std::string labels[4] = {"Copy", "Mul", "Add", "Triad"};
-  size_t sizes[4] = {
+  std::string labels[5] = {"Copy", "Mul", "Add", "Triad", "Dot"};
+  size_t sizes[5] = {
     2 * sizeof(T) * ARRAY_SIZE,
     2 * sizeof(T) * ARRAY_SIZE,
     3 * sizeof(T) * ARRAY_SIZE,
-    3 * sizeof(T) * ARRAY_SIZE
+    3 * sizeof(T) * ARRAY_SIZE,
+    2 * sizeof(T) * ARRAY_SIZE
   };
 
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 5; i++)
   {
     // Get min/max; ignore the first result
     auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
@@ -224,12 +227,13 @@ void run()
 }
 
 template <typename T>
-void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
+void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum)
 {
   // Generate correct solution
   T goldA = startA;
   T goldB = startB;
   T goldC = startC;
+  T goldSum = 0.0;
 
   const T scalar = startScalar;
 
@@ -242,6 +246,9 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
     goldA = goldB + scalar * goldC;
   }
 
+  // Do the reduction
+  goldSum = goldA * goldB * ARRAY_SIZE;
+
   // Calculate the average error
   double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldA); });
   errA /= a.size();
@@ -249,6 +256,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   errB /= b.size();
   double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldC); });
   errC /= c.size();
+  double errSum = fabs(sum - goldSum);
 
   double epsi = std::numeric_limits<T>::epsilon() * 100.0;
 
@@ -263,6 +271,13 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   if (errC > epsi)
     std::cerr
       << "Validation failed on c[]. Average error " << errC
+      << std::endl;
+  // Check sum to 8 decimal places
+  if (errSum > 1.0E-8)
+    std::cerr
+      << "Validation failed on sum. Error " << errSum
+      << std::endl << std::setprecision(15)
+      << "Sum was " << sum << " but should be " << goldSum
       << std::endl;
 
 }

@@ -29,7 +29,7 @@ include(CheckIncludeFileCXX)
 include(CheckCXXCompilerFlag)
 
 set(gpu-stream_VERSION_MAJOR 2)
-set(gpu-stream_VERSION_MINOR 1)
+set(gpu-stream_VERSION_MINOR 2)
 
 configure_file(common.h.in common.h)
 include_directories(${CMAKE_BINARY_DIR})
