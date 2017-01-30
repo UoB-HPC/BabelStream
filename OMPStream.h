@@ -12,29 +12,35 @@
 
 #include "Stream.h"
 
-#define IMPLEMENTATION_STRING "Reference OpenMP"
+#include <omp.h>
+
+#define IMPLEMENTATION_STRING "OpenMP"
 
 template <class T>
-class OMP3Stream : public Stream<T>
+class OMPStream : public Stream<T>
 {
   protected:
     // Size of arrays
     unsigned int array_size;
+
     // Device side pointers
     T *a;
     T *b;
     T *c;
 
   public:
-    OMP3Stream(const unsigned int, T*, T*, T*);
-    ~OMP3Stream();
+    OMPStream(const unsigned int, T*, T*, T*, int);
+    ~OMPStream();
 
     virtual void copy() override;
     virtual void add() override;
     virtual void mul() override;
     virtual void triad() override;
+    virtual T dot() override;
 
-    virtual void write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c) override;
+    virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
+
+
 
 };

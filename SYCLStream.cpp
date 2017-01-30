@@ -18,14 +18,6 @@ std::vector<device> devices;
 void getDeviceList(void);
 program * p;
 
-/* Forward declaration of SYCL kernels */
-namespace kernels {
-  class copy;
-  class mul;
-  class add;
-  class triad;
-}
-
 template <class T>
 SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 {
@@ -38,24 +30,39 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
     throw std::runtime_error("Invalid device index");
   device dev = devices[device_index];
 
+  // Determine sensible dot kernel NDRange configuration
+  if (dev.is_cpu())
+  {
+    dot_num_groups = dev.get_info<info::device::max_compute_units>();
+    dot_wgsize     = dev.get_info<info::device::native_vector_width_double>() * 2;
+  }
+  else
+  {
+    dot_num_groups = dev.get_info<info::device::max_compute_units>() * 4;
+    dot_wgsize     = dev.get_info<info::device::max_work_group_size>();
+  }
+
   // Print out device information
   std::cout << "Using SYCL device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+  std::cout << "Reduction kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
 
   queue = new cl::sycl::queue(dev);
 
   /* Pre-build the kernels */
   p = new program(queue->get_context());
-  p->build_from_kernel_name<kernels::copy>();
-  p->build_from_kernel_name<kernels::mul>();
-  p->build_from_kernel_name<kernels::add>();
-  p->build_from_kernel_name<kernels::triad>();
-
+  p->build_from_kernel_name<init_kernel>();
+  p->build_from_kernel_name<copy_kernel>();
+  p->build_from_kernel_name<mul_kernel>();
+  p->build_from_kernel_name<add_kernel>();
+  p->build_from_kernel_name<triad_kernel>();
+  p->build_from_kernel_name<dot_kernel>();
 
   // Create buffers
   d_a = new buffer<T>(array_size);
   d_b = new buffer<T>(array_size);
   d_c = new buffer<T>(array_size);
+  d_sum = new buffer<T>(dot_num_groups);
 }
 
 template <class T>
@@ -64,6 +71,7 @@ SYCLStream<T>::~SYCLStream()
   delete d_a;
   delete d_b;
   delete d_c;
+  delete d_sum;
 
   delete p;
   delete queue;
@@ -76,11 +84,11 @@ void SYCLStream<T>::copy()
   {
     auto ka = d_a->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::write>(cgh);
-    cgh.parallel_for<kernels::copy>(p->get_kernel<kernels::copy>(),
+    cgh.parallel_for<copy_kernel>(p->get_kernel<copy_kernel>(),
           range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get();
-      kc[id[0]] = ka[id[0]];
+      auto id = item.get()[0];
+      kc[id] = ka[id];
     });
   });
   queue->wait();
@@ -94,11 +102,11 @@ void SYCLStream<T>::mul()
   {
     auto kb = d_b->template get_access<access::mode::write>(cgh);
     auto kc = d_c->template get_access<access::mode::read>(cgh);
-    cgh.parallel_for<kernels::mul>(p->get_kernel<kernels::mul>(),
+    cgh.parallel_for<mul_kernel>(p->get_kernel<mul_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get();
-      kb[id[0]] = scalar * kc[id[0]];
+      auto id = item.get()[0];
+      kb[id] = scalar * kc[id];
     });
   });
   queue->wait();
@@ -112,11 +120,11 @@ void SYCLStream<T>::add()
     auto ka = d_a->template get_access<access::mode::read>(cgh);
     auto kb = d_b->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::write>(cgh);
-    cgh.parallel_for<kernels::add>(p->get_kernel<kernels::add>(),
+    cgh.parallel_for<add_kernel>(p->get_kernel<add_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get();
-      kc[id[0]] = ka[id[0]] + kb[id[0]];
+      auto id = item.get()[0];
+      kc[id] = ka[id] + kb[id];
     });
   });
   queue->wait();
@@ -131,28 +139,81 @@ void SYCLStream<T>::triad()
     auto ka = d_a->template get_access<access::mode::write>(cgh);
     auto kb = d_b->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::read>(cgh);
-    cgh.parallel_for<kernels::triad>(p->get_kernel<kernels::triad>(),
+    cgh.parallel_for<triad_kernel>(p->get_kernel<triad_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get();
-      ka[id] = kb[id[0]] + scalar * kc[id[0]];
+      auto id = item.get()[0];
+      ka[id] = kb[id] + scalar * kc[id];
     });
   });
   queue->wait();
 }
 
 template <class T>
-void SYCLStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
+T SYCLStream<T>::dot()
 {
-  auto _a = d_a->template get_access<access::mode::write, access::target::host_buffer>();
-  auto _b = d_b->template get_access<access::mode::write, access::target::host_buffer>();
-  auto _c = d_c->template get_access<access::mode::write, access::target::host_buffer>();
-  for (int i = 0; i < array_size; i++)
+  queue->submit([&](handler &cgh)
   {
-    _a[i] = a[i];
-    _b[i] = b[i];
-    _c[i] = c[i];
+    auto ka   = d_a->template get_access<access::mode::read>(cgh);
+    auto kb   = d_b->template get_access<access::mode::read>(cgh);
+    auto ksum = d_sum->template get_access<access::mode::write>(cgh);
+
+    auto wg_sum = accessor<T, 1, access::mode::read_write, access::target::local>(range<1>(dot_wgsize), cgh);
+
+    size_t N = array_size;
+
+    cgh.parallel_for<dot_kernel>(p->get_kernel<dot_kernel>(),
+      nd_range<1>(dot_num_groups*dot_wgsize, dot_wgsize), [=](nd_item<1> item)
+    {
+      size_t i = item.get_global(0);
+      size_t li = item.get_local(0);
+      size_t global_size = item.get_global_range()[0];
+
+      wg_sum[li] = 0.0;
+      for (; i < N; i += global_size)
+        wg_sum[li] += ka[i] * kb[i];
+
+      size_t local_size = item.get_local_range()[0];
+      for (int offset = local_size / 2; offset > 0; offset /= 2)
+      {
+        item.barrier(cl::sycl::access::fence_space::local_space);
+        if (li < offset)
+          wg_sum[li] += wg_sum[li + offset];
+      }
+
+      if (li == 0)
+        ksum[item.get_group(0)] = wg_sum[0];
+    });
+  });
+
+  T sum = 0.0;
+  auto h_sum = d_sum->template get_access<access::mode::read, access::target::host_buffer>();
+  for (int i = 0; i < dot_num_groups; i++)
+  {
+    sum += h_sum[i];
   }
+
+  return sum;
+}
+
+template <class T>
+void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
+{
+  queue->submit([&](handler &cgh)
+  {
+    auto ka = d_a->template get_access<access::mode::write>(cgh);
+    auto kb = d_b->template get_access<access::mode::write>(cgh);
+    auto kc = d_c->template get_access<access::mode::write>(cgh);
+    cgh.parallel_for<init_kernel>(p->get_kernel<init_kernel>(),
+      range<1>{array_size}, [=](item<1> item)
+    {
+      auto id = item.get()[0];
+      ka[id] = initA;
+      kb[id] = initB;
+      kc[id] = initC;
+    });
+  });
+  queue->wait();
 }
 
 template <class T>
@@ -244,5 +305,5 @@ std::string getDeviceDriver(const int device)
 
 
 // TODO: Fix kernel names to allow multiple template specializations
-//template class SYCLStream<float>;
+template class SYCLStream<float>;
 template class SYCLStream<double>;
