@@ -24,7 +24,11 @@ endif
 
 else ifeq ($(TARGET), GPU)
 COMP = nvcc
-CFLAGS = --expt-extended-lambda -O3 -std=c++11 -x cu -Xcompiler -fopenmp
+
+ifndef ARCH
+$(error No ARCH defined. Specify target GPU architecture (e.g. ARCH=sm_35))
+endif
+CFLAGS = --expt-extended-lambda -O3 -std=c++11 -x cu -Xcompiler -fopenmp -arch $(ARCH)
 endif
 
 raja-stream: main.cpp RAJAStream.cpp
