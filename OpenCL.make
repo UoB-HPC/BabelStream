@@ -10,8 +10,8 @@ COMPILER_CRAY = CC
 FLAGS_ = -O3
 FLAGS_GNU = -O3 -std=c++11
 FLAGS_CRAY = -O3 -hstd=c++11
-CFLAGS=$(FLAGS_$(COMPILER))
+CXXFLAGS=$(FLAGS_$(COMPILER))
 
 ocl-stream: main.cpp OCLStream.cpp
-	$(COMPILER_$(COMPILER)) $(CFLAGS) -DOCL $^ $(EXTRA_FLAGS) -lOpenCL -o $@
+	$(COMPILER_$(COMPILER)) $(CXXFLAGS) -DOCL $^ $(EXTRA_FLAGS) -lOpenCL -o $@
 

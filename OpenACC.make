@@ -23,8 +23,8 @@ FLAGS_PGI += -ta=multicore
 endif
 
 FLAGS_CRAY = -hstd=c++11
-CFLAGS = $(FLAGS_$(COMPILER))
+CXXFLAGS = $(FLAGS_$(COMPILER))
 
 acc-stream: main.cpp ACCStream.cpp
-	$(CXX) $(CFLAGS) -DACC $^ $(EXTRA_FLAGS) -o $@
+	$(CXX) $(CXXFLAGS) -DACC $^ $(EXTRA_FLAGS) -o $@
 
