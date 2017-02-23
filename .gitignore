@@ -12,7 +12,4 @@ gpu-stream-sycl
 
 .DS_Store
 
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
 Makefile
