@@ -1,0 +1,36 @@
+Android (outdated instructions)
+------------------
+
+Assuming you have a recent Android NDK available, you can use the
+toolchain that it provides to build GPU-STREAM. You should first
+use the NDK to generate a standalone toolchain:
+
+    # Select a directory to install the toolchain to
+    ANDROID_NATIVE_TOOLCHAIN=/path/to/toolchain
+
+    ${NDK}/build/tools/make-standalone-toolchain.sh \
+      --platform=android-14 \
+      --toolchain=arm-linux-androideabi-4.8 \
+      --install-dir=${ANDROID_NATIVE_TOOLCHAIN}
+
+Make sure that the OpenCL headers and library (libOpenCL.so) are
+available in `${ANDROID_NATIVE_TOOLCHAIN}/sysroot/usr/`.
+
+You should then be able to build GPU-STREAM:
+
+    make CXX=${ANDROID_NATIVE_TOOLCHAIN}/bin/arm-linux-androideabi-g++
+
+Copy the executable and OpenCL kernels to the device:
+
+    adb push gpu-stream-ocl /data/local/tmp
+    adb push ocl-stream-kernels.cl /data/local/tmp
+
+Run GPU-STREAM from an adb shell:
+
+    adb shell
+    cd /data/local/tmp
+
+    # Use float if device doesn't support double, and reduce array size
+    ./gpu-stream-ocl --float -n 6 -s 10000000
+
+
