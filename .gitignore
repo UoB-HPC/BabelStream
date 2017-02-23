@@ -9,6 +9,8 @@ sycl-stream
 hip-stream
 
 *.o
+*.bc
+*.sycl
 *.tar
 *.gz
 
