@@ -6,6 +6,7 @@ acc-stream
 raja-stream
 kokkos-stream
 sycl-stream
+hip-stream
 
 *.o
 *.tar
