@@ -28,5 +28,5 @@ CFLAGS = --expt-extended-lambda -O3 -std=c++11 -x cu -Xcompiler -fopenmp
 endif
 
 raja-stream: main.cpp RAJAStream.cpp
-	$(COMP) $(CFLAGS) -DUSE_RAJA -I$(RAJA_PATH)/include $^ -L$(RAJA_PATH)/lib -lRAJA -o $@
+	$(COMP) $(CFLAGS) -DUSE_RAJA -I$(RAJA_PATH)/include $^ $(EXTRA_FLAGS) -L$(RAJA_PATH)/lib -lRAJA -o $@
 
