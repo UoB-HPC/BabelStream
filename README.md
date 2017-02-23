@@ -34,6 +34,9 @@ Some models allow specifying a CPU or GPU style target, and this can be set by p
 
 Pass in extra flags via the `EXTRA_FLAGS` option.
 
+The binaries are named in the form `<model>-stream`.
+
+
 Android (outdated instructions)
 ------------------
 
