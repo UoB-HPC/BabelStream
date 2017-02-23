@@ -25,6 +25,9 @@ OMP_CLANG = -fopenmp=libomp
 OMP = $(OMP_$(COMPILER))
 
 OMP_TARGET_ =
+OMP_TARGET_GNU   = -fopenmp
+OMP_TARGET_INTEL =
+OMP_TARGET_CRAY  =
 OMP_TARGET_CLANG = -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda
 OMP_TARGET = $(OMP_TARGET_$(COMPILER))
 
