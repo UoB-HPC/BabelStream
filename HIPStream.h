@@ -21,10 +21,15 @@ class HIPStream : public Stream<T>
   protected:
     // Size of arrays
     unsigned int array_size;
+
+    // Host array for partial sums for dot kernel
+    T *sums;
+
     // Device side pointers to arrays
     T *d_a;
     T *d_b;
     T *d_c;
+    T *d_sum;
 
 
   public:
@@ -36,6 +41,7 @@ class HIPStream : public Stream<T>
     virtual void add() override;
     virtual void mul() override;
     virtual void triad() override;
+    virtual T dot() override;
 
     virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
