@@ -28,7 +28,7 @@ Drivers, compiler and software applicable to whichever implementation you would 
 We have supplied a series of Makefiles, one for each programming model, to assist with building.
 The Makefiles contain common build options, and should be simple to customise for your needs too.
 
-General usage is `make -f <Model>.make
+General usage is `make -f <Model>.make`
 Common compiler flags and names can be set by passing a `COMPILER` option to Make, e.g. `make COMPILER=GNU`.
 Some models allow specifying a CPU or GPU style target, and this can be set by passing a `TARGET` option to Make, e.g. `make TARGET=GPU`.
 
