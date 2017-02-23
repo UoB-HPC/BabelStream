@@ -29,8 +29,8 @@ OMP_TARGET_CLANG = -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda
 OMP_TARGET = $(OMP_TARGET_$(COMPILER))
 
 omp-stream: main.cpp OMPStream.cpp
-	$(CC) -O3 -std=c++11 -DOMP $^ $(OMP) $(EXTRA_FLAGS) -o $@
+	$(CC) $(CFLAGS) -DOMP $^ $(OMP) $(EXTRA_FLAGS) -o $@
 
 omp-target-stream: main.cpp OMPStream.cpp
-	$(CC) -O3 -std=c++11 -DOMP -DOMP_TARGET_GPU $^ $(OMP_TARGET) $(EXTRA_FLAGS) -o $@
+	$(CC) $(CFLAGS) -DOMP -DOMP_TARGET_GPU $^ $(OMP_TARGET) $(EXTRA_FLAGS) -o $@
 
