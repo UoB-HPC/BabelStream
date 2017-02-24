@@ -36,7 +36,7 @@ CXXFLAGS = $(FLAGS_$(COMPILER))
 # OpenMP flags for CPUs
 OMP_GNU_CPU   = -fopenmp
 OMP_INTEL_CPU = -qopenmp
-OMP_CRAY_CPU  =
+OMP_CRAY_CPU  = -homp
 OMP_CLANG_CPU = -fopenmp=libomp
 
 # OpenMP flags for NVIDIA
