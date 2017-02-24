@@ -12,25 +12,28 @@ endif
 
 ifeq ($(TARGET), CPU)
 COMP=$(CXX)
-CXXFLAGS = -O3 -std=c++11 -DRAJA_TARGET_CPU
+CXXFLAGS = -DRAJA_TARGET_CPU
 
 ifndef COMPILER
 define compiler_help
 Set COMPILER to ensure correct OpenMP flags are set.
 Available compilers are:
-  INTEL GNU CRAY
+  INTEL GNU CRAY XL
 endef
 $(info $(compiler_help))
 endif
 ifeq ($(COMPILER), INTEL)
 COMP = icpc
-CXXFLAGS += -qopenmp
+CXXFLAGS += -O3 -std=c++11 -qopenmp
 else ifeq ($(COMPILER), GNU)
 COMP = g++
-CXXFLAGS += -fopenmp
+CXXFLAGS += -O3 -std=c++11 -fopenmp
 else ifeq ($(COMPILER), CRAY)
 COMP = CC
-CXXFLAGS +=
+CXXFLAGS += -O3 -hstd=c++11
+else ifeq ($(COMPILER), XL)
+COMP = xlc++
+CXXFLAGS += -O5 -std=c++11 -qarch=pwr8 -qtune=pwr8 -qsmp=omp -qthreaded
 endif
 
 else ifeq ($(TARGET), GPU)
