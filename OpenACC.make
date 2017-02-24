@@ -8,7 +8,7 @@ COMPILER_PGI = pgc++
 COMPILER_CRAY = CC
 CXX = $(COMPILER_$(COMPILER))
 
-FLAGS_ = -O3
+FLAGS_ = -O3 -std=c++11
 
 FLAGS_PGI = -std=c++11 -O3 -acc
 ifeq ($(COMPILER), PGI)

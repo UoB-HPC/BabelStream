@@ -10,7 +10,7 @@ COMPILER_CRAY = CC
 COMPILER_CLANG = clang++
 CXX = $(COMPILER_$(COMPILER))
 
-FLAGS_ = -O3
+FLAGS_ = -O3 -std=c++11
 FLAGS_GNU = -O3 -std=c++11
 FLAGS_INTEL = -O3 -std=c++11 -xHOST
 FLAGS_CRAY = -O3 -hstd=c++11
