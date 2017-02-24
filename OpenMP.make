@@ -3,6 +3,11 @@ ifndef COMPILER
 $(info Define a compiler to set common defaults, i.e make COMPILER=GNU)
 endif
 
+ifndef TARGET
+$(info No target defined. Specify CPU or GPU. Defaulting to CPU)
+TARGET=CPU
+endif
+
 COMPILER_ = $(CXX)
 COMPILER_GNU = g++
 COMPILER_INTEL = icpc
@@ -31,14 +36,17 @@ OMP_TARGET_CRAY  =
 OMP_TARGET_CLANG = -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda
 OMP_TARGET = $(OMP_TARGET_$(COMPILER))
 
+ifeq ($(TARGET), CPU)
+OMP = $(OMP_$(COMPILER))
+else ifeq ($(TARGET), GPU)
+OMP = $(OMP_TARGET_$(COMPILER))
+OMP += -DOMP_TARGET_GPU
+endif
+
 omp-stream: main.cpp OMPStream.cpp
 	$(CXX) $(CXXFLAGS) -DOMP $^ $(OMP) $(EXTRA_FLAGS) -o $@
-
-omp-target-stream: main.cpp OMPStream.cpp
-	$(CXX) $(CXXFLAGS) -DOMP -DOMP_TARGET_GPU $^ $(OMP_TARGET) $(EXTRA_FLAGS) -o $@
 
 .PHONY: clean
 clean:
 	rm -f omp-stream
-	rm -f omp-target-stream
 
