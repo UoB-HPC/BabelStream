@@ -1,6 +1,12 @@
 
 ifndef TARGET
-$(info No target defined. Specify CPU or GPU. Defaulting to CPU)
+define target_help
+Set TARGET to change to offload device. Defaulting to CPU.
+Available targets are:
+  CPU (default)
+  GPU
+endef
+$(info $(target_help))
 TARGET=CPU
 endif
 
@@ -9,7 +15,12 @@ COMP=$(CXX)
 CXXFLAGS = -O3 -std=c++11 -DRAJA_TARGET_CPU
 
 ifndef COMPILER
-$(info No COMPILER defined. Specify COMPILER for correct OpenMP flag.)
+define compiler_help
+Set COMPILER to ensure correct OpenMP flags are set.
+Available compilers are:
+  INTEL GNU CRAY
+endef
+$(info $(compiler_help))
 endif
 ifeq ($(COMPILER), INTEL)
 COMP = icpc
@@ -26,7 +37,12 @@ else ifeq ($(TARGET), GPU)
 COMP = nvcc
 
 ifndef ARCH
-$(error No ARCH defined. Specify target GPU architecture (e.g. ARCH=sm_35))
+define arch_help
+Set ARCH to ensure correct GPU architecture.
+Example:
+  ARCH=sm_35
+endef
+$(error $(arch_help))
 endif
 CXXFLAGS = --expt-extended-lambda -O3 -std=c++11 -x cu -Xcompiler -fopenmp -arch $(ARCH)
 endif
