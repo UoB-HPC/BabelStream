@@ -21,8 +21,15 @@ FLAGS_INTEL = -O3 -std=c++11
 FLAGS_CRAY = -O3 -hstd=c++11
 CXXFLAGS=$(FLAGS_$(COMPILER))
 
+PLATFORM = $(shell uname -s)
+ifeq ($(PLATFORM), Darwin)
+  LIBS = -framework OpenCL
+else
+  LIBS = -lOpenCL
+endif
+
 ocl-stream: main.cpp OCLStream.cpp
-	$(COMPILER_$(COMPILER)) $(CXXFLAGS) -DOCL $^ $(EXTRA_FLAGS) -lOpenCL -o $@
+	$(COMPILER_$(COMPILER)) $(CXXFLAGS) -DOCL $^ $(EXTRA_FLAGS) $(LIBS) -o $@
 
 .PHONY: clean
 clean:
