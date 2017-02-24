@@ -49,5 +49,4 @@ acc-stream: main.cpp ACCStream.cpp
 
 .PHONY: clean
 clean:
-	rm -f acc-stream
-
+	rm -f acc-stream main.o ACCStream.o
