@@ -1,47 +1,53 @@
 
 ifndef COMPILER
-$(info Define a compiler to set common defaults, i.e make COMPILER=GNU)
+define compiler_help
+Set COMPILER to change flags (defaulting to GNU).
+Available compilers are:
+  CLANG CRAY GNU INTEL
+
+endef
+$(info $(compiler_help))
+COMPILER=GNU
 endif
 
 ifndef TARGET
-$(info No target defined. Specify CPU or GPU. Defaulting to CPU)
+define target_help
+Set TARGET to change device (defaulting to CPU).
+Available targets are:
+  CPU NVIDIA
+
+endef
+$(info $(target_help))
 TARGET=CPU
 endif
 
-COMPILER_ = $(CXX)
 COMPILER_GNU = g++
 COMPILER_INTEL = icpc
 COMPILER_CRAY = CC
 COMPILER_CLANG = clang++
 CXX = $(COMPILER_$(COMPILER))
 
-FLAGS_ = -O3 -std=c++11
 FLAGS_GNU = -O3 -std=c++11
 FLAGS_INTEL = -O3 -std=c++11 -xHOST
 FLAGS_CRAY = -O3 -hstd=c++11
 FLAGS_CLANG = -O3 -std=c++11
 CXXFLAGS = $(FLAGS_$(COMPILER))
 
-OMP_ =
-OMP_GNU   = -fopenmp
-OMP_INTEL = -qopenmp
-OMP_CRAY  =
-OMP_CLANG = -fopenmp=libomp
-OMP = $(OMP_$(COMPILER))
+# OpenMP flags for CPUs
+OMP_GNU_CPU   = -fopenmp
+OMP_INTEL_CPU = -qopenmp
+OMP_CRAY_CPU  =
+OMP_CLANG_CPU = -fopenmp=libomp
 
-OMP_TARGET_ =
-OMP_TARGET_GNU   = -fopenmp
-OMP_TARGET_INTEL =
-OMP_TARGET_CRAY  =
-OMP_TARGET_CLANG = -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda
-OMP_TARGET = $(OMP_TARGET_$(COMPILER))
+# OpenMP flags for NVIDIA
+OMP_CRAY_NVIDIA  = -DOMP_TARGET_GPU
+OMP_CLANG_NVIDIA = -DOMP_TARGET_GPU -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda
 
-ifeq ($(TARGET), CPU)
-OMP = $(OMP_$(COMPILER))
-else ifeq ($(TARGET), GPU)
-OMP = $(OMP_TARGET_$(COMPILER))
-OMP += -DOMP_TARGET_GPU
+ifndef OMP_$(COMPILER)_$(TARGET)
+$(error Targeting $(TARGET) with $(COMPILER) not supported)
 endif
+
+OMP = $(OMP_$(COMPILER)_$(TARGET))
 
 omp-stream: main.cpp OMPStream.cpp
 	$(CXX) $(CXXFLAGS) -DOMP $^ $(OMP) $(EXTRA_FLAGS) -o $@
@@ -49,4 +55,3 @@ omp-stream: main.cpp OMPStream.cpp
 .PHONY: clean
 clean:
 	rm -f omp-stream
-
