@@ -12,7 +12,7 @@ CXX = $(COMPILER_$(COMPILER))
 
 FLAGS_ = -O3
 FLAGS_GNU = -O3 -std=c++11
-FLAGS_INTEL = -O3 -std=c++11
+FLAGS_INTEL = -O3 -std=c++11 -xHOST
 FLAGS_CRAY = -O3 -hstd=c++11
 FLAGS_CLANG = -O3 -std=c++11
 CXXFLAGS = $(FLAGS_$(COMPILER))
