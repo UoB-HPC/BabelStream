@@ -14,7 +14,7 @@ ifeq ($(COMPILER), PGI)
 define target_help
 Set a TARGET to ensure PGI targets the correct offload device.
 Available targets are:
-  SNB, IVB, HSW, BDW, KNL
+  SNB, IVB, HSW
   KEPLER, MAXWELL, PASCAL
   HAWAII
 endef
@@ -24,8 +24,6 @@ endif
 TARGET_FLAGS_SNB     = -ta=multicore -tp=sandybridge
 TARGET_FLAGS_IVB     = -ta=multicore -tp=ivybridge
 TARGET_FLAGS_HSW     = -ta=multicore -tp=haswell
-TARGET_FLAGS_BDW     = -ta=multicore -tp=haswell # Not yet supported directly
-TARGET_FLAGS_KNL     = -ta=multicore -tp=haswell # Not yet supported directly
 TARGET_FLAGS_KEPLER  = -ta=nvidia:cc35
 TARGET_FLAGS_MAXWELL = -ta=nvidia:cc50
 TARGET_FLAGS_PASCAL  = -ta=nvidia:cc60
