@@ -1,6 +1,11 @@
 
 ifndef COMPILER
-$(info Define a compiler to set common defaults, i.e make COMPILER=GNU)
+define compiler_help
+Set COMPILER to ensure correct flags are set.
+Available compilers are:
+  PGI CRAY
+endef
+$(info $(compiler_help))
 endif
 
 COMPILER_ = $(CXX)
