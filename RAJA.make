@@ -11,33 +11,32 @@ TARGET=CPU
 endif
 
 ifeq ($(TARGET), CPU)
-COMP=$(CXX)
-CXXFLAGS = -DRAJA_TARGET_CPU
 
 ifndef COMPILER
 define compiler_help
-Set COMPILER to ensure correct OpenMP flags are set.
+Set COMPILER to change flags (defaulting to GNU).
 Available compilers are:
   INTEL GNU CRAY XL
 endef
 $(info $(compiler_help))
-endif
-ifeq ($(COMPILER), INTEL)
-COMP = icpc
-CXXFLAGS += -O3 -std=c++11 -qopenmp
-else ifeq ($(COMPILER), GNU)
-COMP = g++
-CXXFLAGS += -O3 -std=c++11 -fopenmp
-else ifeq ($(COMPILER), CRAY)
-COMP = CC
-CXXFLAGS += -O3 -hstd=c++11
-else ifeq ($(COMPILER), XL)
-COMP = xlc++
-CXXFLAGS += -O5 -std=c++11 -qarch=pwr8 -qtune=pwr8 -qsmp=omp -qthreaded
+COMPILER=GNU
 endif
 
+CXX_INTEL = icpc
+CXX_GNU   = g++
+CXX_CRAY  = CC
+CXX_XL    = xlc++
+
+CXXFLAGS_INTEL = -O3 -std=c++11 -qopenmp
+CXXFLAGS_GNU   = -O3 -std=c++11 -fopenmp
+CXXFLAGS_CRAY  = -O3 -hstd=c++11
+CXXFLAGS_XL    = -O5 -std=c++11 -qarch=pwr8 -qtune=pwr8 -qsmp=omp -qthreaded
+
+CXX = $(CXX_$(COMPILER))
+CXXFLAGS = -DRAJA_TARGET_CPU $(CXXFLAGS_$(COMPILER))
+
 else ifeq ($(TARGET), GPU)
-COMP = nvcc
+CXX = nvcc
 
 ifndef ARCH
 define arch_help
@@ -51,7 +50,7 @@ CXXFLAGS = --expt-extended-lambda -O3 -std=c++11 -x cu -Xcompiler -fopenmp -arch
 endif
 
 raja-stream: main.cpp RAJAStream.cpp
-	$(COMP) $(CXXFLAGS) -DUSE_RAJA -I$(RAJA_PATH)/include $^ $(EXTRA_FLAGS) -L$(RAJA_PATH)/lib -lRAJA -o $@
+	$(CXX) $(CXXFLAGS) -DUSE_RAJA -I$(RAJA_PATH)/include $^ $(EXTRA_FLAGS) -L$(RAJA_PATH)/lib -lRAJA -o $@
 
 .PHONY: clean
 clean:
