@@ -9,7 +9,7 @@ COMP=$(CXX)
 CXXFLAGS = -O3 -std=c++11 -DRAJA_TARGET_CPU
 
 ifndef COMPILER
-$(error No COMPILER defined. Specify COMPILER for correct OpenMP flag.)
+$(info No COMPILER defined. Specify COMPILER for correct OpenMP flag.)
 endif
 ifeq ($(COMPILER), INTEL)
 COMP = icpc
@@ -33,3 +33,8 @@ endif
 
 raja-stream: main.cpp RAJAStream.cpp
 	$(COMP) $(CXXFLAGS) -DUSE_RAJA -I$(RAJA_PATH)/include $^ $(EXTRA_FLAGS) -L$(RAJA_PATH)/lib -lRAJA -o $@
+
+.PHONY: clean
+clean:
+	rm -f raja-stream
+

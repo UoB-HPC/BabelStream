@@ -28,3 +28,7 @@ CXXFLAGS = $(FLAGS_$(COMPILER))
 acc-stream: main.cpp ACCStream.cpp
 	$(CXX) $(CXXFLAGS) -DACC $^ $(EXTRA_FLAGS) -o $@
 
+.PHONY: clean
+clean:
+	rm -f acc-stream
+

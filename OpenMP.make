@@ -37,3 +37,8 @@ omp-stream: main.cpp OMPStream.cpp
 omp-target-stream: main.cpp OMPStream.cpp
 	$(CXX) $(CXXFLAGS) -DOMP -DOMP_TARGET_GPU $^ $(OMP_TARGET) $(EXTRA_FLAGS) -o $@
 
+.PHONY: clean
+clean:
+	rm -f omp-stream
+	rm -f omp-target-stream
+

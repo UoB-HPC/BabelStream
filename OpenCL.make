@@ -15,3 +15,7 @@ CXXFLAGS=$(FLAGS_$(COMPILER))
 ocl-stream: main.cpp OCLStream.cpp
 	$(COMPILER_$(COMPILER)) $(CXXFLAGS) -DOCL $^ $(EXTRA_FLAGS) -lOpenCL -o $@
 
+.PHONY: clean
+clean:
+	rm -f ocl-stream
+

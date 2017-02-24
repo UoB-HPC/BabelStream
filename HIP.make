@@ -11,3 +11,8 @@ endif
 
 hip-stream: main.cpp HIPStream.cu
 	$(HIPCC) $(CXXFLAGS) -std=c++11 -DHIP $^ $(EXTRA_FLAGS) -o $@
+
+.PHONY: clean
+clean:
+	rm -f hip-stream
+
