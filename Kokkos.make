@@ -4,7 +4,13 @@ default: kokkos-stream
 include $(KOKKOS_PATH)/Makefile.kokkos
 
 ifndef TARGET
-$(info No target defined. Specify CPU or GPU. Defaulting to CPU)
+define target_help
+Set TARGET to change to offload device. Defaulting to CPU.
+Available targets are:
+  CPU (default)
+  GPU
+endef
+$(info $(target_help))
 TARGET=CPU
 endif
 
