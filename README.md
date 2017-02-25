@@ -23,10 +23,19 @@ Website
 Usage
 -----
 
-CMake 3.2 or above is required.
-Drivers, compiler and software applicable to whichever implementation you would like to build against. Our build system is designed to only build implementations in programming models that your system supports.
+Drivers, compiler and software applicable to whichever implementation you would like to build against is required.
 
-Generate the Makefile with `cmake .`
+We have supplied a series of Makefiles, one for each programming model, to assist with building.
+The Makefiles contain common build options, and should be simple to customise for your needs too.
+
+General usage is `make -f <Model>.make`
+Common compiler flags and names can be set by passing a `COMPILER` option to Make, e.g. `make COMPILER=GNU`.
+Some models allow specifying a CPU or GPU style target, and this can be set by passing a `TARGET` option to Make, e.g. `make TARGET=GPU`.
+
+Pass in extra flags via the `EXTRA_FLAGS` option.
+
+The binaries are named in the form `<model>-stream`.
+
 
 Results
 -------
