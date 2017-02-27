@@ -7,10 +7,9 @@
 #include <codecvt>
 #include <vector>
 #include <locale>
-
+#include <numeric>
 
 #include "HCStream.h"
-//#include "hc.hpp"
 
 #define TBSIZE 1024
 
@@ -25,7 +24,7 @@ void listDevices(void)
 {
   // Get number of devices
   std::vector<hc::accelerator> accs = hc::accelerator::get_all();
-  
+
   // Print device names
   if (accs.empty())
   {
@@ -43,15 +42,6 @@ void listDevices(void)
   }
 }
 
-// void check_error(void)
-// {
-//   hipError_t err = hipGetLastError();
-//   if (err != hipSuccess)
-//   {
-//     std::cerr << "Error: " << hipGetErrorString(err) << std::endl;
-//     exit(err);
-//   }
-// }
 
 template <class T>
 HCStream<T>::HCStream(const unsigned int ARRAY_SIZE, const int device_index):
@@ -76,45 +66,7 @@ HCStream<T>::HCStream(const unsigned int ARRAY_SIZE, const int device_index):
   hc::accelerator::set_default(current.get_device_path());
 
   std::cout << "Using HC device " << getDeviceName(current) << std::endl;
-  
-  // // The array size must be divisible by TBSIZE for kernel launches
-  // if (ARRAY_SIZE % TBSIZE != 0)
-  // {
-  //   std::stringstream ss;
-  //   ss << "Array size must be a multiple of " << TBSIZE;
-  //   throw std::runtime_error(ss.str());
-  // }
 
-  // // Set device
-  // int count;
-  // hipGetDeviceCount(&count);
-  // check_error();
-  // if (device_index >= count)
-  //   throw std::runtime_error("Invalid device index");
-  // hipSetDevice(device_index);
-  // check_error();
-
-  // // Print out device information
-  // std::cout << "Using HIP device " << getDeviceName(device_index) << std::endl;
-  // std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
-
-  // array_size = ARRAY_SIZE;
-
-  // // Check buffers fit on the device
-  // hipDeviceProp_t props;
-  // hipGetDeviceProperties(&props, 0);
-  // if (props.totalGlobalMem < 3*ARRAY_SIZE*sizeof(T))
-  //   throw std::runtime_error("Device does not have enough memory for all 3 buffers");
-
-  // // Create device buffers
-  // hipMalloc(&d_a, ARRAY_SIZE*sizeof(T));
-  // check_error();
-  // hipMalloc(&d_b, ARRAY_SIZE*sizeof(T));
-  // check_error();
-  // hipMalloc(&d_c, ARRAY_SIZE*sizeof(T));
-  // check_error();
-
-  
 }
 
 
@@ -124,11 +76,17 @@ HCStream<T>::~HCStream()
 }
 
 template <class T>
-void HCStream<T>::write_arrays(const std::vector<T>& a, const std::vector<T>& b, const std::vector<T>& c)
+void HCStream<T>::init_arrays(T _a, T _b, T _c)
 {
-  hc::copy(a.cbegin(),a.cend(),d_a);
-  hc::copy(b.cbegin(),b.cend(),d_b);
-  hc::copy(c.cbegin(),c.cend(),d_c);
+  std::vector<T> temp(array_size,_a);
+  hc::copy(temp.begin(), temp.end(),this->d_a);
+
+  std::fill(temp.begin(), temp.end(),_b);
+  hc::copy(temp.begin(), temp.end(),this->d_b);
+
+  std::fill(temp.begin(), temp.end(),_c);
+  hc::copy(temp.begin(), temp.end(),this->d_c);
+
 }
 
 template <class T>
@@ -157,7 +115,7 @@ void HCStream<T>::copy()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cout << e.what() << std::endl;
+    std::cout << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
     throw;
   }
 }
@@ -178,7 +136,7 @@ void HCStream<T>::mul()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cout << e.what() << std::endl;
+    std::cout << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
     throw;
   }
 }
@@ -200,7 +158,7 @@ void HCStream<T>::add()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cout << e.what() << std::endl;
+    std::cout << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
     throw;
   }
 }
@@ -222,10 +180,40 @@ void HCStream<T>::triad()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cout << e.what() << std::endl;
+    std::cout << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
     throw;
   }
 }
+
+template <class T>
+T HCStream<T>::dot()
+{
+  hc::array<T,1>& device_a = this->d_a;
+  hc::array<T,1> product = this->d_b;
+
+  T sum = static_cast<T>(0);
+
+  try{
+    // launch a GPU kernel to compute the saxpy in parallel
+    hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
+                                                                , [&](hc::index<1> i) [[hc]] {
+                                                                  product[i] *= device_a[i];
+                                                                });
+    future_kernel.wait();
+  }
+  catch(std::exception& e){
+    std::cout << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
+    throw;
+  }
+
+  std::vector<T> h_product(array_size,sum);
+  hc::copy(product,h_product.begin());
+
+  sum = std::accumulate(h_product.begin(), h_product.end(),sum);
+
+  return sum;
+}
+
 
 template class HCStream<float>;
 template class HCStream<double>;
