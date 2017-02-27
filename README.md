@@ -23,45 +23,18 @@ Website
 Usage
 -----
 
-CMake 3.2 or above is required.
-Drivers, compiler and software applicable to whichever implementation you would like to build against. Our build system is designed to only build implementations in programming models that your system supports.
+Drivers, compiler and software applicable to whichever implementation you would like to build against is required.
 
-Generate the Makefile with `cmake .`
+We have supplied a series of Makefiles, one for each programming model, to assist with building.
+The Makefiles contain common build options, and should be simple to customise for your needs too.
 
-Android (outdated instructions)
-------------------
+General usage is `make -f <Model>.make`
+Common compiler flags and names can be set by passing a `COMPILER` option to Make, e.g. `make COMPILER=GNU`.
+Some models allow specifying a CPU or GPU style target, and this can be set by passing a `TARGET` option to Make, e.g. `make TARGET=GPU`.
 
-Assuming you have a recent Android NDK available, you can use the
-toolchain that it provides to build GPU-STREAM. You should first
-use the NDK to generate a standalone toolchain:
+Pass in extra flags via the `EXTRA_FLAGS` option.
 
-    # Select a directory to install the toolchain to
-    ANDROID_NATIVE_TOOLCHAIN=/path/to/toolchain
-
-    ${NDK}/build/tools/make-standalone-toolchain.sh \
-      --platform=android-14 \
-      --toolchain=arm-linux-androideabi-4.8 \
-      --install-dir=${ANDROID_NATIVE_TOOLCHAIN}
-
-Make sure that the OpenCL headers and library (libOpenCL.so) are
-available in `${ANDROID_NATIVE_TOOLCHAIN}/sysroot/usr/`.
-
-You should then be able to build GPU-STREAM:
-
-    make CXX=${ANDROID_NATIVE_TOOLCHAIN}/bin/arm-linux-androideabi-g++
-
-Copy the executable and OpenCL kernels to the device:
-
-    adb push gpu-stream-ocl /data/local/tmp
-    adb push ocl-stream-kernels.cl /data/local/tmp
-
-Run GPU-STREAM from an adb shell:
-
-    adb shell
-    cd /data/local/tmp
-
-    # Use float if device doesn't support double, and reduce array size
-    ./gpu-stream-ocl --float -n 6 -s 10000000
+The binaries are named in the form `<model>-stream`.
 
 
 Results

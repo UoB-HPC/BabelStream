@@ -1,18 +1,19 @@
 
-gpu-stream-cuda
-gpu-stream-ocl
-gpu-stream-acc
-gpu-stream-omp3
-gpu-stream-omp45
-gpu-stream-sycl
+cuda-stream
+ocl-stream
+omp-stream
+acc-stream
+raja-stream
+kokkos-stream
+sycl-stream
+hip-stream
 
 *.o
+*.bc
+*.sycl
 *.tar
 *.gz
 
 .DS_Store
 
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
 Makefile
