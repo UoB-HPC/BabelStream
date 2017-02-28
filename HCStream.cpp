@@ -78,65 +78,38 @@ HCStream<T>::~HCStream()
 template <class T>
 void HCStream<T>::init_arrays(T _a, T _b, T _c)
 {
-  // hc::array_view<T,1> view_a(this->d_a);
-  // hc::array_view<T,1> view_b(this->d_b);
-  // hc::array_view<T,1> view_c(this->d_c);
+  hc::array_view<T,1> view_a(this->d_a);
+  hc::array_view<T,1> view_b(this->d_b);
+  hc::array_view<T,1> view_c(this->d_c);
 
-  // hc::completion_future future_a= hc::parallel_for_each(hc::extent<1>(array_size)
-  //                               , [=](hc::index<1> i) [[hc]] {
-  //                                 view_a[i] = _a;
-  //                               });
+  hc::completion_future future_a= hc::parallel_for_each(hc::extent<1>(array_size)
+                                , [=](hc::index<1> i) [[hc]] {
+                                  view_a[i] = _a;
+                                });
 
-  // hc::completion_future future_b= hc::parallel_for_each(hc::extent<1>(array_size)
-  //                                                       , [=](hc::index<1> i) [[hc]] {
-  //                                                         view_b[i] = _b;
-  //                                                       });
-  // hc::completion_future future_c= hc::parallel_for_each(hc::extent<1>(array_size)
-  //                                                       , [=](hc::index<1> i) [[hc]] {
-  //                                                         view_c[i] = _c;
-  //                                                       });
-  // try{
-  //   future_a.wait();
-  // }
-  // catch(std::exception& e){
-  //   std::cout << __FILE__ << ":" << __LINE__ << "\t future_a " << e.what() << std::endl;
-  //   throw;
-  // }
-
-  // try{
-  //   future_b.wait();
-  // }
-  // catch(std::exception& e){
-  //   std::cout << __FILE__ << ":" << __LINE__ << "\t future_b " << e.what() << std::endl;
-  //   throw;
-  // }
-
-
-  // try{
-  //   future_c.wait();
-  // }
-  // catch(std::exception& e){
-  //   std::cout << __FILE__ << ":" << __LINE__ << "\t future_c " << e.what() << std::endl;
-  //   throw;
-  // }
-
-
-  std::vector<T> temp(array_size,_a);
-  hc::copy(temp.begin(), temp.end(),this->d_a);
-
-  std::fill(temp.begin(), temp.end(),_b);
-  hc::copy(temp.begin(), temp.end(),this->d_b);
-
-  std::fill(temp.begin(), temp.end(),_c);
-  hc::copy(temp.begin(), temp.end(),this->d_c);
+  hc::completion_future future_b= hc::parallel_for_each(hc::extent<1>(array_size)
+                                                        , [=](hc::index<1> i) [[hc]] {
+                                                          view_b[i] = _b;
+                                                        });
+  hc::completion_future future_c= hc::parallel_for_each(hc::extent<1>(array_size)
+                                                        , [=](hc::index<1> i) [[hc]] {
+                                                          view_c[i] = _c;
+                                                        });
+  try{
+    future_a.wait();
+    future_b.wait();
+    future_c.wait();
+  }
+  catch(std::exception& e){
+    std::cout << __FILE__ << ":" << __LINE__ << "\t future_{a,b,c} " << e.what() << std::endl;
+    throw;
+  }
 
 }
 
 template <class T>
 void HCStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-
-  // Copy device memory to host
   hc::copy(d_a,a.begin());
   hc::copy(d_b,b.begin());
   hc::copy(d_c,c.begin());
@@ -151,7 +124,6 @@ void HCStream<T>::copy()
   hc::array_view<T,1> view_c = this->d_c;
 
   try{
-  // launch a GPU kernel to compute the saxpy in parallel
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
                                 , [=](hc::index<1> index) [[hc]] {
                                   view_c[index] = view_a[index];
@@ -173,7 +145,6 @@ void HCStream<T>::mul()
   hc::array_view<T,1> view_c = this->d_c;
 
   try{
-  // launch a GPU kernel to compute the saxpy in parallel 
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
                                 , [=](hc::index<1> i) [[hc]] {
                                   view_b[i] = scalar*view_c[i];
@@ -196,7 +167,6 @@ void HCStream<T>::add()
   hc::array_view<T,1> view_c(this->d_c);
 
   try{
-    // launch a GPU kernel to compute the saxpy in parallel 
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
                                 , [=](hc::index<1> i) [[hc]] {
                                   view_c[i] = view_a[i]+view_b[i];
@@ -219,7 +189,6 @@ void HCStream<T>::triad()
   hc::array_view<T,1> view_c(this->d_c);
 
   try{
-    // launch a GPU kernel to compute the saxpy in parallel 
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
                                 , [=](hc::index<1> i) [[hc]] {
                                   view_a[i] = view_b[i] + scalar*view_c[i];
@@ -242,7 +211,6 @@ T HCStream<T>::dot()
   T sum = static_cast<T>(0);
 
   try{
-    // launch a GPU kernel to compute the saxpy in parallel
     hc::completion_future future_kernel = hc::parallel_for_each(view_a.get_extent(),
                                                                 [=](hc::index<1> i) [[hc]] {
                                                                   view_p[i] = view_p[i]*view_a[i];
