@@ -1,5 +1,3 @@
-
-
 // Copyright (c) 2015-16 Tom Deakin, Simon McIntosh-Smith,
 // University of Bristol HPC
 //
@@ -189,8 +187,6 @@ __global__ void dot_kernel(hipLaunchParm lp, const T * a, const T * b, T * sum, 
 {
 
   HIP_DYNAMIC_SHARED(T,tb_sum);
-  // HIP_DYNAMIC_SHARED(unsigned char,smem);
-  // T *tb_sum = reinterpret_cast<T*>(smem);
 
   int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
   const size_t local_i = hipThreadIdx_x;
