@@ -42,7 +42,7 @@ void KOKKOSStream<T>::init_arrays(T initA, T initB, T initC)
   parallel_for(array_size, KOKKOS_LAMBDA (const int index)
   {
     a[index] = initA;
-    b[index] - initB;
+    b[index] = initB;
     c[index] = initC;
   });
   Kokkos::fence();
