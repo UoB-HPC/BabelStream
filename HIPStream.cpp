@@ -185,8 +185,7 @@ void HIPStream<T>::triad()
 template <class T>
 __global__ void dot_kernel(hipLaunchParm lp, const T * a, const T * b, T * sum, unsigned int array_size)
 {
-
-  HIP_DYNAMIC_SHARED(T,tb_sum);
+  __shared__ T tb_sum[TBSIZE];
 
   int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
   const size_t local_i = hipThreadIdx_x;
@@ -211,7 +210,7 @@ __global__ void dot_kernel(hipLaunchParm lp, const T * a, const T * b, T * sum, 
 template <class T>
 T HIPStream<T>::dot()
 {
-  hipLaunchKernel(HIP_KERNEL_NAME(dot_kernel), dim3(DOT_NUM_BLOCKS), dim3(TBSIZE), sizeof(T)*TBSIZE, 0, d_a, d_b, d_sum, array_size);
+  hipLaunchKernel(HIP_KERNEL_NAME(dot_kernel), dim3(DOT_NUM_BLOCKS), dim3(TBSIZE), 0, 0, d_a, d_b, d_sum, array_size);
   check_error();
 
   hipMemcpy(sums, d_sum, DOT_NUM_BLOCKS*sizeof(T), hipMemcpyDeviceToHost);
