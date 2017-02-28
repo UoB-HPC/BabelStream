@@ -78,7 +78,49 @@ HCStream<T>::~HCStream()
 template <class T>
 void HCStream<T>::init_arrays(T _a, T _b, T _c)
 {
-  std::cout << __FILE__ << ":" << __LINE__ << "\t" << "initializing arrays\n";
+  // hc::array_view<T,1> view_a(this->d_a);
+  // hc::array_view<T,1> view_b(this->d_b);
+  // hc::array_view<T,1> view_c(this->d_c);
+
+  // hc::completion_future future_a= hc::parallel_for_each(hc::extent<1>(array_size)
+  //                               , [=](hc::index<1> i) [[hc]] {
+  //                                 view_a[i] = _a;
+  //                               });
+
+  // hc::completion_future future_b= hc::parallel_for_each(hc::extent<1>(array_size)
+  //                                                       , [=](hc::index<1> i) [[hc]] {
+  //                                                         view_b[i] = _b;
+  //                                                       });
+  // hc::completion_future future_c= hc::parallel_for_each(hc::extent<1>(array_size)
+  //                                                       , [=](hc::index<1> i) [[hc]] {
+  //                                                         view_c[i] = _c;
+  //                                                       });
+  // try{
+  //   future_a.wait();
+  // }
+  // catch(std::exception& e){
+  //   std::cout << __FILE__ << ":" << __LINE__ << "\t future_a " << e.what() << std::endl;
+  //   throw;
+  // }
+
+  // try{
+  //   future_b.wait();
+  // }
+  // catch(std::exception& e){
+  //   std::cout << __FILE__ << ":" << __LINE__ << "\t future_b " << e.what() << std::endl;
+  //   throw;
+  // }
+
+
+  // try{
+  //   future_c.wait();
+  // }
+  // catch(std::exception& e){
+  //   std::cout << __FILE__ << ":" << __LINE__ << "\t future_c " << e.what() << std::endl;
+  //   throw;
+  // }
+
+
   std::vector<T> temp(array_size,_a);
   hc::copy(temp.begin(), temp.end(),this->d_a);
 
@@ -93,8 +135,8 @@ void HCStream<T>::init_arrays(T _a, T _b, T _c)
 template <class T>
 void HCStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
+
   // Copy device memory to host
-  std::cout << __FILE__ << ":" << __LINE__ << "\t" << "read arrays\n";
   hc::copy(d_a,a.begin());
   hc::copy(d_b,b.begin());
   hc::copy(d_c,c.begin());
@@ -105,20 +147,19 @@ template <class T>
 void HCStream<T>::copy()
 {
 
-  std::cout << __FILE__ << ":" << __LINE__ << "\t" << "copy\n";
-  hc::array<T,1>& device_a = this->d_a;
-  hc::array<T,1>& device_c = this->d_c;
+  hc::array_view<T,1> view_a = this->d_a;
+  hc::array_view<T,1> view_c = this->d_c;
 
   try{
   // launch a GPU kernel to compute the saxpy in parallel
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
-								, [&](hc::index<1> index) [[hc]] {
-                                  device_c[index] = device_a[index];
+                                , [=](hc::index<1> index) [[hc]] {
+                                  view_c[index] = view_a[index];
 								});
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cout << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
     throw;
   }
 }
@@ -126,21 +167,21 @@ void HCStream<T>::copy()
 template <class T>
 void HCStream<T>::mul()
 {
-  std::cout << __FILE__ << ":" << __LINE__ << "\t" << "mul\n";
+
   const T scalar = 0.3;
-  hc::array<T,1>& device_b = this->d_b;
-  hc::array<T,1>& device_c = this->d_c;
+  hc::array_view<T,1> view_b = this->d_b;
+  hc::array_view<T,1> view_c = this->d_c;
 
   try{
   // launch a GPU kernel to compute the saxpy in parallel 
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
-								, [&](hc::index<1> i) [[hc]] {
-                                  device_b[i] = scalar*device_c[i];
+                                , [=](hc::index<1> i) [[hc]] {
+                                  view_b[i] = scalar*view_c[i];
 								});
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cout << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
     throw;
   }
 }
@@ -148,21 +189,22 @@ void HCStream<T>::mul()
 template <class T>
 void HCStream<T>::add()
 {
-  std::cout << __FILE__ << ":" << __LINE__ << "\t" << "add\n";
-  hc::array<T,1>& device_a = this->d_a;
-  hc::array<T,1>& device_b = this->d_b;
-  hc::array<T,1>& device_c = this->d_c;
+
+
+  hc::array_view<T,1> view_a(this->d_a);
+  hc::array_view<T,1> view_b(this->d_b);
+  hc::array_view<T,1> view_c(this->d_c);
 
   try{
     // launch a GPU kernel to compute the saxpy in parallel 
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
-								, [&](hc::index<1> i) [[hc]] {
-                                  device_c[i] = device_a[i]+device_b[i];
+                                , [=](hc::index<1> i) [[hc]] {
+                                  view_c[i] = view_a[i]+view_b[i];
 								});
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cout << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
     throw;
   }
 }
@@ -170,22 +212,22 @@ void HCStream<T>::add()
 template <class T>
 void HCStream<T>::triad()
 {
-  std::cout << __FILE__ << ":" << __LINE__ << "\t" << "triad\n";
+
   const T scalar = 0.3;
-  hc::array<T,1>& device_a = this->d_a;
-  hc::array<T,1>& device_b = this->d_b;
-  hc::array<T,1>& device_c = this->d_c;
+  hc::array_view<T,1> view_a(this->d_a);
+  hc::array_view<T,1> view_b(this->d_b);
+  hc::array_view<T,1> view_c(this->d_c);
 
   try{
     // launch a GPU kernel to compute the saxpy in parallel 
     hc::completion_future future_kernel = hc::parallel_for_each(hc::extent<1>(array_size)
-								, [&](hc::index<1> i) [[hc]] {
-                                  device_a[i] = device_b[i] + scalar*device_c[i];
+                                , [=](hc::index<1> i) [[hc]] {
+                                  view_a[i] = view_b[i] + scalar*view_c[i];
 								});
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cout << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
     throw;
   }
 }
@@ -193,7 +235,7 @@ void HCStream<T>::triad()
 template <class T>
 T HCStream<T>::dot()
 {
-  std::cout << __FILE__ << ":" << __LINE__ << "\t" << "dot\n";
+
   hc::array_view<T,1> view_a(this->d_a);
   hc::array_view<T,1> view_p(this->d_b);
 
@@ -202,21 +244,19 @@ T HCStream<T>::dot()
   try{
     // launch a GPU kernel to compute the saxpy in parallel
     hc::completion_future future_kernel = hc::parallel_for_each(view_a.get_extent(),
-                                                                [&](hc::index<1> i) [[hc]] {
+                                                                [=](hc::index<1> i) [[hc]] {
                                                                   view_p[i] = view_p[i]*view_a[i];
                                                                 });
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cout << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
     throw;
   }
 
-  std::cout << __FILE__ << ":" << __LINE__ << "\t" << "dot - for_each done\n";
+
   std::vector<T> h_product(array_size,sum);
   hc::copy(view_p,h_product.begin());
-
-  std::cout << __FILE__ << ":" << __LINE__ << "\t" << "dot - copy-out done\n";
 
   sum = std::accumulate(h_product.begin(), h_product.end(),sum);
 
