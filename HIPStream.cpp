@@ -188,9 +188,9 @@ template <class T>
 __global__ void dot_kernel(hipLaunchParm lp, const T * a, const T * b, T * sum, unsigned int array_size)
 {
 
-  //extern __shared__ __align__(sizeof(T)) unsigned char smem[];
-  HIP_DYNAMIC_SHARED(unsigned char,smem);
-  T *tb_sum = reinterpret_cast<T*>(smem);
+  HIP_DYNAMIC_SHARED(T,tb_sum);
+  // HIP_DYNAMIC_SHARED(unsigned char,smem);
+  // T *tb_sum = reinterpret_cast<T*>(smem);
 
   int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
   const size_t local_i = hipThreadIdx_x;
