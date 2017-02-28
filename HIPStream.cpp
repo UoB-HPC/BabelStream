@@ -72,13 +72,18 @@ HIPStream<T>::HIPStream(const unsigned int ARRAY_SIZE, const int device_index)
 template <class T>
 HIPStream<T>::~HIPStream()
 {
+  free(sums);
+
   hipFree(d_a);
   check_error();
   hipFree(d_b);
   check_error();
   hipFree(d_c);
   check_error();
+  hipFree(d_sum);
+  check_error();
 }
+
 
 template <typename T>
 __global__ void init_kernel(hipLaunchParm lp, T * a, T * b, T * c, T initA, T initB, T initC)
@@ -177,22 +182,20 @@ void HIPStream<T>::triad()
   check_error();
 }
 
-
 template <class T>
 __global__ void dot_kernel(hipLaunchParm lp, const T * a, const T * b, T * sum, unsigned int array_size)
 {
 
-  extern __shared__ __align__(sizeof(T)) unsigned char smem[];
-  T *tb_sum = reinterpret_cast<T*>(smem);
+  HIP_DYNAMIC_SHARED(T,tb_sum);
 
-  int i = blockDim.x * blockIdx.x + threadIdx.x;
-  const size_t local_i = threadIdx.x;
+  int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+  const size_t local_i = hipThreadIdx_x;
 
   tb_sum[local_i] = 0.0;
-  for (; i < array_size; i += blockDim.x*gridDim.x)
+  for (; i < array_size; i += hipBlockDim_x*hipGridDim_x)
     tb_sum[local_i] += a[i] * b[i];
 
-  for (int offset = blockDim.x / 2; offset > 0; offset /= 2)
+  for (int offset = hipBlockDim_x / 2; offset > 0; offset /= 2)
   {
     __syncthreads();
     if (local_i < offset)
@@ -202,7 +205,7 @@ __global__ void dot_kernel(hipLaunchParm lp, const T * a, const T * b, T * sum, 
   }
 
   if (local_i == 0)
-    sum[blockIdx.x] = tb_sum[local_i];
+    sum[hipBlockIdx_x] = tb_sum[local_i];
 }
 
 template <class T>
