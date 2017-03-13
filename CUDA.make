@@ -1,7 +1,7 @@
-EXTRA_FLAGS?=-O3
+CXXFLAGS?=-O3 -std=c++11
 
 cuda-stream: main.cpp CUDAStream.cu
-	nvcc -std=c++11 -DCUDA $^ $(EXTRA_FLAGS) -o $@
+	nvcc $(CXXFLAGS) -DCUDA $^ $(EXTRA_FLAGS) -o $@
 
 .PHONY: clean
 clean:
