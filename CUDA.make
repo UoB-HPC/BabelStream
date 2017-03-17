@@ -1,6 +1,8 @@
+CXXFLAGS=-O3
+CUDA_CXX=nvcc
 
 cuda-stream: main.cpp CUDAStream.cu
-	nvcc -std=c++11 -O3 -DCUDA $^ $(EXTRA_FLAGS) -o $@
+	$(CUDA_CXX) -std=c++11 $(CXXFLAGS) -DCUDA $^ $(EXTRA_FLAGS) -o $@
 
 .PHONY: clean
 clean:
