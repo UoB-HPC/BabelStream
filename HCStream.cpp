@@ -206,14 +206,18 @@ T HCStream<T>::dot()
 {
 
   hc::array_view<T,1> view_a(this->d_a);
-  hc::array_view<T,1> view_p(this->d_b);
+  hc::array_view<T,1> view_b(this->d_b);
+  hc::array<T,1>      d_sum(array_view);
+  hc::array_view<T,1> view_s(d_sum)    ;
 
-  T sum = static_cast<T>(0);
+  auto ex = view_a.get_extent();
+  hc::tiled_extent<1> tiled_ex = ex.tile(64);
 
   try{
-    hc::completion_future future_kernel = hc::parallel_for_each(view_a.get_extent(),
+    hc::completion_future future_kernel = hc::parallel_for_each(tiled_ex,
                                                                 [=](hc::index<1> i) [[hc]] {
-                                                                  view_p[i] = view_p[i]*view_a[i];
+
+                                                                  view_s[i] = view_p[i]*view_a[i];
                                                                 });
     future_kernel.wait();
   }
@@ -222,7 +226,7 @@ T HCStream<T>::dot()
     throw;
   }
 
-
+  T sum = 0;
   std::vector<T> h_product(array_size,sum);
   hc::copy(view_p,h_product.begin());
 
