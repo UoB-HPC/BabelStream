@@ -182,9 +182,7 @@ void CUDAStream<T>::triad()
 template <class T>
 __global__ void dot_kernel(const T * a, const T * b, T * sum, unsigned int array_size)
 {
-
-  extern __shared__ __align__(sizeof(T)) unsigned char smem[];
-  T *tb_sum = reinterpret_cast<T*>(smem);
+  __shared__ T tb_sum[TBSIZE];
 
   int i = blockDim.x * blockIdx.x + threadIdx.x;
   const size_t local_i = threadIdx.x;
@@ -209,7 +207,7 @@ __global__ void dot_kernel(const T * a, const T * b, T * sum, unsigned int array
 template <class T>
 T CUDAStream<T>::dot()
 {
-  dot_kernel<<<DOT_NUM_BLOCKS, TBSIZE, sizeof(T)*TBSIZE>>>(d_a, d_b, d_sum, array_size);
+  dot_kernel<<<DOT_NUM_BLOCKS, TBSIZE>>>(d_a, d_b, d_sum, array_size);
   check_error();
 
   cudaMemcpy(sums, d_sum, DOT_NUM_BLOCKS*sizeof(T), cudaMemcpyDeviceToHost);

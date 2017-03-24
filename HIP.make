@@ -3,13 +3,7 @@
 
 HIPCC = hipcc
 
-ifndef CUDA_PATH
-ifeq (,$(wildcard /usr/local/bin/nvcc))
-$(error /usr/local/bin/nvcc not found, set CUDA_PATH instead)
-endif
-endif
-
-hip-stream: main.cpp HIPStream.cu
+hip-stream: main.cpp HIPStream.cpp
 	$(HIPCC) $(CXXFLAGS) -std=c++11 -DHIP $^ $(EXTRA_FLAGS) -o $@
 
 .PHONY: clean

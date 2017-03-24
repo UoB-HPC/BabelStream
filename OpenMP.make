@@ -29,7 +29,7 @@ COMPILER_XL = xlc++
 CXX = $(COMPILER_$(COMPILER))
 
 FLAGS_GNU = -O3 -std=c++11
-FLAGS_INTEL = -O3 -std=c++11 -xHOST
+FLAGS_INTEL = -O3 -std=c++11 -xHOST -qopt-streaming-stores=always
 FLAGS_CRAY = -O3 -hstd=c++11
 FLAGS_CLANG = -O3 -std=c++11
 FLAGS_XL = -O5 -qarch=pwr8 -qtune=pwr8 -std=c++11
