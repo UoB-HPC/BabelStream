@@ -205,34 +205,79 @@ template <class T>
 T HCStream<T>::dot()
 {
 
+  //implementation adapted from
+  //https://ampbook.codeplex.com/SourceControl/latest
+  // ->Samples/CaseStudies/Reduction
+  // ->CascadingReduction.h
+
   hc::array_view<T,1> view_a(this->d_a);
   hc::array_view<T,1> view_b(this->d_b);
-  hc::array<T,1>      d_sum(array_view);
-  hc::array_view<T,1> view_s(d_sum)    ;
 
   auto ex = view_a.get_extent();
-  hc::tiled_extent<1> tiled_ex = ex.tile(64);
+  hc::tiled_extent<1>   tiled_ex = ex.tile(TBSIZE);
+
+  const size_t n_tiles = 64;
+  const size_t n_elements = array_size;
+  // hc::array<T,1>      d_product(array_size);
+  // hc::array_view<T,1> view_p(d_product)    ;
+
+  hc::array<T, 1>     partial(n_tiles*TBSIZE);
+  hc::array_view<T,1> partialv(partial)    ;
+
+  hc::completion_future dot_kernel = hc::parallel_for_each(tiled_ex,
+                                                           [=](hc::tiled_index<1> tidx) [[hc]] {
+
+                                                             std::size_t tid = tidx.local[0];//index in the tile
+
+                                                             tile_static T tileData[TBSIZE];
+
+                                                             std::size_t i = (tidx.tile[0] * 2 * TBSIZE) + tid;
+                                                             std::size_t stride = TBSIZE * 2 * n_tiles;
+
+                                                             //  Load and add many elements, rather than just two
+                                                             T sum = 0;
+                                                             do
+                                                             {
+                                                               T near = view_a[i]*view_b[i];
+                                                               T far = view_a[i+TBSIZE]*view_b[i+TBSIZE];
+                                                               sum += (far + near);
+                                                               i += stride;
+                                                             }
+                                                             while (i < n_elements);
+                                                             tileData[tid] = sum;
+
+                                                             tidx.barrier.wait();
+
+                                                             //  Reduce values for data on this tile
+                                                             for (stride = (TBSIZE / 2); stride > 0; stride >>= 1)
+                                                             {
+                                                               //  Remember that this is a branch within a loop and all threads will have to execute
+                                                               //  this but only threads with a tid < stride will do useful work.
+                                                               if (tid < stride)
+                                                                 tileData[tid] += tileData[tid + stride];
+
+                                                               tidx.barrier.wait_with_tile_static_memory_fence();
+                                                             }
+
+                                                             //  Write the result for this tile back to global memory
+                                                             if (tid == 0)
+                                                               partialv[tidx.tile[0]] = tileData[tid];
+                                                           });
 
   try{
-    hc::completion_future future_kernel = hc::parallel_for_each(tiled_ex,
-                                                                [=](hc::index<1> i) [[hc]] {
 
-                                                                  view_s[i] = view_p[i]*view_a[i];
-                                                                });
-    future_kernel.wait();
+    dot_kernel.wait();
   }
   catch(std::exception& e){
     std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
     throw;
   }
 
-  T sum = 0;
-  std::vector<T> h_product(array_size,sum);
-  hc::copy(view_p,h_product.begin());
+  std::vector<T> h_partial(n_tiles);
+  hc::copy(partial, h_partial.begin());
+  T result = std::accumulate(h_partial.begin(), h_partial.end(), 0.);
 
-  sum = std::accumulate(h_product.begin(), h_product.end(),sum);
-
-  return sum;
+  return result;
 }
 
 
