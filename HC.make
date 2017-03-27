@@ -3,8 +3,6 @@
 
 HCC = hcc
 
-
-
 CXXFLAGS+=-hc -stdlib=libc++ -I/opt/rocm/hcc-lc/include
 LDFLAGS+=-g -fstandalone-debug -hc -L/opt/rocm/hcc-lc/lib -Wl,--rpath=/opt/rocm/hcc-lc/lib -lc++ -lc++abi -ldl -Wl,--whole-archive -lmcwamp -Wl,--no-whole-archive
 

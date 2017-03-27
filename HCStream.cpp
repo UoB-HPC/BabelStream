@@ -202,7 +202,7 @@ void HCStream<T>::triad()
 }
 
 template <class T>
-T HCStream<T>::dot()
+T HCStream<T>::dot_impl()
 {
 
   //implementation adapted from
@@ -280,6 +280,15 @@ T HCStream<T>::dot()
   return result;
 }
 
+template <class T>
+T HCStream<T>::dot()
+{
+  #ifdef HC_DEVELOP
+  return dot_impl();
+  #else
+  return 0.;
+  #endif
+}
 
 template class HCStream<float>;
 template class HCStream<double>;
