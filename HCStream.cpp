@@ -3,13 +3,12 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
+#include "HCStream.h"
 
 #include <codecvt>
 #include <vector>
 #include <locale>
 #include <numeric>
-
-#include "HCStream.h"
 
 #define TBSIZE 1024
 
@@ -101,7 +100,7 @@ void HCStream<T>::init_arrays(T _a, T _b, T _c)
     future_c.wait();
   }
   catch(std::exception& e){
-    std::cout << __FILE__ << ":" << __LINE__ << "\t future_{a,b,c} " << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::init_arrays " << e.what() << std::endl;
     throw;
   }
 
@@ -131,7 +130,7 @@ void HCStream<T>::copy()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::copy " << e.what() << std::endl;
     throw;
   }
 }
@@ -140,7 +139,7 @@ template <class T>
 void HCStream<T>::mul()
 {
 
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   hc::array_view<T,1> view_b = this->d_b;
   hc::array_view<T,1> view_c = this->d_c;
 
@@ -152,7 +151,7 @@ void HCStream<T>::mul()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::copy " << e.what() << std::endl;
     throw;
   }
 }
@@ -174,7 +173,7 @@ void HCStream<T>::add()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::copy " << e.what() << std::endl;
     throw;
   }
 }
@@ -183,7 +182,7 @@ template <class T>
 void HCStream<T>::triad()
 {
 
-  const T scalar = 0.3;
+  const T scalar = startScalar;
   hc::array_view<T,1> view_a(this->d_a);
   hc::array_view<T,1> view_b(this->d_b);
   hc::array_view<T,1> view_c(this->d_c);
@@ -196,98 +195,74 @@ void HCStream<T>::triad()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::copy " << e.what() << std::endl;
     throw;
   }
-}
-
-template <class T>
-T HCStream<T>::dot_impl()
-{
-
-  //implementation adapted from
-  //https://ampbook.codeplex.com/SourceControl/latest
-  // ->Samples/CaseStudies/Reduction
-  // ->CascadingReduction.h
-
-  hc::array_view<T,1> view_a(this->d_a);
-  hc::array_view<T,1> view_b(this->d_b);
-
-  auto ex = view_a.get_extent();
-  hc::tiled_extent<1>   tiled_ex = ex.tile(TBSIZE);
-
-  const size_t n_tiles = 64;
-  const size_t n_elements = array_size;
-  // hc::array<T,1>      d_product(array_size);
-  // hc::array_view<T,1> view_p(d_product)    ;
-
-  hc::array<T, 1>     partial(n_tiles*TBSIZE);
-  hc::array_view<T,1> partialv(partial)    ;
-
-  hc::completion_future dot_kernel = hc::parallel_for_each(tiled_ex,
-                                                           [=](hc::tiled_index<1> tidx) [[hc]] {
-
-                                                             std::size_t tid = tidx.local[0];//index in the tile
-
-                                                             tile_static T tileData[TBSIZE];
-
-                                                             std::size_t i = (tidx.tile[0] * 2 * TBSIZE) + tid;
-                                                             std::size_t stride = TBSIZE * 2 * n_tiles;
-
-                                                             //  Load and add many elements, rather than just two
-                                                             T sum = 0;
-                                                             do
-                                                             {
-                                                               T near = view_a[i]*view_b[i];
-                                                               T far = view_a[i+TBSIZE]*view_b[i+TBSIZE];
-                                                               sum += (far + near);
-                                                               i += stride;
-                                                             }
-                                                             while (i < n_elements);
-                                                             tileData[tid] = sum;
-
-                                                             tidx.barrier.wait();
-
-                                                             //  Reduce values for data on this tile
-                                                             for (stride = (TBSIZE / 2); stride > 0; stride >>= 1)
-                                                             {
-                                                               //  Remember that this is a branch within a loop and all threads will have to execute
-                                                               //  this but only threads with a tid < stride will do useful work.
-                                                               if (tid < stride)
-                                                                 tileData[tid] += tileData[tid + stride];
-
-                                                               tidx.barrier.wait_with_tile_static_memory_fence();
-                                                             }
-
-                                                             //  Write the result for this tile back to global memory
-                                                             if (tid == 0)
-                                                               partialv[tidx.tile[0]] = tileData[tid];
-                                                           });
-
-  try{
-
-    dot_kernel.wait();
-  }
-  catch(std::exception& e){
-    std::cerr << __FILE__ << ":" << __LINE__ << "\t" << e.what() << std::endl;
-    throw;
-  }
-
-  std::vector<T> h_partial(n_tiles);
-  hc::copy(partial, h_partial.begin());
-  T result = std::accumulate(h_partial.begin(), h_partial.end(), 0.);
-
-  return result;
 }
 
 template <class T>
 T HCStream<T>::dot()
 {
-  #ifdef HC_DEVELOP
-  return dot_impl();
-  #else
-  return 0.;
-  #endif
+   //implementation adapted from
+    //https://ampbook.codeplex.com/SourceControl/latest
+    // ->Samples/CaseStudies/Reduction
+    // ->CascadingReduction.h
+
+    static constexpr std::size_t n_tiles = 64;
+
+    const auto& view_a = this->d_a;
+    const auto& view_b = this->d_b;
+
+    auto ex = view_a.get_extent();
+    const auto tiled_ex = hc::extent<1>(n_tiles * TBSIZE).tile(TBSIZE);
+    const auto domain_sz = tiled_ex.size();
+
+    hc::array<T, 1> partial(n_tiles);
+
+    hc::parallel_for_each(tiled_ex,
+                          [=,
+                           &view_a,
+                           &view_b,
+                           &partial](const hc::tiled_index<1>& tidx) [[hc]] {
+
+                            auto gidx = tidx.global[0];
+        T r = T{0}; // Assumes reduction op is addition.
+        while (gidx < view_a.get_extent().size()) {
+            r += view_a[gidx] * view_b[gidx];
+            gidx += domain_sz;
+        }
+
+        tile_static T tileData[TBSIZE];
+        tileData[tidx.local[0]] = r;
+
+        tidx.barrier.wait_with_tile_static_memory_fence();
+
+        for (auto h = TBSIZE / 2; h; h /= 2) {
+            if (tidx.local[0] < h) {
+                tileData[tidx.local[0]] += tileData[tidx.local[0] + h];
+            }
+            tidx.barrier.wait_with_tile_static_memory_fence();
+        }
+
+        if (tidx.global == tidx.tile_origin) partial[tidx.tile] = tileData[0];
+    });
+
+    try {
+        partial.get_accelerator_view().wait();
+    }
+    catch (std::exception& e) {
+        std::cerr << __FILE__ << ":" << __LINE__ << "\t  HCStream<T>::dot " << e.what() << std::endl;
+        throw;
+    }
+
+    std::vector<T> h_partial(n_tiles,0);
+    hc::copy(partial,h_partial.begin());
+
+    T result = std::accumulate(h_partial.begin(), h_partial.end(), 0.);
+
+    return result;
+
+
 }
 
 template class HCStream<float>;
