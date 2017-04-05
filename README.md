@@ -36,6 +36,18 @@ Pass in extra flags via the `EXTRA_FLAGS` option.
 
 The binaries are named in the form `<model>-stream`.
 
+Building Kokkos
+---------------
+
+We use the following command to build Kokkos using the Intel Compiler, specifying the `arch` appropriately, e.g. `KNL`.
+```
+../generate_makefile.bash --prefix=<prefix> --with-openmp --with-pthread --arch=<arch> --compiler=icpc --cxxflags=-DKOKKOS_MEMORY_ALIGNMENT=2097152
+```
+For building with CUDA support, we use the following command, specifying the `arch` appropriately, e.g. `Kepler35`.
+```
+../generate_makefile.bash --prefix=<prefix> --with-cuda --with-openmp --with-pthread --arch=<arch> --with-cuda-options=enable_lambda
+```
+
 
 Results
 -------
