@@ -39,7 +39,7 @@ void KOKKOSStream<T>::init_arrays(T initA, T initB, T initC)
   View<double*, DEVICE> a(*d_a);
   View<double*, DEVICE> b(*d_b);
   View<double*, DEVICE> c(*d_c);
-  parallel_for(array_size, KOKKOS_LAMBDA (const int index)
+  parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     a[index] = initA;
     b[index] = initB;
@@ -70,7 +70,7 @@ void KOKKOSStream<T>::copy()
   View<double*, DEVICE> b(*d_b);
   View<double*, DEVICE> c(*d_c);
 
-  parallel_for(array_size, KOKKOS_LAMBDA (const int index)
+  parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     c[index] = a[index];
   });
@@ -85,7 +85,7 @@ void KOKKOSStream<T>::mul()
   View<double*, DEVICE> c(*d_c);
 
   const T scalar = startScalar;
-  parallel_for(array_size, KOKKOS_LAMBDA (const int index)
+  parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     b[index] = scalar*c[index];
   });
@@ -99,7 +99,7 @@ void KOKKOSStream<T>::add()
   View<double*, DEVICE> b(*d_b);
   View<double*, DEVICE> c(*d_c);
 
-  parallel_for(array_size, KOKKOS_LAMBDA (const int index)
+  parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     c[index] = a[index] + b[index];
   });
@@ -114,7 +114,7 @@ void KOKKOSStream<T>::triad()
   View<double*, DEVICE> c(*d_c);
 
   const T scalar = startScalar;
-  parallel_for(array_size, KOKKOS_LAMBDA (const int index)
+  parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     a[index] = b[index] + scalar*c[index];
   });
@@ -129,7 +129,7 @@ T KOKKOSStream<T>::dot()
 
   T sum = 0.0;
 
-  parallel_reduce(array_size, KOKKOS_LAMBDA (const int index, double &tmp)
+  parallel_reduce(array_size, KOKKOS_LAMBDA (const long index, double &tmp)
   {
     tmp += a[index] * b[index];
   }, sum);
