@@ -10,6 +10,10 @@
 using RAJA::forall;
 using RAJA::RangeSegment;
 
+#ifndef ALIGNMENT
+#define ALIGNMENT (2*1024*1024) // 2MB
+#endif
+
 template <class T>
 RAJAStream<T>::RAJAStream(const unsigned int ARRAY_SIZE, const int device_index)
     : array_size(ARRAY_SIZE)
@@ -18,9 +22,9 @@ RAJAStream<T>::RAJAStream(const unsigned int ARRAY_SIZE, const int device_index)
   index_set.push_back(seg);
 
 #ifdef RAJA_TARGET_CPU
-  d_a = new T[ARRAY_SIZE];
-  d_b = new T[ARRAY_SIZE];
-  d_c = new T[ARRAY_SIZE];
+  d_a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+  d_b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+  d_c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
 #else
   cudaMallocManaged((void**)&d_a, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
   cudaMallocManaged((void**)&d_b, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
@@ -33,9 +37,9 @@ template <class T>
 RAJAStream<T>::~RAJAStream()
 {
 #ifdef RAJA_TARGET_CPU
-  delete[] d_a;
-  delete[] d_b;
-  delete[] d_c;
+  free(d_a);
+  free(d_b);
+  free(d_c);
 #else
   cudaFree(d_a);
   cudaFree(d_b);
