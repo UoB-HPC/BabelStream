@@ -53,7 +53,7 @@ void RAJAStream<T>::init_arrays(T initA, T initB, T initC)
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
+  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     a[index] = initA;
     b[index] = initB;
@@ -75,7 +75,7 @@ void RAJAStream<T>::copy()
 {
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
+  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index];
   });
@@ -87,7 +87,7 @@ void RAJAStream<T>::mul()
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
   const T scalar = startScalar;
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
+  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     b[index] = scalar*c[index];
   });
@@ -99,7 +99,7 @@ void RAJAStream<T>::add()
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
+  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index] + b[index];
   });
@@ -112,7 +112,7 @@ void RAJAStream<T>::triad()
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
   const T scalar = startScalar;
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
+  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     a[index] = b[index] + scalar*c[index];
   });
@@ -126,7 +126,7 @@ T RAJAStream<T>::dot()
 
   RAJA::ReduceSum<reduce_policy, T> sum(0.0);
 
-  forall<policy>(index_set, [=] RAJA_DEVICE (int index)
+  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     sum += a[index] * b[index];
   });
