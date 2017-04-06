@@ -27,7 +27,7 @@ CXX_GNU   = g++
 CXX_CRAY  = CC
 CXX_XL    = xlc++
 
-CXXFLAGS_INTEL = -O3 -std=c++11 -qopenmp
+CXXFLAGS_INTEL = -O3 -std=c++11 -qopenmp -xHost -qopt-streaming-stores=always
 CXXFLAGS_GNU   = -O3 -std=c++11 -fopenmp
 CXXFLAGS_CRAY  = -O3 -hstd=c++11
 CXXFLAGS_XL    = -O5 -std=c++11 -qarch=pwr8 -qtune=pwr8 -qsmp=omp -qthreaded
