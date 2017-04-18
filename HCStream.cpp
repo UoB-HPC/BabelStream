@@ -60,7 +60,7 @@ HCStream<T>::HCStream(const unsigned int ARRAY_SIZE, const int device_index):
 
   // Set device
   std::vector<hc::accelerator> accs = hc::accelerator::get_all();
-  auto current = accs[device_index];
+  auto current = accs.at(device_index);
 
   hc::accelerator::set_default(current.get_device_path());
 
