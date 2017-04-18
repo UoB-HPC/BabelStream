@@ -151,7 +151,7 @@ void HCStream<T>::mul()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::copy " << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::mul " << e.what() << std::endl;
     throw;
   }
 }
@@ -173,7 +173,7 @@ void HCStream<T>::add()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::copy " << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::add " << e.what() << std::endl;
     throw;
   }
 }
@@ -195,7 +195,7 @@ void HCStream<T>::triad()
     future_kernel.wait();
   }
   catch(std::exception& e){
-    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::copy " << e.what() << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << "\t HCStream<T>::triad " << e.what() << std::endl;
     throw;
   }
 }
