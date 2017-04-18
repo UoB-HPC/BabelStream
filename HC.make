@@ -1,6 +1,4 @@
 
-# TODO: HC with HCC
-
 HCC = hcc
 
 CXXFLAGS+=-O3 -hc -stdlib=libc++ -I/opt/rocm/hcc-lc/include
