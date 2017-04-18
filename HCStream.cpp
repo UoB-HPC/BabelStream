@@ -58,7 +58,7 @@ HCStream<T>::HCStream(const unsigned int ARRAY_SIZE, const int device_index):
     throw std::runtime_error(ss.str());
   }
 
-  // // Set device
+  // Set device
   std::vector<hc::accelerator> accs = hc::accelerator::get_all();
   auto current = accs[device_index];
 
