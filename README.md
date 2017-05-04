@@ -1,4 +1,4 @@
-GPU-STREAM
+BabelStream
 ==========
 
 Measure memory transfer rates to/from global device memory on GPUs.
@@ -16,9 +16,11 @@ Currently implemented are:
   - RAJA
   - SYCL
 
+This code was previously called GPU-STREAM.
+
 Website
 -------
-[uob-hpc.github.io/GPU-STREAM/](https://uob-hpc.github.io/GPU-STREAM/)
+[uob-hpc.github.io/BabelStream/](https://uob-hpc.github.io/BabelStream/)
 
 Usage
 -----
@@ -36,6 +38,29 @@ Pass in extra flags via the `EXTRA_FLAGS` option.
 
 The binaries are named in the form `<model>-stream`.
 
+Building Kokkos
+---------------
+
+We use the following command to build Kokkos using the Intel Compiler, specifying the `arch` appropriately, e.g. `KNL`.
+```
+../generate_makefile.bash --prefix=<prefix> --with-openmp --with-pthread --arch=<arch> --compiler=icpc --cxxflags=-DKOKKOS_MEMORY_ALIGNMENT=2097152
+```
+For building with CUDA support, we use the following command, specifying the `arch` appropriately, e.g. `Kepler35`.
+```
+../generate_makefile.bash --prefix=<prefix> --with-cuda --with-openmp --with-pthread --arch=<arch> --with-cuda-options=enable_lambda
+```
+
+Building RAJA
+-------------
+
+We use the following command to build RAJA using the Intel Compiler.
+```
+cmake .. -DCMAKE_INSTALL_PREFIX=<prefix> -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DRAJA_PTR="RAJA_USE_RESTRICT_ALIGNED_PTR" -DCMAKE_BUILD_TYPE=ICCBuild -DRAJA_ENABLE_TESTS=Off
+```
+For building with CUDA support, we use the following command.
+```
+cmake .. -DCMAKE_INSTALL_PREFIX=<prefix> -DRAJA_PTR="RAJA_USE_RESTRICT_ALIGNED_PTR" -DRAJA_ENABLE_CUDA=1 -DRAJA_ENABLE_TESTS=Off
+```
 
 Results
 -------
@@ -45,13 +70,17 @@ Sample results can be found in the `results` subdirectory. If you would like to 
 Citing
 ------
 
-You can view the [Poster and Extended Abstract](http://sc15.supercomputing.org/sites/all/themes/SC15images/tech_poster/tech_poster_pages/post150.html) on GPU-STREAM presented at SC'15. Please cite GPU-STREAM via this reference:
+Please cite BabelStream via this reference:
 
 > Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM v2.0: Benchmarking the achievable memory bandwidth of many-core processors across diverse parallel programming models. 2016. Paper presented at P^3MA Workshop at ISC High Performance, Frankfurt, Germany.
 
-**Other GPU-STREAM publications:**
+**Other BabelStream publications:**
 
 > Deakin T, McIntosh-Smith S. GPU-STREAM: Benchmarking the achievable memory bandwidth of Graphics Processing Units. 2015. Poster session presented at IEEE/ACM SuperComputing, Austin, United States.
+You can view the [Poster and Extended Abstract](http://sc15.supercomputing.org/sites/all/themes/SC15images/tech_poster/tech_poster_pages/post150.html).
+
+> Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM: Now in 2D!. 2016. Poster session presented at IEEE/ACM SuperComputing, Salt Lake City, United States.
+You can view the [Poster and Extended Abstract](http://sc16.supercomputing.org/sc-archive/tech_poster/tech_poster_pages/post139.html).
 
 
 
