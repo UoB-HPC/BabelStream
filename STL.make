@@ -13,7 +13,7 @@ endif
 COMPILER_INTEL=icpc
 CXX=$(COMPILER_$(COMPILER))
 
-FLAGS_INTEL=-O3 -std=c++17 -qopenmp-simd -tbb -xHost -qstreaming-stores=always
+FLAGS_INTEL=-O3 -std=c++17 -qopenmp-simd -tbb -xHost -qopt-streaming-stores=always
 CXXFLAGS=$(FLAGS_$(COMPILER))
 
 stl-stream: main.cpp STLStream.cpp
