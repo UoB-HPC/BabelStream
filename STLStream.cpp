@@ -26,12 +26,9 @@ STLStream<T>::~STLStream()
 template <class T>
 void STLStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  for (int i = 0; i < array_size; i++)
-  {
-    a[i] = initA;
-    b[i] = initB;
-    c[i] = initC;
-  }
+  std::fill(std::execution::par_unseq, a.begin(), a.end(), initA);
+  std::fill(std::execution::par_unseq, b.begin(), b.end(), initB);
+  std::fill(std::execution::par_unseq, c.begin(), c.end(), initC);
 }
 
 template <class T>
