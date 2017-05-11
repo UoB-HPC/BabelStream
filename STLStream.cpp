@@ -46,7 +46,7 @@ void STLStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
 template <class T>
 void STLStream<T>::copy()
 {
-  std::copy(
+  std::copy(std::execution::par_unseq,
     a.begin(), a.end(), c.begin()
     );
 }
@@ -55,7 +55,7 @@ template <class T>
 void STLStream<T>::mul()
 {
   const T scalar = startScalar;
-  std::transform(
+  std::transform(std::execution::par_unseq,
     c.begin(), c.end(), b.begin(),
     [scalar](T c){
       return scalar * c;
@@ -65,7 +65,7 @@ void STLStream<T>::mul()
 template <class T>
 void STLStream<T>::add()
 {
-  std::transform(
+  std::transform(std::execution::par_unseq,
     a.begin(), a.end(), b.begin(), c.begin(),
     [](T a, T b){
       return a + b;
@@ -76,7 +76,7 @@ template <class T>
 void STLStream<T>::triad()
 {
   const T scalar = startScalar;
-  std::transform(
+  std::transform(std::execution::par_unseq,
     b.begin(), b.end(), c.begin(), a.begin(),
     [scalar](T b, T c) {
       return b + scalar * c;
