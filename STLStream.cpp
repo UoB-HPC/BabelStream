@@ -9,6 +9,7 @@
 
 #include "pstl/algorithm"
 #include "pstl/execution"
+#include "pstl/numeric"
 #include <functional>
 
 template <class T>
@@ -88,11 +89,11 @@ template <class T>
 T STLStream<T>::dot()
 {
   T sum = 0.0;
-  for (int i = 0; i < array_size; i++)
-  {
-    sum += a[i] * b[i];
-  }
-
+  //sum = std::transform_reduce(std::execution::par_unseq,
+  //  a.begin(), a.end(), b.begin(), 0.0,
+  //    [](T a, T b){ return a * b; },
+  //    [](T a, T b){ return a + b; }
+  //    );
   return sum;
 }
 
