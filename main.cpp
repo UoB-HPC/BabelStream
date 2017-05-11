@@ -35,6 +35,8 @@
 #include "SYCLStream.h"
 #elif defined(OMP)
 #include "OMPStream.h"
+#elif defined(STL)
+#include "STLStream.hpp"
 #endif
 
 // Default size of 2^25
@@ -129,6 +131,9 @@ void run()
   // Use the OpenMP implementation
   stream = new OMPStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
 
+#elif defined(STL)
+  // Use C++17 STL implementation
+  stream = new STLStream<T>(ARRAY_SIZE, deviceIndex);
 #endif
 
   stream->init_arrays(startA, startB, startC);
