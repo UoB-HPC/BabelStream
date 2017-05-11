@@ -7,8 +7,9 @@
 
 #include "STLStream.hpp"
 
-#include <algorithm>
-#include <execution>
+#include "pstl/algorithm"
+#include "pstl/execution"
+#include <functional>
 
 template <class T>
 STLStream<T>::STLStream(const unsigned int ARRAY_SIZE, int device) :
