@@ -7,6 +7,9 @@
 
 #include "STLStream.hpp"
 
+#include <algorithm>
+#include <execution>
+
 template <class T>
 STLStream<T>::STLStream(const unsigned int ARRAY_SIZE, int device) :
   array_size(ARRAY_SIZE), a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
