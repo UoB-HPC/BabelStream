@@ -7,6 +7,10 @@
 
 #include "OMPStream.h"
 
+#ifndef ALIGNMENT
+#define ALIGNMENT (2*1024*1024) // 2MB
+#endif
+
 template <class T>
 OMPStream<T>::OMPStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int device)
 {
@@ -22,9 +26,9 @@ OMPStream<T>::OMPStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int dev
   {}
 #else
   // Allocate on the host
-  this->a = (T*)malloc(sizeof(T)*array_size);
-  this->b = (T*)malloc(sizeof(T)*array_size);
-  this->c = (T*)malloc(sizeof(T)*array_size);
+  this->a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+  this->b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+  this->c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
 #endif
 }
 

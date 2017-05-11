@@ -9,6 +9,7 @@
 #include "hip/hip_runtime.h"
 
 #define TBSIZE 1024
+#define DOT_NUM_BLOCKS 256
 
 void check_error(void)
 {
@@ -47,6 +48,9 @@ HIPStream<T>::HIPStream(const unsigned int ARRAY_SIZE, const int device_index)
 
   array_size = ARRAY_SIZE;
 
+  // Allocate the host array for partial sums for dot kernels
+  sums = (T*)malloc(sizeof(T) * DOT_NUM_BLOCKS);
+
   // Check buffers fit on the device
   hipDeviceProp_t props;
   hipGetDeviceProperties(&props, 0);
@@ -60,19 +64,26 @@ HIPStream<T>::HIPStream(const unsigned int ARRAY_SIZE, const int device_index)
   check_error();
   hipMalloc(&d_c, ARRAY_SIZE*sizeof(T));
   check_error();
+  hipMalloc(&d_sum, DOT_NUM_BLOCKS*sizeof(T));
+  check_error();
 }
 
 
 template <class T>
 HIPStream<T>::~HIPStream()
 {
+  free(sums);
+
   hipFree(d_a);
   check_error();
   hipFree(d_b);
   check_error();
   hipFree(d_c);
   check_error();
+  hipFree(d_sum);
+  check_error();
 }
+
 
 template <typename T>
 __global__ void init_kernel(hipLaunchParm lp, T * a, T * b, T * c, T initA, T initB, T initC)
@@ -171,6 +182,46 @@ void HIPStream<T>::triad()
   check_error();
 }
 
+template <class T>
+__global__ void dot_kernel(hipLaunchParm lp, const T * a, const T * b, T * sum, unsigned int array_size)
+{
+  __shared__ T tb_sum[TBSIZE];
+
+  int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+  const size_t local_i = hipThreadIdx_x;
+
+  tb_sum[local_i] = 0.0;
+  for (; i < array_size; i += hipBlockDim_x*hipGridDim_x)
+    tb_sum[local_i] += a[i] * b[i];
+
+  for (int offset = hipBlockDim_x / 2; offset > 0; offset /= 2)
+  {
+    __syncthreads();
+    if (local_i < offset)
+    {
+      tb_sum[local_i] += tb_sum[local_i+offset];
+    }
+  }
+
+  if (local_i == 0)
+    sum[hipBlockIdx_x] = tb_sum[local_i];
+}
+
+template <class T>
+T HIPStream<T>::dot()
+{
+  hipLaunchKernel(HIP_KERNEL_NAME(dot_kernel), dim3(DOT_NUM_BLOCKS), dim3(TBSIZE), 0, 0, d_a, d_b, d_sum, array_size);
+  check_error();
+
+  hipMemcpy(sums, d_sum, DOT_NUM_BLOCKS*sizeof(T), hipMemcpyDeviceToHost);
+  check_error();
+
+  T sum = 0.0;
+  for (int i = 0; i < DOT_NUM_BLOCKS; i++)
+    sum += sums[i];
+
+  return sum;
+}
 
 void listDevices(void)
 {
