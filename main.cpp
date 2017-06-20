@@ -201,16 +201,20 @@ void run()
   {
     // Get min/max; ignore the first result
     auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
+    double min = *minmax.first;
+    double max = *minmax.second;
 
     // Calculate average; ignore the first result
-    double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
+    double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0);
+
+    average = average / (double)(num_times - 1);
 
     // Display results
     std::cout
       << std::left << std::setw(12) << labels[i]
-      << std::left << std::setw(12) << std::setprecision(3) << 1.0E-6 * sizes[i] / (*minmax.first)
-      << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
-      << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
+      << std::left << std::setw(12) << std::setprecision(3) << 1.0E-6 * sizes[i] / min
+      << std::left << std::setw(12) << std::setprecision(5) << min
+      << std::left << std::setw(12) << std::setprecision(5) << max
       << std::left << std::setw(12) << std::setprecision(5) << average
       << std::endl;
 
