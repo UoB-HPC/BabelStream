@@ -225,10 +225,7 @@ if (rank == 0)
     t1 = std::chrono::high_resolution_clock::now();
     sum = stream->dot();
     #ifdef USE_MPI
-    if (rank == 0)
-      MPI_Reduce(MPI_IN_PLACE, &sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    else
-      MPI_Reduce(&sum, NULL, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     #endif
     t2 = std::chrono::high_resolution_clock::now();
     timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
@@ -333,10 +330,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   goldSum = goldA * goldB * ARRAY_SIZE;
 
 #ifdef USE_MPI
-  if (rank == 0)
-  {
     goldSum *= (T)procs;
-  }
 #endif
 
   // Calculate the average error
