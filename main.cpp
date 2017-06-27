@@ -276,18 +276,18 @@ if (rank == 0)
     double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0);
 
 #ifdef USE_MPI
-  // Collate timings
-  if (rank == 0)
-  {
-    MPI_Reduce(MPI_IN_PLACE, &min, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
-    MPI_Reduce(MPI_IN_PLACE, &max, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-  }
-  else
-  {
-    MPI_Reduce(&min, NULL, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&max, NULL, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-  }
-  sizes[i] *= procs;
+    // Collate timings
+    if (rank == 0)
+    {
+      MPI_Reduce(MPI_IN_PLACE, &min, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+      MPI_Reduce(MPI_IN_PLACE, &max, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    }
+    else
+    {
+      MPI_Reduce(&min, NULL, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+      MPI_Reduce(&max, NULL, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    }
+    sizes[i] *= procs;
 #endif
 
     average = average / (double)(num_times - 1);
