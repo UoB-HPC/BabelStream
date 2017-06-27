@@ -234,6 +234,11 @@ if (rank == 0)
 
   // Check solutions
   stream->read_arrays(a, b, c);
+
+#ifdef USE_MPI
+  // Only check solutions on the master rank in case verificaiton fails
+  if (rank == 0)
+#endif
   check_solution<T>(num_times, a, b, c, sum);
 
   // Display timing results
