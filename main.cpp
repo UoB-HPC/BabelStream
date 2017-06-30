@@ -123,9 +123,19 @@ if (rank == 0)
   {
   std::streamsize ss = std::cout.precision();
   std::cout << std::setprecision(1) << std::fixed
-    << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-    << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
-  std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
+#ifdef USE_MPI
+    << "Array size (per rank): "
+#else
+    << "Array size: "
+#endif
+    << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
+    << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl
+#ifdef USE_MPI
+    << "Total size (per rank): "
+#else
+    << "Total size: "
+#endif
+    << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
     << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
   std::cout.precision(ss);
   }
