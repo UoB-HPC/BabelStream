@@ -47,16 +47,31 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
   std::cout << "Reduction kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
 
-  queue = new cl::sycl::queue(dev);
+  queue = new cl::sycl::queue(dev, [&](cl::sycl::exception_list l) {
+      try {
+      for(auto e: l) {
+        std::rethrow_exception(e);
+      }
+      } catch (cl::sycl::exception e) {
+        std::cout << e.what();
+      }
+  });
 
   /* Pre-build the kernels */
-  p = new program(queue->get_context());
-  p->build_from_kernel_name<init_kernel>();
-  p->build_from_kernel_name<copy_kernel>();
-  p->build_from_kernel_name<mul_kernel>();
-  p->build_from_kernel_name<add_kernel>();
-  p->build_from_kernel_name<triad_kernel>();
-  p->build_from_kernel_name<dot_kernel>();
+  cl::sycl::vector_class<cl::sycl::program> v;
+  v.push_back(cl::sycl::program{queue->get_context()});
+  v.back().compile_from_kernel_name<init_kernel>();
+  v.push_back(cl::sycl::program{queue->get_context()});
+  v.back().compile_from_kernel_name<copy_kernel>();
+  v.push_back(cl::sycl::program{queue->get_context()});
+  v.back().compile_from_kernel_name<mul_kernel>();
+  v.push_back(cl::sycl::program{queue->get_context()});
+  v.back().compile_from_kernel_name<add_kernel>();
+  v.push_back(cl::sycl::program{queue->get_context()});
+  v.back().compile_from_kernel_name<triad_kernel>();
+  v.push_back(cl::sycl::program{queue->get_context()});
+  v.back().compile_from_kernel_name<dot_kernel>();
+  p = new program(v);
 
   // Create buffers
   d_a = new buffer<T>(array_size);
