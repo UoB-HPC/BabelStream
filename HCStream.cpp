@@ -10,7 +10,9 @@
 #include <locale>
 #include <numeric>
 
-#define TBSIZE 1024
+#ifndef VIRTUALTILESIZE
+#define VIRTUALTILESIZE 1024
+#endif
 
 std::string getDeviceName(const hc::accelerator& _acc)
 {
@@ -50,11 +52,11 @@ HCStream<T>::HCStream(const unsigned int ARRAY_SIZE, const int device_index):
   d_c(ARRAY_SIZE)
 {
 
-  // The array size must be divisible by TBSIZE for kernel launches
-  if (ARRAY_SIZE % TBSIZE != 0)
+  // The array size must be divisible by VIRTUALTILESIZE for kernel launches
+  if (ARRAY_SIZE % VIRTUALTILESIZE != 0)
   {
     std::stringstream ss;
-    ss << "Array size must be a multiple of " << TBSIZE;
+    ss << "Array size must be a multiple of " << VIRTUALTILESIZE;
     throw std::runtime_error(ss.str());
   }
 
@@ -214,7 +216,7 @@ T HCStream<T>::dot()
     const auto& view_b = this->d_b;
 
     auto ex = view_a.get_extent();
-    const auto tiled_ex = hc::extent<1>(n_tiles * TBSIZE).tile(TBSIZE);
+    const auto tiled_ex = hc::extent<1>(n_tiles * VIRTUALTILESIZE).tile(VIRTUALTILESIZE);
     const auto domain_sz = tiled_ex.size();
 
     hc::array<T, 1> partial(n_tiles);
@@ -232,12 +234,12 @@ T HCStream<T>::dot()
             gidx += domain_sz;
         }
 
-        tile_static T tileData[TBSIZE];
+        tile_static T tileData[VIRTUALTILESIZE];
         tileData[tidx.local[0]] = r;
 
         tidx.barrier.wait_with_tile_static_memory_fence();
 
-        for (auto h = TBSIZE / 2; h; h /= 2) {
+        for (auto h = VIRTUALTILESIZE / 2; h; h /= 2) {
             if (tidx.local[0] < h) {
                 tileData[tidx.local[0]] += tileData[tidx.local[0] + h];
             }
