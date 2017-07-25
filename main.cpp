@@ -15,7 +15,7 @@
 #include <iomanip>
 #include <cstring>
 
-#define VERSION_STRING "3.1"
+#define VERSION_STRING "3.2"
 
 #include "Stream.h"
 
@@ -56,7 +56,7 @@ void parseArguments(int argc, char *argv[]);
 int main(int argc, char *argv[])
 {
   std::cout
-    << "GPU-STREAM" << std::endl
+    << "BabelStream" << std::endl
     << "Version: " << VERSION_STRING << std::endl
     << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
 

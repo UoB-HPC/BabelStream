@@ -3,6 +3,21 @@ default: kokkos-stream
 
 include $(KOKKOS_PATH)/Makefile.kokkos
 
+ifndef COMPILER
+define compiler_help
+Set COMPILER to change flags (defaulting to GNU).
+Available compilers are:
+  GNU INTEL
+
+endef
+$(info $(compiler_help))
+COMPILER=GNU
+endif
+
+COMPILER_GNU = g++
+COMPILER_INTEL = icpc -qopt-streaming-stores=always
+CXX = $(COMPILER_$(COMPILER))
+
 ifndef TARGET
 define target_help
 Set TARGET to change to offload device. Defaulting to CPU.
