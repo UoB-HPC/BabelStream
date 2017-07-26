@@ -43,7 +43,7 @@ unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
 bool output_as_csv = false;
-std::string csv_seperator = ",";
+std::string csv_separator = ",";
 
 template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
