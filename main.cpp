@@ -192,13 +192,13 @@ void run()
   // Display timing results
   if(output_as_csv){
     std::cout
-      << "function"  << csv_seperator
-      << "nreps"  << csv_seperator
-      << "n_elements"  << csv_seperator
-      << "sizeof"  << csv_seperator
-      << "max_mbytes_per_sec"<< csv_seperator
-      << "min_runtime" << csv_seperator
-      << "max_runtime" << csv_seperator
+      << "function"  << csv_separator
+      << "nreps"  << csv_separator
+      << "n_elements"  << csv_separator
+      << "sizeof"  << csv_separator
+      << "max_mbytes_per_sec"<< csv_separator
+      << "min_runtime" << csv_separator
+      << "max_runtime" << csv_separator
       << "avg_runtime" << std::endl;
   }
   else{
@@ -234,14 +234,14 @@ void run()
     // Display results
     if(output_as_csv){
       std::cout
-        << labels[i] << csv_seperator
-        << num_times << csv_seperator
-        << ARRAY_SIZE << csv_seperator
-        << sizeof(T) << csv_seperator
-        << 1.0E-6 * sizes[i] / (*minmax.first) << csv_seperator
-        << *minmax.first << csv_seperator
-        << *minmax.second << csv_seperator
-        << average << csv_seperator
+        << labels[i] << csv_separator
+        << num_times << csv_separator
+        << ARRAY_SIZE << csv_separator
+        << sizeof(T) << csv_separator
+        << 1.0E-6 * sizes[i] / (*minmax.first) << csv_separator
+        << *minmax.first << csv_separator
+        << *minmax.second << csv_separator
+        << average << csv_separator
         << std::endl;
     }
     else {
