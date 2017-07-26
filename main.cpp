@@ -42,6 +42,7 @@ unsigned int ARRAY_SIZE = 33554432;
 unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
+bool output_as_csv = false;
 
 template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
@@ -327,6 +328,10 @@ void parseArguments(int argc, char *argv[])
     {
       use_float = true;
     }
+    else if (!std::string("--csv").compare(argv[i]))
+    {
+      output_as_csv = true;
+    }
     else if (!std::string("--help").compare(argv[i]) ||
              !std::string("-h").compare(argv[i]))
     {
@@ -339,6 +344,7 @@ void parseArguments(int argc, char *argv[])
       std::cout << "  -s  --arraysize  SIZE    Use SIZE elements in the array" << std::endl;
       std::cout << "  -n  --numtimes   NUM     Run the test NUM times (NUM >= 2)" << std::endl;
       std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
+      std::cout << "      --csv                Output as csv table" << std::endl;
       std::cout << std::endl;
       exit(EXIT_SUCCESS);
     }
