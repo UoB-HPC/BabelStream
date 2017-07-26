@@ -43,6 +43,7 @@ unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
 bool output_as_csv = false;
+std::string csv_seperator = ",";
 
 template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
@@ -54,12 +55,15 @@ void parseArguments(int argc, char *argv[]);
 
 int main(int argc, char *argv[])
 {
-  std::cout
-    << "BabelStream" << std::endl
-    << "Version: " << VERSION_STRING << std::endl
-    << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
 
   parseArguments(argc, argv);
+
+  if(!output_as_csv){
+    std::cout
+      << "BabelStream" << std::endl
+      << "Version: " << VERSION_STRING << std::endl
+      << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
+  }
 
   // TODO: Fix Kokkos to allow multiple template specializations
 #ifndef KOKKOS
@@ -74,24 +78,30 @@ int main(int argc, char *argv[])
 template <typename T>
 void run()
 {
-  std::cout << "Running kernels " << num_times << " times" << std::endl;
+  std::streamsize ss = std::cout.precision();
 
-  if (sizeof(T) == sizeof(float))
-    std::cout << "Precision: float" << std::endl;
-  else
-    std::cout << "Precision: double" << std::endl;
+  if(!output_as_csv){
+    std::cout << "Running kernels " << num_times << " times" << std::endl;
+
+    if (sizeof(T) == sizeof(float))
+      std::cout << "Precision: float" << std::endl;
+    else
+      std::cout << "Precision: double" << std::endl;
+
+
+    std::cout << std::setprecision(1) << std::fixed
+              << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
+              << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
+    std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
+              << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
+    std::cout.precision(ss);
+
+  }
 
   // Create host vectors
   std::vector<T> a(ARRAY_SIZE);
   std::vector<T> b(ARRAY_SIZE);
   std::vector<T> c(ARRAY_SIZE);
-  std::streamsize ss = std::cout.precision();
-  std::cout << std::setprecision(1) << std::fixed
-    << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-    << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
-  std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-    << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
-  std::cout.precision(ss);
 
   // Result of the Dot kernel
   T sum;
@@ -180,14 +190,29 @@ void run()
   check_solution<T>(num_times, a, b, c, sum);
 
   // Display timing results
-  std::cout
-    << std::left << std::setw(12) << "Function"
-    << std::left << std::setw(12) << "MBytes/sec"
-    << std::left << std::setw(12) << "Min (sec)"
-    << std::left << std::setw(12) << "Max"
-    << std::left << std::setw(12) << "Average" << std::endl;
+  if(output_as_csv){
+    std::cout
+      << "function"  << csv_seperator
+      << "nreps"  << csv_seperator
+      << "n_elements"  << csv_seperator
+      << "sizeof"  << csv_seperator
+      << "max_mbytes_per_sec"<< csv_seperator
+      << "min_runtime" << csv_seperator
+      << "max_runtime" << csv_seperator
+      << "avg_runtime" << std::endl;
+  }
+  else{
+    std::cout
+      << std::left << std::setw(12) << "Function"
+      << std::left << std::setw(12) << "MBytes/sec"
+      << std::left << std::setw(12) << "Min (sec)"
+      << std::left << std::setw(12) << "Max"
+      << std::left << std::setw(12) << "Average"
+      << std::endl
+      << std::fixed;
+  }
 
-  std::cout << std::fixed;
+
 
   std::string labels[5] = {"Copy", "Mul", "Add", "Triad", "Dot"};
   size_t sizes[5] = {
@@ -207,14 +232,27 @@ void run()
     double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
 
     // Display results
-    std::cout
+    if(output_as_csv){
+      std::cout
+        << labels[i] << csv_seperator
+        << num_times << csv_seperator
+        << ARRAY_SIZE << csv_seperator
+        << sizeof(T) << csv_seperator
+        << 1.0E-6 * sizes[i] / (*minmax.first) << csv_seperator
+        << *minmax.first << csv_seperator
+        << *minmax.second << csv_seperator
+        << average << csv_seperator
+        << std::endl;
+    }
+    else {
+      std::cout
       << std::left << std::setw(12) << labels[i]
       << std::left << std::setw(12) << std::setprecision(3) << 1.0E-6 * sizes[i] / (*minmax.first)
       << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
       << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
       << std::left << std::setw(12) << std::setprecision(5) << average
       << std::endl;
-
+    }
   }
 
   delete stream;
