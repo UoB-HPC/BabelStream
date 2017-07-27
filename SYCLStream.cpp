@@ -58,20 +58,13 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   });
 
   /* Pre-build the kernels */
-  cl::sycl::vector_class<cl::sycl::program> v;
-  v.push_back(cl::sycl::program{queue->get_context()});
-  v.back().compile_from_kernel_name<init_kernel>();
-  v.push_back(cl::sycl::program{queue->get_context()});
-  v.back().compile_from_kernel_name<copy_kernel>();
-  v.push_back(cl::sycl::program{queue->get_context()});
-  v.back().compile_from_kernel_name<mul_kernel>();
-  v.push_back(cl::sycl::program{queue->get_context()});
-  v.back().compile_from_kernel_name<add_kernel>();
-  v.push_back(cl::sycl::program{queue->get_context()});
-  v.back().compile_from_kernel_name<triad_kernel>();
-  v.push_back(cl::sycl::program{queue->get_context()});
-  v.back().compile_from_kernel_name<dot_kernel>();
-  p = new program(v);
+  p = new program(queue->get_context());
+  p->build_from_kernel_name<init_kernel>();
+  p->build_from_kernel_name<copy_kernel>();
+  p->build_from_kernel_name<mul_kernel>();
+  p->build_from_kernel_name<add_kernel>();
+  p->build_from_kernel_name<triad_kernel>();
+  p->build_from_kernel_name<dot_kernel>();
 
   // Create buffers
   d_a = new buffer<T>(array_size);
