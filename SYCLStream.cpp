@@ -49,9 +49,9 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 
   queue = new cl::sycl::queue(dev, [&](cl::sycl::exception_list l) {
       try {
-      for(auto e: l) {
-        std::rethrow_exception(e);
-      }
+        for(auto e: l) {
+          std::rethrow_exception(e);
+        }
       } catch (cl::sycl::exception e) {
         std::cout << e.what();
       }
