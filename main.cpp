@@ -58,7 +58,8 @@ int main(int argc, char *argv[])
 
   parseArguments(argc, argv);
 
-  if(!output_as_csv){
+  if (!output_as_csv)
+  {
     std::cout
       << "BabelStream" << std::endl
       << "Version: " << VERSION_STRING << std::endl
@@ -80,7 +81,8 @@ void run()
 {
   std::streamsize ss = std::cout.precision();
 
-  if(!output_as_csv){
+  if (!output_as_csv)
+  {
     std::cout << "Running kernels " << num_times << " times" << std::endl;
 
     if (sizeof(T) == sizeof(float))
@@ -190,7 +192,8 @@ void run()
   check_solution<T>(num_times, a, b, c, sum);
 
   // Display timing results
-  if(output_as_csv){
+  if(output_as_csv)
+  {
     std::cout
       << "function"  << csv_separator
       << "nreps"  << csv_separator
@@ -232,7 +235,8 @@ void run()
     double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
 
     // Display results
-    if(output_as_csv){
+    if(output_as_csv)
+    {
       std::cout
         << labels[i] << csv_separator
         << num_times << csv_separator
