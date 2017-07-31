@@ -1,4 +1,4 @@
-// Copyright (c) 2015-16 Peter Steinbach, MPI CBG Scientific Computing Facility
+// Copyright (c) 2017 Peter Steinbach, MPI CBG Scientific Computing Facility
 //
 // For full license terms please see the LICENSE file distributed with this
 // source code
@@ -10,9 +10,16 @@
 #include <locale>
 #include <numeric>
 
+//specific sizes were obtained through experimentation using a Fiji R9 Nano with rocm 1.6-115
 #ifndef VIRTUALTILESIZE
-#define VIRTUALTILESIZE 1024
+#define VIRTUALTILESIZE 256
 #endif
+
+//specific sizes were obtained through experimentation using a Fiji R9 Nano with rocm 1.6-115
+#ifndef NTILES
+#define NTILES 2048
+#endif
+
 
 std::string getDeviceName(const hc::accelerator& _acc)
 {
@@ -210,16 +217,14 @@ T HCStream<T>::dot()
     // ->Samples/CaseStudies/Reduction
     // ->CascadingReduction.h
 
-    static constexpr std::size_t n_tiles = 64;
-
     const auto& view_a = this->d_a;
     const auto& view_b = this->d_b;
 
     auto ex = view_a.get_extent();
-    const auto tiled_ex = hc::extent<1>(n_tiles * VIRTUALTILESIZE).tile(VIRTUALTILESIZE);
+    const auto tiled_ex = hc::extent<1>(NTILES * VIRTUALTILESIZE).tile(VIRTUALTILESIZE);
     const auto domain_sz = tiled_ex.size();
 
-    hc::array<T, 1> partial(n_tiles);
+    hc::array<T, 1> partial(NTILES);
 
     hc::parallel_for_each(tiled_ex,
                           [=,
@@ -257,7 +262,7 @@ T HCStream<T>::dot()
         throw;
     }
 
-    std::vector<T> h_partial(n_tiles,0);
+    std::vector<T> h_partial(NTILES,0);
     hc::copy(partial,h_partial.begin());
 
     T result = std::accumulate(h_partial.begin(), h_partial.end(), 0.);
