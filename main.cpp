@@ -192,7 +192,7 @@ void run()
   check_solution<T>(num_times, a, b, c, sum);
 
   // Display timing results
-  if(output_as_csv)
+  if (output_as_csv)
   {
     std::cout
       << "function"  << csv_separator
@@ -204,7 +204,8 @@ void run()
       << "max_runtime" << csv_separator
       << "avg_runtime" << std::endl;
   }
-  else{
+  else
+  {
     std::cout
       << std::left << std::setw(12) << "Function"
       << std::left << std::setw(12) << "MBytes/sec"
@@ -235,7 +236,7 @@ void run()
     double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
 
     // Display results
-    if(output_as_csv)
+    if (output_as_csv)
     {
       std::cout
         << labels[i] << csv_separator
@@ -248,14 +249,15 @@ void run()
         << average << csv_separator
         << std::endl;
     }
-    else {
+    else
+    {
       std::cout
-      << std::left << std::setw(12) << labels[i]
-      << std::left << std::setw(12) << std::setprecision(3) << 1.0E-6 * sizes[i] / (*minmax.first)
-      << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
-      << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
-      << std::left << std::setw(12) << std::setprecision(5) << average
-      << std::endl;
+        << std::left << std::setw(12) << labels[i]
+        << std::left << std::setw(12) << std::setprecision(3) << 1.0E-6 * sizes[i] / (*minmax.first)
+        << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
+        << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
+        << std::left << std::setw(12) << std::setprecision(5) << average
+        << std::endl;
     }
   }
 
