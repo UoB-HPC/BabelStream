@@ -197,7 +197,7 @@ void run()
     std::cout
       << "function"  << csv_separator
       << "num_times"  << csv_separator
-      << "n_elements"  << csv_separator
+      << "n_elements" << csv_separator
       << "sizeof"  << csv_separator
       << "max_mbytes_per_sec" << csv_separator
       << "min_runtime" << csv_separator
