@@ -44,6 +44,7 @@ unsigned int ARRAY_SIZE = 33554432;
 unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
+bool triad_only = false;
 bool output_as_csv = false;
 std::string csv_separator = ",";
 
@@ -52,6 +53,9 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 
 template <typename T>
 void run();
+
+template <typename T>
+void run_triad();
 
 void parseArguments(int argc, char *argv[]);
 
@@ -69,12 +73,26 @@ int main(int argc, char *argv[])
   }
 
   // TODO: Fix Kokkos to allow multiple template specializations
+  if (triad_only)
+  {
+    // TODO: Fix Kokkos to allow multiple template specializations
 #ifndef KOKKOS
-  if (use_float)
-    run<float>();
-  else
+    if (use_float)
+      run_triad<float>();
+    else
 #endif
-    run<double>();
+      run_triad<double>();
+  }
+  else
+  {
+    // TODO: Fix Kokkos to allow multiple template specializations
+#ifndef KOKKOS
+    if (use_float)
+      run<float>();
+    else
+#endif
+      run<double>();
+  }
 
 }
 
@@ -272,6 +290,99 @@ void run()
 }
 
 template <typename T>
+void run_triad()
+{
+  std::cout << "Running triad " << num_times << " times" << std::endl;
+  std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
+
+  if (sizeof(T) == sizeof(float))
+    std::cout << "Precision: float" << std::endl;
+  else
+    std::cout << "Precision: double" << std::endl;
+
+  // Create host vectors
+  std::vector<T> a(ARRAY_SIZE);
+  std::vector<T> b(ARRAY_SIZE);
+  std::vector<T> c(ARRAY_SIZE);
+  std::streamsize ss = std::cout.precision();
+  std::cout << std::setprecision(1) << std::fixed
+    << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-3 << " KB"
+    << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB)" << std::endl;
+  std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-3 << " KB"
+    << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB)" << std::endl;
+  std::cout.precision(ss);
+
+  Stream<T> *stream;
+
+#if defined(CUDA)
+  // Use the CUDA implementation
+  stream = new CUDAStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(HIP)
+  // Use the HIP implementation
+  stream = new HIPStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(OCL)
+  // Use the OpenCL implementation
+  stream = new OCLStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(USE_RAJA)
+  // Use the RAJA implementation
+  stream = new RAJAStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(KOKKOS)
+  // Use the Kokkos implementation
+  stream = new KOKKOSStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(ACC)
+  // Use the OpenACC implementation
+  stream = new ACCStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+
+#elif defined(SYCL)
+  // Use the SYCL implementation
+  stream = new SYCLStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(OMP)
+  // Use the OpenMP implementation
+  stream = new OMPStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+
+#endif
+
+  stream->init_arrays(startA, startB, startC);
+
+  // Declare timers
+  std::chrono::high_resolution_clock::time_point t1, t2;
+
+  // Run triad in loop
+  t1 = std::chrono::high_resolution_clock::now();
+  for (unsigned int k = 0; k < num_times; k++)
+  {
+    stream->triad();
+  }
+  t2 = std::chrono::high_resolution_clock::now();
+
+  double runtime = std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+
+  // Check solutions
+  T sum = 0.0;
+  stream->read_arrays(a, b, c);
+  check_solution<T>(num_times, a, b, c, sum);
+
+  // Display timing results
+  double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
+  double bandwidth = 1.0E-9 * (total_bytes / runtime);
+  std::cout
+    << "--------------------------------"
+    << std::endl << std::fixed
+    << "Runtime (seconds): " << std::left << std::setprecision(5)
+    << runtime << std::endl
+    << "Bandwidth (GB/s):  " << std::left << std::setprecision(3)
+    << bandwidth << std::endl;
+
+  delete stream;
+}
+
+template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum)
 {
   // Generate correct solution
@@ -285,9 +396,12 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   for (unsigned int i = 0; i < ntimes; i++)
   {
     // Do STREAM!
-    goldC = goldA;
-    goldB = scalar * goldC;
-    goldC = goldA + goldB;
+    if (!triad_only)
+    {
+      goldC = goldA;
+      goldB = scalar * goldC;
+      goldC = goldA + goldB;
+    }
     goldA = goldB + scalar * goldC;
   }
 
@@ -318,7 +432,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
       << "Validation failed on c[]. Average error " << errC
       << std::endl;
   // Check sum to 8 decimal places
-  if (errSum > 1.0E-8)
+  if (!triad_only && errSum > 1.0E-8)
     std::cerr
       << "Validation failed on sum. Error " << errSum
       << std::endl << std::setprecision(15)
@@ -378,6 +492,10 @@ void parseArguments(int argc, char *argv[])
     {
       use_float = true;
     }
+    else if (!std::string("--triad-only").compare(argv[i]))
+    {
+      triad_only = true;
+    }
     else if (!std::string("--csv").compare(argv[i]))
     {
       output_as_csv = true;
@@ -394,6 +512,7 @@ void parseArguments(int argc, char *argv[])
       std::cout << "  -s  --arraysize  SIZE    Use SIZE elements in the array" << std::endl;
       std::cout << "  -n  --numtimes   NUM     Run the test NUM times (NUM >= 2)" << std::endl;
       std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
+      std::cout << "      --triad-only         Only run triad" << std::endl;
       std::cout << "      --csv                Output as csv table" << std::endl;
       std::cout << std::endl;
       exit(EXIT_SUCCESS);
