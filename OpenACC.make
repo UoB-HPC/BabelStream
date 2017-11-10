@@ -20,7 +20,7 @@ define target_help
 Set a TARGET to ensure PGI targets the correct offload device.
 Available targets are:
   SNB, IVB, HSW
-  KEPLER, MAXWELL, PASCAL
+  KEPLER, MAXWELL, PASCAL, VOLTA
   HAWAII
 endef
 ifndef TARGET
@@ -32,6 +32,7 @@ TARGET_FLAGS_HSW     = -ta=multicore -tp=haswell
 TARGET_FLAGS_KEPLER  = -ta=nvidia:cc35
 TARGET_FLAGS_MAXWELL = -ta=nvidia:cc50
 TARGET_FLAGS_PASCAL  = -ta=nvidia:cc60
+TARGET_FLAGS_VOLTA   = -ta=nvidia:cc70
 TARGET_FLAGS_HAWAII  = -ta=radeon:hawaii
 ifeq ($(TARGET_FLAGS_$(TARGET)),)
 $(error $(target_help))
