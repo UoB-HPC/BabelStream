@@ -82,6 +82,8 @@ You can view the [Poster and Extended Abstract](http://sc15.supercomputing.org/s
 > Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM: Now in 2D!. 2016. Poster session presented at IEEE/ACM SuperComputing, Salt Lake City, United States.
 You can view the [Poster and Extended Abstract](http://sc16.supercomputing.org/sc-archive/tech_poster/tech_poster_pages/post139.html).
 
+> Deakin T, Price J, McIntosh-Smith S. Portable methods for measuring cache hierarchy performance. 2017. Poster sessions presented at IEEE/ACM SuperComputing, Denver, United States.
+You can view the [Poster](https://research-information.bris.ac.uk/pure/files/130921801/poster.pdf) and [Extended Abstract](https://research-information.bris.ac.uk/pure/files/130921799/summary.pdf).
 
 
 [1]: McCalpin, John D., 1995: "Memory Bandwidth and Machine Balance in Current High Performance Computers", IEEE Computer Society Technical Committee on Computer Architecture (TCCA) Newsletter, December 1995.
