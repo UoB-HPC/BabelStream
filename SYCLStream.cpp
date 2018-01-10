@@ -70,12 +70,12 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
 
   /* Pre-build the kernels */
   p = new program(queue->get_context());
-  p->build_from_kernel_name<init_kernel>();
-  p->build_from_kernel_name<copy_kernel>();
-  p->build_from_kernel_name<mul_kernel>();
-  p->build_from_kernel_name<add_kernel>();
-  p->build_from_kernel_name<triad_kernel>();
-  p->build_from_kernel_name<dot_kernel>();
+  p->build_with_kernel_type<init_kernel>();
+  p->build_with_kernel_type<copy_kernel>();
+  p->build_with_kernel_type<mul_kernel>();
+  p->build_with_kernel_type<add_kernel>();
+  p->build_with_kernel_type<triad_kernel>();
+  p->build_with_kernel_type<dot_kernel>();
 
   // Create buffers
   d_a = new buffer<T>(array_size);
@@ -106,7 +106,7 @@ void SYCLStream<T>::copy()
     cgh.parallel_for<copy_kernel>(p->get_kernel<copy_kernel>(),
           range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get()[0];
+      auto id = item.get_id(0);
       kc[id] = ka[id];
     });
   });
@@ -124,7 +124,7 @@ void SYCLStream<T>::mul()
     cgh.parallel_for<mul_kernel>(p->get_kernel<mul_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get()[0];
+      auto id = item.get_id(0);
       kb[id] = scalar * kc[id];
     });
   });
@@ -142,7 +142,7 @@ void SYCLStream<T>::add()
     cgh.parallel_for<add_kernel>(p->get_kernel<add_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get()[0];
+      auto id = item.get_id(0);
       kc[id] = ka[id] + kb[id];
     });
   });
@@ -161,7 +161,7 @@ void SYCLStream<T>::triad()
     cgh.parallel_for<triad_kernel>(p->get_kernel<triad_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get()[0];
+      auto id = item.get_id(0);
       ka[id] = kb[id] + scalar * kc[id];
     });
   });
@@ -226,7 +226,7 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
     cgh.parallel_for<init_kernel>(p->get_kernel<init_kernel>(),
       range<1>{array_size}, [=](item<1> item)
     {
-      auto id = item.get()[0];
+      auto id = item.get_id(0);
       ka[id] = initA;
       kb[id] = initB;
       kc[id] = initC;
