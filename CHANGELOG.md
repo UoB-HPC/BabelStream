@@ -35,7 +35,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Build instructions for RAJA and Kokkos libraries.
 
-### Changed
+### Changed
 - Use RAJA and Kokkos internal iterator types instead of int.
 - Ensure RAJA pointers do not alias.
 - Align memory to 2MB pages in RAJA and OpenMP.
