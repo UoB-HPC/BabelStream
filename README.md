@@ -47,7 +47,7 @@ We use the following command to build Kokkos using the Intel Compiler, specifyin
 ```
 For building with CUDA support, we use the following command, specifying the `arch` appropriately, e.g. `Kepler35`.
 ```
-../generate_makefile.bash --prefix=<prefix> --with-cuda --with-openmp --with-pthread --arch=<arch> --with-cuda-options=enable_lambda
+../generate_makefile.bash --prefix=<prefix> --with-cuda --with-openmp --with-pthread --arch=<arch> --with-cuda-options=enable_lambda --compiler=<path_to_kokkos_src>/bin/nvcc_wrapper
 ```
 
 Building RAJA
