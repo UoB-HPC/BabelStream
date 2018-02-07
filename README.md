@@ -87,7 +87,7 @@ You can view the [Poster and Extended Abstract](http://sc16.supercomputing.org/s
 > Deakin T, Price J, Martineau M, McIntosh-Smith S. Evaluating attainable memory bandwidth of parallel programming models via BabelStream. International Journal of Computational Science and Engineering. Special issue (in press). 2017.
 
 > Deakin T, Price J, McIntosh-Smith S. Portable methods for measuring cache hierarchy performance. 2017. Poster sessions presented at IEEE/ACM SuperComputing, Denver, United States.
-You can view the [Poster](https://research-information.bris.ac.uk/pure/files/130921801/poster.pdf) and [Extended Abstract](https://research-information.bris.ac.uk/pure/files/130921799/summary.pdf).
+You can view the [Poster and Extended Abstract](http://sc17.supercomputing.org/SC17%20Archive/tech_poster/tech_poster_pages/post155.html)
 
 
 [1]: McCalpin, John D., 1995: "Memory Bandwidth and Machine Balance in Current High Performance Computers", IEEE Computer Society Technical Committee on Computer Architecture (TCCA) Newsletter, December 1995.
