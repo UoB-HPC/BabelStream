@@ -130,7 +130,7 @@ All notable changes to this project will be documented in this file.
 - Ability to set CUDA block sizes on command line.
 - Android build instructions.
 
-### Changed
+### Changed
 - Update OpenCL C++ header.
 - Requires CUDA 6.5 or above.
 - OpenCL uses Kernel Functor APIs instead of make_kernel API.
