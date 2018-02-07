@@ -1,6 +1,21 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- OpenACC flags to build for Volta.
+
+### Changed
+- Update SYCL implementation to SYCL 1.2.1 interface.
+
+### Removed
+- Superfluous OpenMP 4.5 map(to:) clauses on kernel target regions.
+
+### Fixed
+- Kokkos now compiles and links separately to fix complication with Kokkos 2.05.00.
+- OpenMP 4.5 map and reduction clause order to ensure reduction result copied back.
+
 
 ## [v3.3] - 2017-12-04
 
