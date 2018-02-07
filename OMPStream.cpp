@@ -173,7 +173,7 @@ T OMPStream<T>::dot()
   unsigned int array_size = this->array_size;
   T *a = this->a;
   T *b = this->b;
-  #pragma omp target teams distribute parallel for simd reduction(+:sum) map(tofrom: sum)
+  #pragma omp target teams distribute parallel for simd map(tofrom: sum) reduction(+:sum)
 #else
   #pragma omp parallel for reduction(+:sum)
 #endif
