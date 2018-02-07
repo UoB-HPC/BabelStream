@@ -58,7 +58,7 @@ void OMPStream<T>::init_arrays(T initA, T initB, T initC)
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd map(to: a[0:array_size], b[0:array_size], c[0:array_size])
+  #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
 #endif
@@ -68,6 +68,11 @@ void OMPStream<T>::init_arrays(T initA, T initB, T initC)
     b[i] = initB;
     c[i] = initC;
   }
+  #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
+  // If using the Cray compiler, the kernels do not block, so this update forces
+  // a small copy to ensure blocking so that timing is correct
+  #pragma omp target update from(a[0:0])
+  #endif
 }
 
 template <class T>
@@ -97,7 +102,7 @@ void OMPStream<T>::copy()
   unsigned int array_size = this->array_size;
   T *a = this->a;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd map(to: a[0:array_size], c[0:array_size])
+  #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
 #endif
@@ -105,6 +110,11 @@ void OMPStream<T>::copy()
   {
     c[i] = a[i];
   }
+  #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
+  // If using the Cray compiler, the kernels do not block, so this update forces
+  // a small copy to ensure blocking so that timing is correct
+  #pragma omp target update from(a[0:0])
+  #endif
 }
 
 template <class T>
@@ -116,7 +126,7 @@ void OMPStream<T>::mul()
   unsigned int array_size = this->array_size;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd map(to: b[0:array_size], c[0:array_size])
+  #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
 #endif
@@ -124,6 +134,11 @@ void OMPStream<T>::mul()
   {
     b[i] = scalar * c[i];
   }
+  #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
+  // If using the Cray compiler, the kernels do not block, so this update forces
+  // a small copy to ensure blocking so that timing is correct
+  #pragma omp target update from(c[0:0])
+  #endif
 }
 
 template <class T>
@@ -134,7 +149,7 @@ void OMPStream<T>::add()
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd map(to: a[0:array_size], b[0:array_size], c[0:array_size])
+  #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
 #endif
@@ -142,6 +157,11 @@ void OMPStream<T>::add()
   {
     c[i] = a[i] + b[i];
   }
+  #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
+  // If using the Cray compiler, the kernels do not block, so this update forces
+  // a small copy to ensure blocking so that timing is correct
+  #pragma omp target update from(a[0:0])
+  #endif
 }
 
 template <class T>
@@ -154,7 +174,7 @@ void OMPStream<T>::triad()
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd map(to: a[0:array_size], b[0:array_size], c[0:array_size])
+  #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
 #endif
@@ -162,6 +182,11 @@ void OMPStream<T>::triad()
   {
     a[i] = b[i] + scalar * c[i];
   }
+  #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
+  // If using the Cray compiler, the kernels do not block, so this update forces
+  // a small copy to ensure blocking so that timing is correct
+  #pragma omp target update from(a[0:0])
+  #endif
 }
 
 template <class T>
