@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 - Superfluous OpenMP 4.5 map(to:) clauses on kernel target regions.
+- Kokkos namespace not used by default so the API is easier to spot.
 
 ### Fixed
 - Kokkos now compiles and links separately to fix complication with Kokkos 2.05.00.

@@ -7,8 +7,6 @@
 
 #include "KOKKOSStream.hpp"
 
-using namespace Kokkos;
-
 template <class T>
 KOKKOSStream<T>::KOKKOSStream(
         const unsigned int ARRAY_SIZE, const int device_index)
@@ -16,12 +14,12 @@ KOKKOSStream<T>::KOKKOSStream(
 {
   Kokkos::initialize();
 
-  d_a = new View<double*, DEVICE>("d_a", ARRAY_SIZE);
-  d_b = new View<double*, DEVICE>("d_b", ARRAY_SIZE);
-  d_c = new View<double*, DEVICE>("d_c", ARRAY_SIZE);
-  hm_a = new View<double*, DEVICE>::HostMirror();
-  hm_b = new View<double*, DEVICE>::HostMirror();
-  hm_c = new View<double*, DEVICE>::HostMirror();
+  d_a = new Kokkos::View<double*, DEVICE>("d_a", ARRAY_SIZE);
+  d_b = new Kokkos::View<double*, DEVICE>("d_b", ARRAY_SIZE);
+  d_c = new Kokkos::View<double*, DEVICE>("d_c", ARRAY_SIZE);
+  hm_a = new Kokkos::View<double*, DEVICE>::HostMirror();
+  hm_b = new Kokkos::View<double*, DEVICE>::HostMirror();
+  hm_c = new Kokkos::View<double*, DEVICE>::HostMirror();
   *hm_a = create_mirror_view(*d_a);
   *hm_b = create_mirror_view(*d_b);
   *hm_c = create_mirror_view(*d_c);
@@ -30,16 +28,16 @@ KOKKOSStream<T>::KOKKOSStream(
 template <class T>
 KOKKOSStream<T>::~KOKKOSStream()
 {
-  finalize();
+  Kokkos::finalize();
 }
 
 template <class T>
 void KOKKOSStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  View<double*, DEVICE> a(*d_a);
-  View<double*, DEVICE> b(*d_b);
-  View<double*, DEVICE> c(*d_c);
-  parallel_for(array_size, KOKKOS_LAMBDA (const long index)
+  Kokkos::View<double*, DEVICE> a(*d_a);
+  Kokkos::View<double*, DEVICE> b(*d_b);
+  Kokkos::View<double*, DEVICE> c(*d_c);
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     a[index] = initA;
     b[index] = initB;
@@ -66,11 +64,11 @@ void KOKKOSStream<T>::read_arrays(
 template <class T>
 void KOKKOSStream<T>::copy()
 {
-  View<double*, DEVICE> a(*d_a);
-  View<double*, DEVICE> b(*d_b);
-  View<double*, DEVICE> c(*d_c);
+  Kokkos::View<double*, DEVICE> a(*d_a);
+  Kokkos::View<double*, DEVICE> b(*d_b);
+  Kokkos::View<double*, DEVICE> c(*d_c);
 
-  parallel_for(array_size, KOKKOS_LAMBDA (const long index)
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     c[index] = a[index];
   });
@@ -80,12 +78,12 @@ void KOKKOSStream<T>::copy()
 template <class T>
 void KOKKOSStream<T>::mul()
 {
-  View<double*, DEVICE> a(*d_a);
-  View<double*, DEVICE> b(*d_b);
-  View<double*, DEVICE> c(*d_c);
+  Kokkos::View<double*, DEVICE> a(*d_a);
+  Kokkos::View<double*, DEVICE> b(*d_b);
+  Kokkos::View<double*, DEVICE> c(*d_c);
 
   const T scalar = startScalar;
-  parallel_for(array_size, KOKKOS_LAMBDA (const long index)
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     b[index] = scalar*c[index];
   });
@@ -95,11 +93,11 @@ void KOKKOSStream<T>::mul()
 template <class T>
 void KOKKOSStream<T>::add()
 {
-  View<double*, DEVICE> a(*d_a);
-  View<double*, DEVICE> b(*d_b);
-  View<double*, DEVICE> c(*d_c);
+  Kokkos::View<double*, DEVICE> a(*d_a);
+  Kokkos::View<double*, DEVICE> b(*d_b);
+  Kokkos::View<double*, DEVICE> c(*d_c);
 
-  parallel_for(array_size, KOKKOS_LAMBDA (const long index)
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     c[index] = a[index] + b[index];
   });
@@ -109,12 +107,12 @@ void KOKKOSStream<T>::add()
 template <class T>
 void KOKKOSStream<T>::triad()
 {
-  View<double*, DEVICE> a(*d_a);
-  View<double*, DEVICE> b(*d_b);
-  View<double*, DEVICE> c(*d_c);
+  Kokkos::View<double*, DEVICE> a(*d_a);
+  Kokkos::View<double*, DEVICE> b(*d_b);
+  Kokkos::View<double*, DEVICE> c(*d_c);
 
   const T scalar = startScalar;
-  parallel_for(array_size, KOKKOS_LAMBDA (const long index)
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     a[index] = b[index] + scalar*c[index];
   });
@@ -124,12 +122,12 @@ void KOKKOSStream<T>::triad()
 template <class T>
 T KOKKOSStream<T>::dot()
 {
-  View<double *, DEVICE> a(*d_a);
-  View<double *, DEVICE> b(*d_b);
+  Kokkos::View<double *, DEVICE> a(*d_a);
+  Kokkos::View<double *, DEVICE> b(*d_b);
 
   T sum = 0.0;
 
-  parallel_reduce(array_size, KOKKOS_LAMBDA (const long index, double &tmp)
+  Kokkos::parallel_reduce(array_size, KOKKOS_LAMBDA (const long index, double &tmp)
   {
     tmp += a[index] * b[index];
   }, sum);
