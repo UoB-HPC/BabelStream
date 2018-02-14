@@ -122,8 +122,8 @@ void KokkosStream<T>::triad()
 template <class T>
 T KokkosStream<T>::dot()
 {
-  Kokkos::View<double *> a(*d_a);
-  Kokkos::View<double *> b(*d_b);
+  Kokkos::View<double*> a(*d_a);
+  Kokkos::View<double*> b(*d_b);
 
   T sum = 0.0;
 
