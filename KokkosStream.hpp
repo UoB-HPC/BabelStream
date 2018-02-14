@@ -17,12 +17,6 @@
 
 #define IMPLEMENTATION_STRING "Kokkos"
 
-#ifdef KOKKOS_TARGET_CPU
-  #define DEVICE Kokkos::OpenMP
-#else
-  #define DEVICE Kokkos::Cuda
-#endif
-
 template <class T>
 class KokkosStream : public Stream<T>
 {
@@ -31,9 +25,9 @@ class KokkosStream : public Stream<T>
     unsigned int array_size;
 
     // Device side pointers to arrays
-    Kokkos::View<double*, DEVICE>* d_a;
-    Kokkos::View<double*, DEVICE>* d_b;
-    Kokkos::View<double*, DEVICE>* d_c;
+    Kokkos::View<double*>* d_a;
+    Kokkos::View<double*>* d_b;
+    Kokkos::View<double*>* d_c;
     Kokkos::View<double*>::HostMirror* hm_a;
     Kokkos::View<double*>::HostMirror* hm_b;
     Kokkos::View<double*>::HostMirror* hm_c;

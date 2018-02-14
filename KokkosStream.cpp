@@ -14,12 +14,12 @@ KokkosStream<T>::KokkosStream(
 {
   Kokkos::initialize();
 
-  d_a = new Kokkos::View<double*, DEVICE>("d_a", ARRAY_SIZE);
-  d_b = new Kokkos::View<double*, DEVICE>("d_b", ARRAY_SIZE);
-  d_c = new Kokkos::View<double*, DEVICE>("d_c", ARRAY_SIZE);
-  hm_a = new Kokkos::View<double*, DEVICE>::HostMirror();
-  hm_b = new Kokkos::View<double*, DEVICE>::HostMirror();
-  hm_c = new Kokkos::View<double*, DEVICE>::HostMirror();
+  d_a = new Kokkos::View<double*>("d_a", ARRAY_SIZE);
+  d_b = new Kokkos::View<double*>("d_b", ARRAY_SIZE);
+  d_c = new Kokkos::View<double*>("d_c", ARRAY_SIZE);
+  hm_a = new Kokkos::View<double*>::HostMirror();
+  hm_b = new Kokkos::View<double*>::HostMirror();
+  hm_c = new Kokkos::View<double*>::HostMirror();
   *hm_a = create_mirror_view(*d_a);
   *hm_b = create_mirror_view(*d_b);
   *hm_c = create_mirror_view(*d_c);
@@ -34,9 +34,9 @@ KokkosStream<T>::~KokkosStream()
 template <class T>
 void KokkosStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  Kokkos::View<double*, DEVICE> a(*d_a);
-  Kokkos::View<double*, DEVICE> b(*d_b);
-  Kokkos::View<double*, DEVICE> c(*d_c);
+  Kokkos::View<double*> a(*d_a);
+  Kokkos::View<double*> b(*d_b);
+  Kokkos::View<double*> c(*d_c);
   Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
     a[index] = initA;
@@ -64,9 +64,9 @@ void KokkosStream<T>::read_arrays(
 template <class T>
 void KokkosStream<T>::copy()
 {
-  Kokkos::View<double*, DEVICE> a(*d_a);
-  Kokkos::View<double*, DEVICE> b(*d_b);
-  Kokkos::View<double*, DEVICE> c(*d_c);
+  Kokkos::View<double*> a(*d_a);
+  Kokkos::View<double*> b(*d_b);
+  Kokkos::View<double*> c(*d_c);
 
   Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
@@ -78,9 +78,9 @@ void KokkosStream<T>::copy()
 template <class T>
 void KokkosStream<T>::mul()
 {
-  Kokkos::View<double*, DEVICE> a(*d_a);
-  Kokkos::View<double*, DEVICE> b(*d_b);
-  Kokkos::View<double*, DEVICE> c(*d_c);
+  Kokkos::View<double*> a(*d_a);
+  Kokkos::View<double*> b(*d_b);
+  Kokkos::View<double*> c(*d_c);
 
   const T scalar = startScalar;
   Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
@@ -93,9 +93,9 @@ void KokkosStream<T>::mul()
 template <class T>
 void KokkosStream<T>::add()
 {
-  Kokkos::View<double*, DEVICE> a(*d_a);
-  Kokkos::View<double*, DEVICE> b(*d_b);
-  Kokkos::View<double*, DEVICE> c(*d_c);
+  Kokkos::View<double*> a(*d_a);
+  Kokkos::View<double*> b(*d_b);
+  Kokkos::View<double*> c(*d_c);
 
   Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
   {
@@ -107,9 +107,9 @@ void KokkosStream<T>::add()
 template <class T>
 void KokkosStream<T>::triad()
 {
-  Kokkos::View<double*, DEVICE> a(*d_a);
-  Kokkos::View<double*, DEVICE> b(*d_b);
-  Kokkos::View<double*, DEVICE> c(*d_c);
+  Kokkos::View<double*> a(*d_a);
+  Kokkos::View<double*> b(*d_b);
+  Kokkos::View<double*> c(*d_c);
 
   const T scalar = startScalar;
   Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
@@ -122,8 +122,8 @@ void KokkosStream<T>::triad()
 template <class T>
 T KokkosStream<T>::dot()
 {
-  Kokkos::View<double *, DEVICE> a(*d_a);
-  Kokkos::View<double *, DEVICE> b(*d_b);
+  Kokkos::View<double *> a(*d_a);
+  Kokkos::View<double *> b(*d_b);
 
   T sum = 0.0;
 

@@ -29,20 +29,17 @@ $(info $(target_help))
 TARGET=CPU
 endif
 
-ifeq ($(TARGET), CPU)
-TARGET_DEF = -DKOKKOS_TARGET_CPU
-else ifeq ($(TARGET), GPU)
+ifeq ($(TARGET), GPU)
 CXX = $(NVCC_WRAPPER)
-TARGET_DEF =
 endif
 
 OBJ = main.o KokkosStream.o
 
 kokkos-stream: $(OBJ) $(KOKKOS_CPP_DEPENDS)
-	$(CXX) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS) -DKOKKOS $(TARGET_DEF) -O3 $(EXTRA_FLAGS) $(OBJ) -o $@ 
+	$(CXX) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS) -DKOKKOS -O3 $(EXTRA_FLAGS) $(OBJ) -o $@ 
 
 %.o: %.cpp
-	$(CXX) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DKOKKOS $(TARGET_DEF) -O3 $(EXTRA_FLAGS) -c $<
+	$(CXX) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DKOKKOS -O3 $(EXTRA_FLAGS) -c $<
 
 .PHONY: clean
 clean:
