@@ -15,7 +15,7 @@
 
 #include "Stream.h"
 
-#define IMPLEMENTATION_STRING "KOKKOS"
+#define IMPLEMENTATION_STRING "Kokkos"
 
 #ifdef KOKKOS_TARGET_CPU
   #define DEVICE Kokkos::OpenMP
