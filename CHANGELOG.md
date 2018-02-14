@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - OpenACC flags to build for Volta.
+- Kokkos list CLI argument shows some information about which device will be used.
 
 ### Changed
 - Update SYCL implementation to SYCL 1.2.1 interface.

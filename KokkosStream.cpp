@@ -138,13 +138,13 @@ T KokkosStream<T>::dot()
 
 void listDevices(void)
 {
-  std::cout << "This is not the device you are looking for.";
+  std::cout << "Kokkos library for " << getDeviceName(0) << std::endl;
 }
 
 
 std::string getDeviceName(const int device)
 {
-  return "Kokkos";
+  return typeid (Kokkos::DefaultExecutionSpace).name();
 }
 
 
