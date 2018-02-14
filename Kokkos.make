@@ -36,7 +36,7 @@ CXX = $(NVCC_WRAPPER)
 TARGET_DEF =
 endif
 
-OBJ = main.o KOKKOSStream.o
+OBJ = main.o KokkosStream.o
 
 kokkos-stream: $(OBJ) $(KOKKOS_CPP_DEPENDS)
 	$(CXX) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS) -DKOKKOS $(TARGET_DEF) -O3 $(EXTRA_FLAGS) $(OBJ) -o $@ 
@@ -46,5 +46,5 @@ kokkos-stream: $(OBJ) $(KOKKOS_CPP_DEPENDS)
 
 .PHONY: clean
 clean:
-	rm -f kokkos-stream main.o KOKKOSStream.o
+	rm -f kokkos-stream main.o KokkosStream.o
 

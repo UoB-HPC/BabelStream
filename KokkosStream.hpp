@@ -24,7 +24,7 @@
 #endif
 
 template <class T>
-class KOKKOSStream : public Stream<T>
+class KokkosStream : public Stream<T>
 {
   protected:
     // Size of arrays
@@ -40,8 +40,8 @@ class KOKKOSStream : public Stream<T>
 
   public:
 
-    KOKKOSStream(const unsigned int, const int);
-    ~KOKKOSStream();
+    KokkosStream(const unsigned int, const int);
+    ~KokkosStream();
 
     virtual void copy() override;
     virtual void add() override;

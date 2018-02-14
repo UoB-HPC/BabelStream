@@ -5,10 +5,10 @@
 // source code
 
 
-#include "KOKKOSStream.hpp"
+#include "KokkosStream.hpp"
 
 template <class T>
-KOKKOSStream<T>::KOKKOSStream(
+KokkosStream<T>::KokkosStream(
         const unsigned int ARRAY_SIZE, const int device_index)
     : array_size(ARRAY_SIZE)
 {
@@ -26,13 +26,13 @@ KOKKOSStream<T>::KOKKOSStream(
 }
 
 template <class T>
-KOKKOSStream<T>::~KOKKOSStream()
+KokkosStream<T>::~KokkosStream()
 {
   Kokkos::finalize();
 }
 
 template <class T>
-void KOKKOSStream<T>::init_arrays(T initA, T initB, T initC)
+void KokkosStream<T>::init_arrays(T initA, T initB, T initC)
 {
   Kokkos::View<double*, DEVICE> a(*d_a);
   Kokkos::View<double*, DEVICE> b(*d_b);
@@ -47,7 +47,7 @@ void KOKKOSStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void KOKKOSStream<T>::read_arrays(
+void KokkosStream<T>::read_arrays(
         std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
   deep_copy(*hm_a, *d_a);
@@ -62,7 +62,7 @@ void KOKKOSStream<T>::read_arrays(
 }
 
 template <class T>
-void KOKKOSStream<T>::copy()
+void KokkosStream<T>::copy()
 {
   Kokkos::View<double*, DEVICE> a(*d_a);
   Kokkos::View<double*, DEVICE> b(*d_b);
@@ -76,7 +76,7 @@ void KOKKOSStream<T>::copy()
 }
 
 template <class T>
-void KOKKOSStream<T>::mul()
+void KokkosStream<T>::mul()
 {
   Kokkos::View<double*, DEVICE> a(*d_a);
   Kokkos::View<double*, DEVICE> b(*d_b);
@@ -91,7 +91,7 @@ void KOKKOSStream<T>::mul()
 }
 
 template <class T>
-void KOKKOSStream<T>::add()
+void KokkosStream<T>::add()
 {
   Kokkos::View<double*, DEVICE> a(*d_a);
   Kokkos::View<double*, DEVICE> b(*d_b);
@@ -105,7 +105,7 @@ void KOKKOSStream<T>::add()
 }
 
 template <class T>
-void KOKKOSStream<T>::triad()
+void KokkosStream<T>::triad()
 {
   Kokkos::View<double*, DEVICE> a(*d_a);
   Kokkos::View<double*, DEVICE> b(*d_b);
@@ -120,7 +120,7 @@ void KOKKOSStream<T>::triad()
 }
 
 template <class T>
-T KOKKOSStream<T>::dot()
+T KokkosStream<T>::dot()
 {
   Kokkos::View<double *, DEVICE> a(*d_a);
   Kokkos::View<double *, DEVICE> b(*d_b);
@@ -153,5 +153,5 @@ std::string getDeviceDriver(const int device)
   return "Kokkos";
 }
 
-//template class KOKKOSStream<float>;
-template class KOKKOSStream<double>;
+//template class KokkosStream<float>;
+template class KokkosStream<double>;

@@ -30,7 +30,7 @@
 #elif defined(USE_RAJA)
 #include "RAJAStream.hpp"
 #elif defined(KOKKOS)
-#include "KOKKOSStream.hpp"
+#include "KokkosStream.hpp"
 #elif defined(ACC)
 #include "ACCStream.h"
 #elif defined(SYCL)
@@ -152,7 +152,7 @@ void run()
 
 #elif defined(KOKKOS)
   // Use the Kokkos implementation
-  stream = new KOKKOSStream<T>(ARRAY_SIZE, deviceIndex);
+  stream = new KokkosStream<T>(ARRAY_SIZE, deviceIndex);
 
 #elif defined(ACC)
   // Use the OpenACC implementation
@@ -332,7 +332,7 @@ void run_triad()
 
 #elif defined(KOKKOS)
   // Use the Kokkos implementation
-  stream = new KOKKOSStream<T>(ARRAY_SIZE, deviceIndex);
+  stream = new KokkosStream<T>(ARRAY_SIZE, deviceIndex);
 
 #elif defined(ACC)
   // Use the OpenACC implementation
