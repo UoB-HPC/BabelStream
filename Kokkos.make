@@ -36,7 +36,7 @@ endif
 OBJ = main.o KokkosStream.o
 
 kokkos-stream: $(OBJ) $(KOKKOS_CPP_DEPENDS)
-	$(CXX) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS) -DKOKKOS -O3 $(EXTRA_FLAGS) $(OBJ) -o $@ 
+	$(CXX) $(KOKKOS_LDFLAGS) -DKOKKOS -O3 $(EXTRA_FLAGS) $(OBJ) $(KOKKOS_LIBS) -o $@
 
 %.o: %.cpp
 	$(CXX) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DKOKKOS -O3 $(EXTRA_FLAGS) -c $<
