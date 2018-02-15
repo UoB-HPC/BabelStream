@@ -85,12 +85,9 @@ int main(int argc, char *argv[])
   }
   else
   {
-    // TODO: Fix Kokkos to allow multiple template specializations
-#ifndef KOKKOS
     if (use_float)
       run<float>();
     else
-#endif
       run<double>();
   }
 

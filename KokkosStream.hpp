@@ -25,12 +25,12 @@ class KokkosStream : public Stream<T>
     unsigned int array_size;
 
     // Device side pointers to arrays
-    Kokkos::View<double*>* d_a;
-    Kokkos::View<double*>* d_b;
-    Kokkos::View<double*>* d_c;
-    Kokkos::View<double*>::HostMirror* hm_a;
-    Kokkos::View<double*>::HostMirror* hm_b;
-    Kokkos::View<double*>::HostMirror* hm_c;
+     typename Kokkos::View<T*>* d_a;
+     typename Kokkos::View<T*>* d_b;
+     typename Kokkos::View<T*>* d_c;
+     typename Kokkos::View<T*>::HostMirror* hm_a;
+     typename Kokkos::View<T*>::HostMirror* hm_b;
+     typename Kokkos::View<T*>::HostMirror* hm_c;
 
   public:
 
