@@ -75,12 +75,9 @@ int main(int argc, char *argv[])
   // TODO: Fix Kokkos to allow multiple template specializations
   if (triad_only)
   {
-    // TODO: Fix Kokkos to allow multiple template specializations
-#ifndef KOKKOS
     if (use_float)
       run_triad<float>();
     else
-#endif
       run_triad<double>();
   }
   else
