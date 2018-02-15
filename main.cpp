@@ -425,10 +425,10 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
     std::cerr
       << "Validation failed on c[]. Average error " << errC
       << std::endl;
-  // Check sum to 8 decimal places
-  if (!triad_only && errSum > 1.0E-8)
+  // Check percentage error of sum. Should be within 2%.
+  if (!triad_only && errSum/goldSum > 2.0E-2)
     std::cerr
-      << "Validation failed on sum. Error " << errSum
+      << "Validation failed on sum. Percentage error " << errSum/goldSum * 100.0
       << std::endl << std::setprecision(15)
       << "Sum was " << sum << " but should be " << goldSum
       << std::endl;
