@@ -206,7 +206,7 @@ T SYCLStream<T>::dot()
   });
 
   T sum = 0.0;
-  auto h_sum = d_sum->template get_access<access::mode::read, access::target::host_buffer>();
+  auto h_sum = d_sum->template get_access<access::mode::read>();
   for (int i = 0; i < dot_num_groups; i++)
   {
     sum += h_sum[i];
@@ -238,9 +238,9 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void SYCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-  auto _a = d_a->template get_access<access::mode::read, access::target::host_buffer>();
-  auto _b = d_b->template get_access<access::mode::read, access::target::host_buffer>();
-  auto _c = d_c->template get_access<access::mode::read, access::target::host_buffer>();
+  auto _a = d_a->template get_access<access::mode::read>();
+  auto _b = d_b->template get_access<access::mode::read>();
+  auto _c = d_c->template get_access<access::mode::read>();
   for (int i = 0; i < array_size; i++)
   {
     a[i] = _a[i];
