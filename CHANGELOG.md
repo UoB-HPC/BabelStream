@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Update SYCL implementation to SYCL 1.2.1 interface.
 - Output formatting of Kokkos implementation.
 - Capitalisation of Kokkos filenames.
+- Updated HIP implementation to new interface.
 
 ### Removed
 - Superfluous OpenMP 4.5 map(to:) clauses on kernel target regions.
