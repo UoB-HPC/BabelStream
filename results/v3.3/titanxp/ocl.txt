@@ -1,0 +1,16 @@
+BabelStream
+Version: 3.3
+Implementation: OpenCL
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using OpenCL device TITAN Xp
+Driver: 390.30
+Reduction kernel config: 120 groups of size 1024
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        433585.615  0.00124     0.00131     0.00125     
+Mul         432684.751  0.00124     0.00125     0.00125     
+Add         435230.162  0.00185     0.00187     0.00186     
+Triad       435177.949  0.00185     0.00187     0.00186     
+Dot         431076.539  0.00125     0.00127     0.00126     

@@ -1,0 +1,15 @@
+BabelStream
+Version: 3.3
+Implementation: CUDA
+Running kernels 100 times
+Precision: double
+Array size: 268.4 MB (=0.3 GB)
+Total size: 805.3 MB (=0.8 GB)
+Using CUDA device TITAN Xp
+Driver: 9010
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        433182.244  0.00124     0.00128     0.00125     
+Mul         431744.565  0.00124     0.00125     0.00125     
+Add         436451.083  0.00185     0.00186     0.00185     
+Triad       436491.299  0.00184     0.00186     0.00185     
+Dot         435969.304  0.00123     0.00125     0.00124     
