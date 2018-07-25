@@ -42,7 +42,7 @@ void ACCStream<T>::init_arrays(T initA, T initB, T initC)
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
-  #pragma acc kernels present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
   for (int i = 0; i < array_size; i++)
   {
     a[i] = initA;
@@ -67,7 +67,7 @@ void ACCStream<T>::copy()
   unsigned int array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict c = this->c;
-  #pragma acc kernels present(a[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop present(a[0:array_size], c[0:array_size]) wait
   for (int i = 0; i < array_size; i++)
   {
     c[i] = a[i];
@@ -82,7 +82,7 @@ void ACCStream<T>::mul()
   unsigned int array_size = this->array_size;
   T * restrict b = this->b;
   T * restrict c = this->c;
-  #pragma acc kernels present(b[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop present(b[0:array_size], c[0:array_size]) wait
   for (int i = 0; i < array_size; i++)
   {
     b[i] = scalar * c[i];
@@ -96,7 +96,7 @@ void ACCStream<T>::add()
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
-  #pragma acc kernels present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
   for (int i = 0; i < array_size; i++)
   {
     c[i] = a[i] + b[i];
@@ -112,7 +112,7 @@ void ACCStream<T>::triad()
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
-  #pragma acc kernels present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
   for (int i = 0; i < array_size; i++)
   {
     a[i] = b[i] + scalar * c[i];
@@ -127,7 +127,7 @@ T ACCStream<T>::dot()
   unsigned int array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
-  #pragma acc kernels present(a[0:array_size], b[0:array_size]) wait
+  #pragma acc parallel loop reduction(+:sum) present(a[0:array_size], b[0:array_size]) wait
   for (int i = 0; i < array_size; i++)
   {
     sum += a[i] * b[i];
