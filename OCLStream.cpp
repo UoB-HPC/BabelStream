@@ -186,6 +186,8 @@ OCLStream<T>::~OCLStream()
   delete mul_kernel;
   delete add_kernel;
   delete triad_kernel;
+
+  devices.clear();
 }
 
 template <class T>
