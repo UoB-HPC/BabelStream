@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - Kokkos now compiles and links separately to fix complication with Kokkos 2.05.00.
 - Kokkos can now instantiate single and double precision.
 - OpenMP 4.5 map and reduction clause order to ensure reduction result copied back.
+- Potential race condition in SYCL code between unloading OpenCL library and device list deconstructor.
 
 
 ## [v3.3] - 2017-12-04
