@@ -264,7 +264,7 @@ void run()
         << 1.0E-6 * sizes[i] / (*minmax.first) << csv_separator
         << *minmax.first << csv_separator
         << *minmax.second << csv_separator
-        << average << csv_separator
+        << average
         << std::endl;
     }
     else
