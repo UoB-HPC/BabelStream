@@ -286,25 +286,30 @@ void run()
 template <typename T>
 void run_triad()
 {
-  std::cout << "Running triad " << num_times << " times" << std::endl;
-  std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
 
-  if (sizeof(T) == sizeof(float))
-    std::cout << "Precision: float" << std::endl;
-  else
-    std::cout << "Precision: double" << std::endl;
+  if (!output_as_csv)
+  {
+    std::cout << "Running triad " << num_times << " times" << std::endl;
+    std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
+
+    if (sizeof(T) == sizeof(float))
+      std::cout << "Precision: float" << std::endl;
+    else
+      std::cout << "Precision: double" << std::endl;
+
+    std::streamsize ss = std::cout.precision();
+    std::cout << std::setprecision(1) << std::fixed
+      << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-3 << " KB"
+      << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB)" << std::endl;
+    std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-3 << " KB"
+      << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB)" << std::endl;
+    std::cout.precision(ss);
+  }
 
   // Create host vectors
   std::vector<T> a(ARRAY_SIZE);
   std::vector<T> b(ARRAY_SIZE);
   std::vector<T> c(ARRAY_SIZE);
-  std::streamsize ss = std::cout.precision();
-  std::cout << std::setprecision(1) << std::fixed
-    << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-3 << " KB"
-    << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB)" << std::endl;
-  std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-3 << " KB"
-    << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB)" << std::endl;
-  std::cout.precision(ss);
 
   Stream<T> *stream;
 
@@ -365,13 +370,35 @@ void run_triad()
   // Display timing results
   double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
   double bandwidth = 1.0E-9 * (total_bytes / runtime);
-  std::cout
-    << "--------------------------------"
-    << std::endl << std::fixed
-    << "Runtime (seconds): " << std::left << std::setprecision(5)
-    << runtime << std::endl
-    << "Bandwidth (GB/s):  " << std::left << std::setprecision(3)
-    << bandwidth << std::endl;
+  if (output_as_csv)
+  {
+    std::cout
+      << "function" << csv_separator
+      << "num_times" << csv_separator
+      << "n_elements" << csv_separator
+      << "sizeof" << csv_separator
+      << "gbytes_per_sec" << csv_separator
+      << "runtime"
+      << std::endl;
+    std::cout
+      << "Triad" << csv_separator
+      << num_times << csv_separator
+      << ARRAY_SIZE << csv_separator
+      << sizeof(T) << csv_separator
+      << bandwidth << csv_separator
+      << runtime
+      << std::endl;
+  }
+  else
+  {
+    std::cout
+      << "--------------------------------"
+      << std::endl << std::fixed
+      << "Runtime (seconds): " << std::left << std::setprecision(5)
+      << runtime << std::endl
+      << "Bandwidth (GB/s):  " << std::left << std::setprecision(3)
+      << bandwidth << std::endl;
+  }
 
   delete stream;
 }
