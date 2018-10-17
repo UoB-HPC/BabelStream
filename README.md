@@ -1,6 +1,9 @@
 BabelStream
 ==========
 
+<img src="https://github.com/UoB-HPC/BabelStream/blob/gh-pages/img/BabelStreamlogo.png?raw=true" alt="logo" height="300" align="right" />
+
+
 Measure memory transfer rates to/from global device memory on GPUs.
 This benchmark is similar in spirit, and based on, the STREAM benchmark [1] for CPUs.
 
