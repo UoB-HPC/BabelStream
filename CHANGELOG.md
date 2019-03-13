@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- OpenACC flags to build for Volta.
+- OpenACC flags to build for Volta and Skylake.
 - Kokkos list CLI argument shows some information about which device will be used.
 - OpenMP GNU compiler now uses native target flag.
 - Support CSV output for Triad only running mode.
