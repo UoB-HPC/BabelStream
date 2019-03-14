@@ -34,7 +34,7 @@ FLAGS_GNU = -O3 -std=c++11 -mcpu=native
 FLAGS_INTEL = -O3 -std=c++11 -xHOST -qopt-streaming-stores=always
 FLAGS_CRAY = -O3 -hstd=c++11
 FLAGS_CLANG = -O3 -std=c++11
-FLAGS_XL = -O5 -qarch=pwr8 -qtune=pwr8 -std=c++11
+FLAGS_XL = -O5 -qarch=auto -qtune=auto -std=c++11
 FLAGS_PGI = -O3 -std=c++11
 FLAGS_NEC = -O4 -finline -std=c++11
 CXXFLAGS = $(FLAGS_$(COMPILER))

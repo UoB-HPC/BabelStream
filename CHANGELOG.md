@@ -15,7 +15,8 @@ All notable changes to this project will be documented in this file.
 - Output formatting of Kokkos implementation.
 - Capitalisation of Kokkos filenames.
 - Updated HIP implementation to new interface.
-- Use parallel loop instead of kernels for OpenACC
+- Use parallel loop instead of kernels for OpenACC.
+- OpenMP build for XL compiler uses `-qarch=auto`.
 
 ### Removed
 - Superfluous OpenMP 4.5 map(to:) clauses on kernel target regions.
