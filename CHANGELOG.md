@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- None
+
+## [v3.4] - 2019-04-10
+
 ### Added
 - OpenACC flags to build for Power 9, Volta, Skylake and KNL.
 - Kokkos list CLI argument shows some information about which device will be used.
