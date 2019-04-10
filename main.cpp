@@ -224,35 +224,23 @@ void run()
   check_solution<T>(num_times, a, b, c, sum);
 
   // Display timing results
-  std::string units;
-
   if (output_as_csv)
   {
-    if (mibibytes)
-      units = "max_mibytes_per_sec";
-    else
-      units = "max_mbytes_per_sec";
-
     std::cout
       << "function" << csv_separator
       << "num_times" << csv_separator
       << "n_elements" << csv_separator
       << "sizeof" << csv_separator
-      << units << csv_separator
+      << ((mibibytes) ? "max_mibytes_per_sec" : "max_mbytes_per_sec") << csv_separator
       << "min_runtime" << csv_separator
       << "max_runtime" << csv_separator
       << "avg_runtime" << std::endl;
   }
   else
   {
-    if (mibibytes)
-      units = "MiBytes/sec";
-    else
-      units = "MBytes/sec";
-
     std::cout
       << std::left << std::setw(12) << "Function"
-      << std::left << std::setw(12) << units
+      << std::left << std::setw(12) << ((mibibytes) ? "MiBytes/sec" : "MBytes/sec")
       << std::left << std::setw(12) << "Min (sec)"
       << std::left << std::setw(12) << "Max"
       << std::left << std::setw(12) << "Average"
@@ -286,18 +274,8 @@ void run()
         << labels[i] << csv_separator
         << num_times << csv_separator
         << ARRAY_SIZE << csv_separator
-        << sizeof(T) << csv_separator;
-      if (mibibytes)
-      {
-      std::cout
-        << pow(2.0, -20.0) * sizes[i] / (*minmax.first) << csv_separator;
-      }
-      else
-      {
-      std::cout
-        << 1.0E-6 * sizes[i] / (*minmax.first) << csv_separator;
-      }
-      std::cout
+        << sizeof(T) << csv_separator
+        << ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first) << csv_separator
         << *minmax.first << csv_separator
         << *minmax.second << csv_separator
         << average
@@ -417,26 +395,16 @@ void run_triad()
 
   // Display timing results
   double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
-  double bandwidth;
-  std::string units;
-  if (mibibytes)
-    bandwidth = pow(2.0, -30.0) * (total_bytes / runtime);
-  else
-    bandwidth = 1.0E-9 * (total_bytes / runtime);
+  double bandwidth = ((mibibytes) ? pow(2.0, -30.0) : 1.0E-9) * (total_bytes / runtime);
 
   if (output_as_csv)
   {
-    if (mibibytes)
-      units = "gibytes_per_sec";
-    else
-      units = "gbytes_per_sec";
-
     std::cout
       << "function" << csv_separator
       << "num_times" << csv_separator
       << "n_elements" << csv_separator
       << "sizeof" << csv_separator
-      << units << csv_separator
+      << ((mibibytes) ? "gibytes_per_sec" : "gbytes_per_sec") << csv_separator
       << "runtime"
       << std::endl;
     std::cout
@@ -450,17 +418,13 @@ void run_triad()
   }
   else
   {
-    if (mibibytes)
-      units = "GiB/s";
-    else
-      units = "GB/s";
-
     std::cout
       << "--------------------------------"
       << std::endl << std::fixed
       << "Runtime (seconds): " << std::left << std::setprecision(5)
       << runtime << std::endl
-      << "Bandwidth (" << units << "):  " << std::left << std::setprecision(3)
+      << "Bandwidth (" << ((mibibytes) ? "GiB/s" : "GB/s") << "):  "
+      << std::left << std::setprecision(3)
       << bandwidth << std::endl;
   }
 
