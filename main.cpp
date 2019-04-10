@@ -307,7 +307,8 @@ void run()
     {
       std::cout
         << std::left << std::setw(12) << labels[i]
-        << std::left << std::setw(12) << std::setprecision(3) << 1.0E-6 * sizes[i] / (*minmax.first)
+        << std::left << std::setw(12) << std::setprecision(3) << 
+          ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first)
         << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
         << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
         << std::left << std::setw(12) << std::setprecision(5) << average
