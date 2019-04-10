@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - OpenMP GNU compiler now uses native target flag.
 - Support CSV output for Triad only running mode.
 - NEC and PGI compiler option for OpenMP version.
+- Option to calculate memory bandwidth in base 2 (MiB/s) rather than base 10 (MB/s).
 
 ### Changed
 - Update SYCL implementation to SYCL 1.2.1 interface.
