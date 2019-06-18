@@ -185,8 +185,8 @@ T SYCLStream<T>::dot()
     cgh.parallel_for<dot_kernel>(p->get_kernel<dot_kernel>(),
       nd_range<1>(dot_num_groups*dot_wgsize, dot_wgsize), [=](nd_item<1> item)
     {
-      size_t i = item.get_global(0);
-      size_t li = item.get_local(0);
+      size_t i = item.get_global_id(0);
+      size_t li = item.get_local_id(0);
       size_t global_size = item.get_global_range()[0];
 
       wg_sum[li] = 0.0;
