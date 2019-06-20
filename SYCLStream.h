@@ -15,6 +15,9 @@
 
 #define IMPLEMENTATION_STRING "SYCL"
 
+// allows a use of 'parallel_for' currently known to be supported by ComputeCpp
+#define COMPUTECPP_CE
+
 namespace sycl_kernels
 {
   template <class T> class init;
