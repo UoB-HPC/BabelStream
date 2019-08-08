@@ -20,7 +20,7 @@ define target_help
 Set a TARGET to ensure PGI targets the correct offload device.
 Available targets are:
   SNB, IVB, HSW, SKL, KNL
-  PWR9
+  PWR9, AMD
   KEPLER, MAXWELL, PASCAL, VOLTA
   HAWAII
 endef
@@ -33,6 +33,7 @@ TARGET_FLAGS_HSW     = -ta=multicore -tp=haswell
 TARGET_FLAGS_SKL     = -ta=multicore -tp=skylake
 TARGET_FLAGS_KNL     = -ta=multicore -tp=knl
 TARGET_FLAGS_PWR9    = -ta=multicore -tp=pwr9
+TARGET_FLAGS_AMD     = -ta=multicore -tp=zen
 TARGET_FLAGS_KEPLER  = -ta=nvidia:cc35
 TARGET_FLAGS_MAXWELL = -ta=nvidia:cc50
 TARGET_FLAGS_PASCAL  = -ta=nvidia:cc60
