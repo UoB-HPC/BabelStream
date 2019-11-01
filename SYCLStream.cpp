@@ -93,10 +93,9 @@ void SYCLStream<T>::copy()
   {
     auto ka = d_a->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::write>(cgh);
-    cgh.parallel_for<copy_kernel>(range<1>{array_size}, [=](item<1> item)
+    cgh.parallel_for<copy_kernel>(range<1>{array_size}, [=](id<1> idx)
     {
-      auto id = item.get_id(0);
-      kc[id] = ka[id];
+      kc[idx] = ka[idx];
     });
   });
   queue->wait();
@@ -110,10 +109,9 @@ void SYCLStream<T>::mul()
   {
     auto kb = d_b->template get_access<access::mode::write>(cgh);
     auto kc = d_c->template get_access<access::mode::read>(cgh);
-    cgh.parallel_for<mul_kernel>(range<1>{array_size}, [=](item<1> item)
+    cgh.parallel_for<mul_kernel>(range<1>{array_size}, [=](id<1> idx)
     {
-      auto id = item.get_id(0);
-      kb[id] = scalar * kc[id];
+      kb[idx] = scalar * kc[idx];
     });
   });
   queue->wait();
@@ -127,10 +125,9 @@ void SYCLStream<T>::add()
     auto ka = d_a->template get_access<access::mode::read>(cgh);
     auto kb = d_b->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::write>(cgh);
-    cgh.parallel_for<add_kernel>(range<1>{array_size}, [=](item<1> item)
+    cgh.parallel_for<add_kernel>(range<1>{array_size}, [=](id<1> idx)
     {
-      auto id = item.get_id(0);
-      kc[id] = ka[id] + kb[id];
+      kc[idx] = ka[idx] + kb[idx];
     });
   });
   queue->wait();
@@ -145,10 +142,9 @@ void SYCLStream<T>::triad()
     auto ka = d_a->template get_access<access::mode::write>(cgh);
     auto kb = d_b->template get_access<access::mode::read>(cgh);
     auto kc = d_c->template get_access<access::mode::read>(cgh);
-    cgh.parallel_for<triad_kernel>(range<1>{array_size}, [=](item<1> item)
+    cgh.parallel_for<triad_kernel>(range<1>{array_size}, [=](id<1> idx)
     {
-      auto id = item.get_id(0);
-      ka[id] = kb[id] + scalar * kc[id];
+      ka[idx] = kb[idx] + scalar * kc[idx];
     });
   });
   queue->wait();
