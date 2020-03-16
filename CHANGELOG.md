@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Use cl::sycl::id parameters instead of cl::sycl::item.
+- Update local copy of OpenCL C++ header file.
 
 ### Removed
 - Pre-building of kernels in SYCL version to ensure compatibility with SYCL 1.2.1.
