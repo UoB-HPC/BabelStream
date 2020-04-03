@@ -102,10 +102,9 @@ void OMPStream<T>::copy()
   unsigned int array_size = this->array_size;
   T *a = this->a;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd
-#else
-  #pragma omp parallel for
 #endif
+  #pragma omp target
+  #pragma omp teams distribute parallel for simd
   for (int i = 0; i < array_size; i++)
   {
     c[i] = a[i];
@@ -126,10 +125,9 @@ void OMPStream<T>::mul()
   unsigned int array_size = this->array_size;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd
-#else
-  #pragma omp parallel for
 #endif
+  #pragma omp target
+  #pragma omp teams distribute parallel for simd
   for (int i = 0; i < array_size; i++)
   {
     b[i] = scalar * c[i];
@@ -149,10 +147,9 @@ void OMPStream<T>::add()
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd
-#else
-  #pragma omp parallel for
 #endif
+  #pragma omp target
+  #pragma omp teams distribute parallel for simd
   for (int i = 0; i < array_size; i++)
   {
     c[i] = a[i] + b[i];
@@ -174,10 +171,9 @@ void OMPStream<T>::triad()
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd
-#else
-  #pragma omp parallel for
 #endif
+#pragma omp target
+#pragma omp teams distribute parallel for simd
   for (int i = 0; i < array_size; i++)
   {
     a[i] = b[i] + scalar * c[i];
@@ -198,10 +194,9 @@ T OMPStream<T>::dot()
   unsigned int array_size = this->array_size;
   T *a = this->a;
   T *b = this->b;
-  #pragma omp target teams distribute parallel for simd map(tofrom: sum) reduction(+:sum)
-#else
-  #pragma omp parallel for reduction(+:sum)
 #endif
+  #pragma omp target map(tofrom: sum)
+  #pragma teams distribute parallel for simd reduction(+:sum)
   for (int i = 0; i < array_size; i++)
   {
     sum += a[i] * b[i];
