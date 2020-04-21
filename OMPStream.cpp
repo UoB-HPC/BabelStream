@@ -12,62 +12,64 @@
 #endif
 
 template <class T>
-OMPStream<T>::OMPStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int device)
+OMPStream<T>::OMPStream(const unsigned int ARRAY_SIZE, int device)
 {
+
   array_size = ARRAY_SIZE;
 
-#ifdef OMP_TARGET_GPU
+//  int dev_id = omp_get_default_device();
+//  this->a = (T*)omp_target_alloc(sizeof(T)*array_size, dev_id);
+//  this->b = (T*)omp_target_alloc(sizeof(T)*array_size, dev_id);
+//  this->c = (T*)omp_target_alloc(sizeof(T)*array_size, dev_id);
+//  omp_set_default_device(dev_id);
+
   omp_set_default_device(device);
-  // Set up data region on device
-  this->a = a;
-  this->b = b;
-  this->c = c;
-  #pragma omp target enter data map(alloc: a[0:array_size], b[0:array_size], c[0:array_size])
-  {}
-#else
+
+  // OpenMP has two memory spaces: host and device.
+  // We allocate on the host and map to the device if required.
+
   // Allocate on the host
-  this->a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-  this->b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-  this->c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-#endif
+  a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+  b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+  c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+
+  // Set up data region on device
+  #pragma omp target enter data map(alloc: a[0:array_size], b[0:array_size], c[0:array_size])
+
 }
 
 template <class T>
 OMPStream<T>::~OMPStream()
 {
-#ifdef OMP_TARGET_GPU
   // End data region on device
   unsigned int array_size = this->array_size;
-  T *a = this->a;
-  T *b = this->b;
-  T *c = this->c;
+
   #pragma omp target exit data map(release: a[0:array_size], b[0:array_size], c[0:array_size])
-  {}
-#else
+
   free(a);
   free(b);
   free(c);
-#endif
 }
 
 template <class T>
 void OMPStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  unsigned int array_size = this->array_size;
-#ifdef OMP_TARGET_GPU
+  #if defined(OMP_TARGET_GPU) && defined(__llvm__)
+  // LLVM BUG: Need to pull out the pointers
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-  #pragma omp target teams distribute parallel for simd
-#else
-  #pragma omp parallel for
-#endif
+  #endif
+
+  #pragma omp target
+  #pragma omp teams distribute parallel for simd
   for (int i = 0; i < array_size; i++)
   {
     a[i] = initA;
     b[i] = initB;
     c[i] = initC;
   }
+
   #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
   // If using the Cray compiler, the kernels do not block, so this update forces
   // a small copy to ensure blocking so that timing is correct
@@ -78,13 +80,15 @@ void OMPStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void OMPStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
-#ifdef OMP_TARGET_GPU
+  #if defined(OMP_TARGET_GPU) && defined(__llvm__)
+  // LLVM BUG: Need to pull out the pointers
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
+  #endif
+
   #pragma omp target update from(a[0:array_size], b[0:array_size], c[0:array_size])
-  {}
-#else
+
   #pragma omp parallel for
   for (int i = 0; i < array_size; i++)
   {
@@ -92,23 +96,25 @@ void OMPStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
     h_b[i] = b[i];
     h_c[i] = c[i];
   }
-#endif
+
 }
 
 template <class T>
 void OMPStream<T>::copy()
 {
-#ifdef OMP_TARGET_GPU
-  unsigned int array_size = this->array_size;
+  #if defined(OMP_TARGET_GPU) && defined(__llvm__)
+  // LLVM BUG: Need to pull out the pointers
   T *a = this->a;
   T *c = this->c;
-#endif
+  #endif
+
   #pragma omp target
   #pragma omp teams distribute parallel for simd
   for (int i = 0; i < array_size; i++)
   {
     c[i] = a[i];
   }
+
   #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
   // If using the Cray compiler, the kernels do not block, so this update forces
   // a small copy to ensure blocking so that timing is correct
@@ -121,17 +127,19 @@ void OMPStream<T>::mul()
 {
   const T scalar = startScalar;
 
-#ifdef OMP_TARGET_GPU
-  unsigned int array_size = this->array_size;
+  #if defined(OMP_TARGET_GPU) && defined(__llvm__)
+  // LLVM BUG: Need to pull out the pointers
   T *b = this->b;
   T *c = this->c;
-#endif
+  #endif
+
   #pragma omp target
   #pragma omp teams distribute parallel for simd
   for (int i = 0; i < array_size; i++)
   {
     b[i] = scalar * c[i];
   }
+
   #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
   // If using the Cray compiler, the kernels do not block, so this update forces
   // a small copy to ensure blocking so that timing is correct
@@ -142,18 +150,20 @@ void OMPStream<T>::mul()
 template <class T>
 void OMPStream<T>::add()
 {
-#ifdef OMP_TARGET_GPU
-  unsigned int array_size = this->array_size;
+  #if defined(OMP_TARGET_GPU) && defined(__llvm__)
+  // LLVM BUG: Need to pull out the pointers
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-#endif
+  #endif
+
   #pragma omp target
   #pragma omp teams distribute parallel for simd
   for (int i = 0; i < array_size; i++)
   {
     c[i] = a[i] + b[i];
   }
+
   #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
   // If using the Cray compiler, the kernels do not block, so this update forces
   // a small copy to ensure blocking so that timing is correct
@@ -166,18 +176,20 @@ void OMPStream<T>::triad()
 {
   const T scalar = startScalar;
 
-#ifdef OMP_TARGET_GPU
-  unsigned int array_size = this->array_size;
+  #if defined(OMP_TARGET_GPU) && defined(__llvm__)
+  // LLVM BUG: Need to pull out the pointers
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
-#endif
-#pragma omp target
-#pragma omp teams distribute parallel for simd
+  #endif
+
+  #pragma omp target
+  #pragma omp teams distribute parallel for simd
   for (int i = 0; i < array_size; i++)
   {
     a[i] = b[i] + scalar * c[i];
   }
+
   #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
   // If using the Cray compiler, the kernels do not block, so this update forces
   // a small copy to ensure blocking so that timing is correct
@@ -188,13 +200,15 @@ void OMPStream<T>::triad()
 template <class T>
 T OMPStream<T>::dot()
 {
+
   T sum = 0.0;
 
-#ifdef OMP_TARGET_GPU
-  unsigned int array_size = this->array_size;
+  #if defined(OMP_TARGET_GPU) && defined(__llvm__)
+  // LLVM BUG: Need to pull out the pointers
   T *a = this->a;
   T *b = this->b;
-#endif
+  #endif
+
   #pragma omp target map(tofrom: sum)
   #pragma teams distribute parallel for simd reduction(+:sum)
   for (int i = 0; i < array_size; i++)
