@@ -45,7 +45,7 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
   std::cout << "Reduction kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
 
-  queue = new cl::sycl::queue(dev, [&](cl::sycl::exception_list l)
+  queue = new cl::sycl::queue(dev, cl::sycl::async_handler{[&](cl::sycl::exception_list l)
   {
     bool error = false;
     for(auto e: l)
@@ -64,7 +64,7 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
     {
       throw std::runtime_error("SYCL errors detected");
     }
-  });
+  }});
   
   // Create buffers
   d_a = new buffer<T>(array_size);
