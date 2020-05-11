@@ -228,15 +228,8 @@ void SYCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vecto
 
 void getDeviceList(void)
 {
-  // Get list of platforms
-  std::vector<platform> platforms = platform::get_platforms();
-
-  // Enumerate devices
-  for (unsigned i = 0; i < platforms.size(); i++)
-  {
-    std::vector<device> plat_devices = platforms[i].get_devices();
-    devices.insert(devices.end(), plat_devices.begin(), plat_devices.end());
-  }
+  // Ask SYCL runtime for all devices in system
+  devices = cl::sycl::device::get_devices();
   cached = true;
 }
 
