@@ -45,7 +45,7 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
   std::cout << "Reduction kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
 
-  queue = new cl::sycl::queue(dev, [&](cl::sycl::exception_list l)
+  queue = new cl::sycl::queue(dev, cl::sycl::async_handler{[&](cl::sycl::exception_list l)
   {
     bool error = false;
     for(auto e: l)
@@ -64,7 +64,7 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
     {
       throw std::runtime_error("SYCL errors detected");
     }
-  }, {});
+  }});
   
   // Create buffers
   d_a = new buffer<T>(array_size);
@@ -228,15 +228,8 @@ void SYCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vecto
 
 void getDeviceList(void)
 {
-  // Get list of platforms
-  std::vector<platform> platforms = platform::get_platforms();
-
-  // Enumerate devices
-  for (unsigned i = 0; i < platforms.size(); i++)
-  {
-    std::vector<device> plat_devices = platforms[i].get_devices();
-    devices.insert(devices.end(), plat_devices.begin(), plat_devices.end());
-  }
+  // Ask SYCL runtime for all devices in system
+  devices = cl::sycl::device::get_devices();
   cached = true;
 }
 
