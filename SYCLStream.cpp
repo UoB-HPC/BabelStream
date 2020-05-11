@@ -15,7 +15,6 @@ using namespace cl::sycl;
 bool cached = false;
 std::vector<device> devices;
 void getDeviceList(void);
-program * p;
 
 template <class T>
 SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
@@ -65,7 +64,7 @@ SYCLStream<T>::SYCLStream(const unsigned int ARRAY_SIZE, const int device_index)
     {
       throw std::runtime_error("SYCL errors detected");
     }
-  });
+  }, {});
   
   // Create buffers
   d_a = new buffer<T>(array_size);
@@ -81,7 +80,6 @@ SYCLStream<T>::~SYCLStream()
   delete d_b;
   delete d_c;
   delete d_sum;
-  delete p;
   delete queue;
   devices.clear();
 }
