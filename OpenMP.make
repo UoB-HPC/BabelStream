@@ -14,7 +14,7 @@ ifndef TARGET
 define target_help
 Set TARGET to change device (defaulting to CPU).
 Available targets are:
-  CPU NVIDIA
+  CPU NVIDIA AMD
 
 endef
 $(info $(target_help))
@@ -51,6 +51,8 @@ OMP_NEC_CPU = -fopenmp
 # OpenMP flags for NVIDIA
 OMP_CRAY_NVIDIA  = -DOMP_TARGET_GPU
 OMP_CLANG_NVIDIA = -DOMP_TARGET_GPU -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda
+OMP_GNU_NVIDIA = -DOMP_TARGET_GPU -fopenmp -foffload=nvptx-none
+OMP_GNU_AMD = -DOMP_TARGET_GPU -fopenmp -foffload=amdgcn-amdhsa
 
 ifndef OMP_$(COMPILER)_$(TARGET)
 $(error Targeting $(TARGET) with $(COMPILER) not supported)
