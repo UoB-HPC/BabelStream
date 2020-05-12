@@ -30,7 +30,7 @@ COMPILER_PGI = pgc++
 COMPILER_NEC = /opt/nec/ve/bin/nc++
 CXX = $(COMPILER_$(COMPILER))
 
-FLAGS_GNU = -O3 -std=c++11 -mcpu=native
+FLAGS_GNU = -O3 -std=c++11 -march=native
 FLAGS_INTEL = -O3 -std=c++11 -xHOST -qopt-streaming-stores=always
 FLAGS_CRAY = -O3 -hstd=c++11
 FLAGS_CLANG = -O3 -std=c++11
