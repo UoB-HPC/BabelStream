@@ -10,8 +10,8 @@
 template <class T>
 ACCStream<T>::ACCStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int device)
 {
-
-  acc_set_device_num(device, acc_device_nvidia);
+  acc_device_t device_type = acc_get_device_type();
+  acc_set_device_num(device, device_type);
 
   array_size = ARRAY_SIZE;
 
@@ -139,7 +139,8 @@ T ACCStream<T>::dot()
 void listDevices(void)
 {
   // Get number of devices
-  int count = acc_get_num_devices(acc_device_nvidia);
+  acc_device_t device_type = acc_get_device_type();
+  int count = acc_get_num_devices(device_type);
 
   // Print device list
   if (count == 0)

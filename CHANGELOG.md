@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- Compiler options for OpenMP GNU offloading to NVIDIA and AMD.
+- Compiler options for OpenMP and OpenACC GNU offloading to NVIDIA and AMD.
 
 ### Changed
 - Use cl::sycl::id parameters instead of cl::sycl::item.
