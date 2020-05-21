@@ -23,6 +23,7 @@ namespace sycl_kernels
   template <class T> class add;
   template <class T> class triad;
   template <class T> class dot;
+  template <class T> class dot_hp;
 }
 
 template <class T>
@@ -46,6 +47,7 @@ class SYCLStream : public Stream<T>
     typedef sycl_kernels::add<T> add_kernel;
     typedef sycl_kernels::triad<T> triad_kernel;
     typedef sycl_kernels::dot<T> dot_kernel;
+    typedef sycl_kernels::dot_hp<T> dot_hp_kernel;
 
     // NDRange configuration for the dot kernel
     size_t dot_num_groups;

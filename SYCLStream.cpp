@@ -151,6 +151,38 @@ void SYCLStream<T>::triad()
 template <class T>
 T SYCLStream<T>::dot()
 {
+//  queue->submit([&](handler &cgh)
+//  {
+//    auto ka   = d_a->template get_access<access::mode::read>(cgh);
+//    auto kb   = d_b->template get_access<access::mode::read>(cgh);
+//    auto ksum = d_sum->template get_access<access::mode::write>(cgh);
+//
+//    auto wg_sum = accessor<T, 1, access::mode::read_write, access::target::local>(range<1>(dot_wgsize), cgh);
+//
+//    size_t N = array_size;
+//    cgh.parallel_for<dot_kernel>(nd_range<1>(dot_num_groups*dot_wgsize, dot_wgsize), [=](nd_item<1> item)
+//    {
+//      size_t i = item.get_global_id(0);
+//      size_t li = item.get_local_id(0);
+//      size_t global_size = item.get_global_range()[0];
+//
+//      wg_sum[li] = 0.0;
+//      for (; i < N; i += global_size)
+//        wg_sum[li] += ka[i] * kb[i];
+//
+//      size_t local_size = item.get_local_range()[0];
+//      for (int offset = local_size / 2; offset > 0; offset /= 2)
+//      {
+//        item.barrier(cl::sycl::access::fence_space::local_space);
+//        if (li < offset)
+//          wg_sum[li] += wg_sum[li + offset];
+//      }
+//
+//      if (li == 0)
+//        ksum[item.get_group(0)] = wg_sum[0];
+//    });
+//  });
+
   queue->submit([&](handler &cgh)
   {
     auto ka   = d_a->template get_access<access::mode::read>(cgh);
@@ -160,28 +192,39 @@ T SYCLStream<T>::dot()
     auto wg_sum = accessor<T, 1, access::mode::read_write, access::target::local>(range<1>(dot_wgsize), cgh);
 
     size_t N = array_size;
-    cgh.parallel_for<dot_kernel>(nd_range<1>(dot_num_groups*dot_wgsize, dot_wgsize), [=](nd_item<1> item)
+    size_t local_size = dot_wgsize;
+    cgh.parallel_for_work_group<dot_hp_kernel>(range<1>(dot_num_groups), range<1>(dot_wgsize), [=](group<1> g)
     {
-      size_t i = item.get_global_id(0);
-      size_t li = item.get_local_id(0);
-      size_t global_size = item.get_global_range()[0];
+      g.parallel_for_work_item([&](h_item<1> item)
+      {
+        size_t i = item.get_global_id(0);
+        size_t li = item.get_local_id(0);
+        size_t global_size = item.get_global_range(0);
 
-      wg_sum[li] = 0.0;
-      for (; i < N; i += global_size)
-        wg_sum[li] += ka[i] * kb[i];
+        wg_sum[li] = 0.0;
+        for (; i < N; i += global_size)
+          wg_sum[li] += ka[i] * kb[i];
+      });
 
-      size_t local_size = item.get_local_range()[0];
+      // size_t local_size = g.get_local_range(0); always zero, set above.
       for (int offset = local_size / 2; offset > 0; offset /= 2)
       {
-        item.barrier(cl::sycl::access::fence_space::local_space);
-        if (li < offset)
-          wg_sum[li] += wg_sum[li + offset];
+        g.parallel_for_work_item([&](h_item<1> item)
+        {
+          size_t li = item.get_local_id(0);
+          if (li < offset)
+            wg_sum[li] += wg_sum[li + offset];
+        });
       }
 
-      if (li == 0)
-        ksum[item.get_group(0)] = wg_sum[0];
+      g.parallel_for_work_item([&](h_item<1> item)
+      {
+        if (item.get_local_id(0) == 0)
+          ksum[g.get_id(0)] = wg_sum[0];
+      });
     });
   });
+
 
   T sum = 0.0;
   auto h_sum = d_sum->template get_access<access::mode::read>();
