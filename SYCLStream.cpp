@@ -189,12 +189,16 @@ T SYCLStream<T>::dot()
     auto kb   = d_b->template get_access<access::mode::read>(cgh);
     auto ksum = d_sum->template get_access<access::mode::write>(cgh);
 
-    auto wg_sum = accessor<T, 1, access::mode::read_write, access::target::local>(range<1>(dot_wgsize), cgh);
+    // Allocate local memory
+    //auto wg_sum = accessor<T, 1, access::mode::read_write, access::target::local>(range<1>(dot_wgsize), cgh);
 
     size_t N = array_size;
-    size_t local_size = dot_wgsize;
+
     cgh.parallel_for_work_group<dot_hp_kernel>(range<1>(dot_num_groups), range<1>(dot_wgsize), [=](group<1> g)
     {
+
+      T wg_sum[dot_wgsize];
+
       g.parallel_for_work_item([&](h_item<1> item)
       {
         size_t i = item.get_global_id(0);
@@ -206,8 +210,7 @@ T SYCLStream<T>::dot()
           wg_sum[li] += ka[i] * kb[i];
       });
 
-      // size_t local_size = g.get_local_range(0); always zero, set above.
-      for (int offset = local_size / 2; offset > 0; offset /= 2)
+      for (int offset = g.get_local_range(0) / 2; offset > 0; offset /= 2)
       {
         g.parallel_for_work_item([&](h_item<1> item)
         {
