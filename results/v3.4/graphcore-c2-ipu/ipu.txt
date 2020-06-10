@@ -1,0 +1,18 @@
+BabelStream
+Version: 3.4
+Implementation: Poplar
+Running kernels 100 times
+Precision: float
+Array size: 64.7 MB (=0.1 GB)
+Total size: 194.2 MB (=0.2 GB)
+Attached to IPU 12
+Using IPU with 1216 tiles, each with 6 workers and 256KB of memory per tile, and clock frequency 1600 MHz
+Validation failed on sum. Error 7.62939e-06
+Sum was 19.1933250427246 but should be 19.1933326721191
+Function    MBytes/sec  Min (sec)   Max         Average     
+Copy        4193140.970 0.00003     0.00003     0.00003     
+Mul         3586405.562 0.00004     0.00004     0.00004     
+Add         4192914.661 0.00005     0.00005     0.00005     
+Triad       3772580.708 0.00005     0.00005     0.00005     
+Dot         1301842.970 0.00010     0.00010     0.00010  
+ 

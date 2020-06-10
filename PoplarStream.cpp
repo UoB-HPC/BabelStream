@@ -41,6 +41,41 @@ const OptionFlags POPLAR_ENGINE_OPTIONS{
 };
 
 
+std::optional <Device> getIpuDevice(const unsigned deviceType = 0) {
+    if (deviceType == 0) { // Target an IPUDevice
+        DeviceManager manager = DeviceManager::createDeviceManager();
+        Device device;
+        bool success = false;
+        for (auto &hwDevice : manager.getDevices(poplar::TargetType::IPU, 1)) {
+            device = std::move(hwDevice);
+            if ((success = device.attach())) {
+                std::cout << "Attached to IPU " << device.getId() << std::endl;
+                return std::optional<Device>(std::move(device));
+            }
+        }
+    } else if (deviceType == 1) { // Use the CPUDevice
+        // Note that as of Poplar v1.1.11, this ony returns a useless device with 1 tile and 256Kb of memory!
+        return std::optional<Device>(Device::createCPUDevice());
+
+    }
+    return std::nullopt;
+}
+
+
+void listDevices(void) {    
+    std::cout << 0 << ": " << "CPUDevice" << std::endl;
+
+    // For now we just support the IPU device rather than the CPU device
+    // Create the DeviceManager which is used to discover devices
+    DeviceManager manager = DeviceManager::createDeviceManager();
+
+    // Attempt to attach to a single IPU:
+    Device device;
+    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 1); !devices.empty()) {
+        std::cout << 1 << ": " << "CPUDevice" << std::endl;
+    }
+}
+
 class PoplarStreamUtil {
 private:
     const unsigned numTiles;
@@ -384,7 +419,6 @@ PoplarStream<T>::PoplarStream(const unsigned int arraySize, const int device_num
         throw std::runtime_error("Could not allocate IPU device");
     }
 
-    std::cout << "Constructing compute graph and control program\n";
     Graph graph(device.value());
     const auto numTiles = graph.getTarget().getNumTiles();
     const auto numWorkers = graph.getTarget().getNumWorkerContexts();
@@ -405,8 +439,8 @@ PoplarStream<T>::PoplarStream(const unsigned int arraySize, const int device_num
     }
 
     // Check buffers fit on the device
-    long maxbuffer = numTiles * maxBytesPerTile;
-    long totalmem = numTiles * maxBytesPerTile;
+    unsigned long maxbuffer = numTiles * maxBytesPerTile;
+    unsigned long totalmem = numTiles * maxBytesPerTile;
     if (maxbuffer < sizeof(T) * arraySize)
         throw std::runtime_error("Device cannot allocate a buffer big enough");
     if (totalmem < 3 * sizeof(T) * arraySize)
@@ -474,8 +508,8 @@ void PoplarStream<T>::read_arrays(std::vector <T> &h_a, std::vector <T> &h_b, st
 
     }
 
-    engine->printProfileSummary(std::cout,
-                              OptionFlags{{"showExecutionSteps", "false"}});
+    //engine->printProfileSummary(std::cout,
+    //                          OptionFlags{{"showExecutionSteps", "false"}});
 }
 
 
@@ -485,41 +519,4 @@ class PoplarStream<float>;
 template
 class PoplarStream<double>;
 
-
-std::optional <Device> getIpuDevice(const unsigned deviceType = 0) {
-    if (deviceType == 0) { // Target an IPUDevice
-        DeviceManager manager = DeviceManager::createDeviceManager();
-        Device device;
-        bool success = false;
-        for (auto &hwDevice : manager.getDevices(poplar::TargetType::IPU, 1)) {
-            device = std::move(hwDevice);
-            std::cerr << "Trying to attach to IPU " << device.getId() << std::endl;
-            if ((success = device.attach())) {
-                std::cerr << "Attached to IPU " << device.getId() << std::endl;
-                return std::optional<Device>(std::move(device));
-            }
-        }
-    } else if (deviceType == 1) { // Use the CPUDevice
-        // Note that as of Poplar v1.1.11, this ony returns a useless device with 1 tile and 256Kb of memory!
-        return std::optional<Device>(Device::createCPUDevice());
-
-    }
-    return std::nullopt;
-}
-
-
-void listDevices(void) {    
-    std::cout << 0 << ": " << "CPUDevice" << std::endl;
-
-    // For now we just support the IPU device rather than the CPU device
-    // Create the DeviceManager which is used to discover devices
-    DeviceManager manager = DeviceManager::createDeviceManager();
-
-    // Attempt to attach to a single IPU:
-    Device device;
-    for (auto &hwDevice : manager.getDevices(poplar::TargetType::IPU, 1)) {
-        std::cout << 1 << ": " << "CPUDevice" << std::endl;
-        break;
-    }
-}
 

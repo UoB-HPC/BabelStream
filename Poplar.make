@@ -12,8 +12,8 @@ endif
 COMPILER_GNU = g++
 CXX = $(COMPILER_$(COMPILER))
 
-FLAGS_ = -O3 -std=c++17
-FLAGS_GNU = -O3 -std=c++17
+FLAGS_ = -O3 -std=c++17 -Wall
+FLAGS_GNU = -O3 -std=c++17 -Wall
 CXXFLAGS=$(FLAGS_$(COMPILER))
 
 PLATFORM = $(shell uname -s)
