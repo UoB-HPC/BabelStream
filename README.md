@@ -18,6 +18,7 @@ Currently implemented are:
   - Kokkos
   - RAJA
   - SYCL
+  - Graphcore's Poplar framework for the Graphcore IPU
 
 This code was previously called GPU-STREAM.
 
@@ -80,6 +81,28 @@ cmake .. -DCMAKE_INSTALL_PREFIX=<prefix> -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMP
 For building with CUDA support, we use the following command.
 ```
 cmake .. -DCMAKE_INSTALL_PREFIX=<prefix> -DRAJA_PTR="RAJA_USE_RESTRICT_ALIGNED_PTR" -DRAJA_ENABLE_CUDA=1 -DRAJA_ENABLE_TESTS=Off
+```
+
+
+Building and running for Poplar
+-------------------------------
+See the Developer Documentation at https://www.graphcore.ai/developer for how to install Poplar and set up 
+the environment variables for building. The latest version we used was v1.1.11.
+
+The IPU doesn't support doubles, so you must run with the --float option. 
+For a single IPU (with 1216 tiles), the largest array size we used was 16185000.
+
+Run with
+```
+./poplar-stream --arraysize 16185000  --device 0  --float 
+```
+
+You can run the Poplar program on a CPU target, but as of v1.1.11 this only gives you 1 tile with 256Kb of 
+memory. The largest array size we used was 21845.
+
+Run with
+```
+./poplar-stream --arraysize 21845  --device 1  --float 
 ```
 
 Results

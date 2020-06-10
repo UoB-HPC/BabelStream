@@ -37,6 +37,8 @@
 #include "SYCLStream.h"
 #elif defined(OMP)
 #include "OMPStream.h"
+#elif defined(POPLAR)
+#include "PoplarStream.h"
 #endif
 
 // Default size of 2^25
@@ -173,6 +175,10 @@ void run()
 #elif defined(OMP)
   // Use the OpenMP implementation
   stream = new OMPStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+
+#elif defined(POPLAR)
+  // Use the Graphcore Poplar implementation
+  stream = new PoplarStream<T>(ARRAY_SIZE, deviceIndex);
 
 #endif
 
@@ -370,6 +376,10 @@ void run_triad()
 #elif defined(OMP)
   // Use the OpenMP implementation
   stream = new OMPStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+
+#elif defined(POPLAR)
+  // Use the Graphcore Poplar implementation
+  stream = new PoplarStream<T>(ARRAY_SIZE, deviceIndex);
 
 #endif
 

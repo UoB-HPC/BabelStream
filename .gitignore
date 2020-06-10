@@ -7,10 +7,12 @@ raja-stream
 kokkos-stream
 sycl-stream
 hip-stream
+poplar-stream
 
 *.o
 *.bc
 *.sycl
+*.gc
 *.tar
 *.gz
 
