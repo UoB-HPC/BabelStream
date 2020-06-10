@@ -20,31 +20,36 @@
 
 using namespace poplar::program;
 
-template <class T>
-class PoplarStream : public Stream<T>
-{
+template<class T>
+class PoplarStream : public Stream<T> {
 
-  protected:
+protected:
     unsigned int arraySize;
     T sum = 0;
-    std::unique_ptr<poplar::Engine> engine;
-    std::unique_ptr<T[]> a;  
-    std::unique_ptr<T[]> b;  
-    std::unique_ptr<T[]> c;  
+    std::unique_ptr <poplar::Engine> engine;
+    std::unique_ptr<T[]> a;
+    std::unique_ptr<T[]> b;
+    std::unique_ptr<T[]> c;
 
-  public:
+public:
 
     PoplarStream(const unsigned int, const int);
+
     ~PoplarStream();
 
     virtual void copy() override;
+
     virtual void add() override;
+
     virtual void mul() override;
+
     virtual void triad() override;
+
     virtual T dot() override;
 
     virtual void init_arrays(T initA, T initB, T initC) override;
-    virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
+
+    virtual void read_arrays(std::vector <T> &a, std::vector <T> &b, std::vector <T> &c) override;
 
 };
 

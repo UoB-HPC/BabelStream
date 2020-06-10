@@ -9,7 +9,8 @@
 #include <poplar/Engine.hpp>
 #include <poplar/DeviceManager.hpp>
 #include <poplin/codelets.hpp>
-#include <math.h>
+#include <map>
+#include <cmath>
 
 using namespace poplar;
 using namespace poplar::program;
@@ -45,10 +46,9 @@ std::optional <Device> getIpuDevice(const unsigned deviceType = 0) {
     if (deviceType == 0) { // Target an IPUDevice
         DeviceManager manager = DeviceManager::createDeviceManager();
         Device device;
-        bool success = false;
         for (auto &hwDevice : manager.getDevices(poplar::TargetType::IPU, 1)) {
             device = std::move(hwDevice);
-            if ((success = device.attach())) {
+            if (device.attach()) {
                 std::cout << "Attached to IPU " << device.getId() << std::endl;
                 return std::optional<Device>(std::move(device));
             }
@@ -62,7 +62,7 @@ std::optional <Device> getIpuDevice(const unsigned deviceType = 0) {
 }
 
 
-void listDevices(void) {    
+void listDevices() {
     std::cout << 0 << ": " << "CPUDevice" << std::endl;
 
     // For now we just support the IPU device rather than the CPU device
@@ -89,18 +89,18 @@ private:
     std::vector <Program> programs = {};
     std::map <std::string, DataStream> dataStreams = {};
 
-    unsigned numItemsForTileAndWorker(const unsigned tileNum, const unsigned workerNum) const {
+    [[nodiscard]] unsigned numItemsForTileAndWorker(const unsigned tileNum, const unsigned workerNum) const {
         if (arraySize <= numTiles) { // Just use 1 item per worker
             return 1;
         } else { // Balance as fairly as possible
-            auto extra =  tileNum < arraySize % numTiles;
+            auto extra = tileNum < arraySize % numTiles;
             auto totalForTile = unsigned(arraySize / numTiles) + extra;
             auto extraForThread = workerNum < totalForTile % numWorkersPerTile;
             return unsigned(totalForTile / numWorkersPerTile) + extraForThread;
         }
     }
 
-    unsigned numItemsForTile(const unsigned tileNum) const {
+    [[nodiscard]] unsigned numItemsForTile(const unsigned tileNum) const {
         if (arraySize <= numTiles) { // We'll just use one item per worker
             return numWorkersUsedOnTile(tileNum);
         } else { // Now we must balance as fairly as possible
@@ -109,8 +109,8 @@ private:
         }
     }
 
-    unsigned numWorkersUsedOnTile(const unsigned tileNum) const {
-        return std::min(numWorkersPerTile, totalWorkersThatWillBeUsed - tileNum * numWorkersPerTile); 
+    [[nodiscard]] unsigned numWorkersUsedOnTile(const unsigned tileNum) const {
+        return std::min(numWorkersPerTile, totalWorkersThatWillBeUsed - tileNum * numWorkersPerTile);
     }
 
     Program copyProgram(Graph &graph) {
@@ -121,7 +121,6 @@ private:
             auto tile = w / numWorkersPerTile;
             auto worker = w % numWorkersPerTile;
             auto numItems = numItemsForTileAndWorker(tile, worker);
-            //std::cout <<  tile  << " " << worker << " " << numItems << std::endl;
             const auto v = graph.addVertex(cs,
                                            "CopyKernel",
                                            {
@@ -145,13 +144,13 @@ private:
             auto worker = w % numWorkersPerTile;
             auto numItems = numItemsForTileAndWorker(tile, worker);
             const auto v = graph.addVertex(
-                cs,
-                "MulKernel",
-                {
-                        {"b",     tensors["b"].slice({idx}, {idx + numItems})},
-                        {"c",     tensors["c"].slice({idx}, {idx + numItems})},
-                        {"alpha", tensors["alpha"]},
-                }
+                    cs,
+                    "MulKernel",
+                    {
+                            {"b",     tensors["b"].slice({idx}, {idx + numItems})},
+                            {"c",     tensors["c"].slice({idx}, {idx + numItems})},
+                            {"alpha", tensors["alpha"]},
+                    }
             );
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
@@ -171,14 +170,14 @@ private:
             auto worker = w % numWorkersPerTile;
             auto numItems = numItemsForTileAndWorker(tile, worker);
             const auto v = graph.addVertex(
-                cs,
-                "AddKernel",
-                {
-                        {"b", tensors["b"].slice({idx}, {idx + numItems})},
-                        {"a", tensors["a"].slice({idx}, {idx + numItems})},
-                        {"c", tensors["c"].slice({idx}, {idx + numItems})},
+                    cs,
+                    "AddKernel",
+                    {
+                            {"b", tensors["b"].slice({idx}, {idx + numItems})},
+                            {"a", tensors["a"].slice({idx}, {idx + numItems})},
+                            {"c", tensors["c"].slice({idx}, {idx + numItems})},
 
-                }
+                    }
             );
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
@@ -199,22 +198,22 @@ private:
 
             auto numItems = numItemsForTileAndWorker(tile, worker);
             const auto v = graph.addVertex(
-                cs,
-                "TriadKernel",
-                {
-                        {"b",     tensors["b"].slice({idx}, {idx + numItems})},
-                        {"a",     tensors["a"].slice({idx}, {idx + numItems})},
-                        {"c",     tensors["c"].slice({idx}, {idx + numItems})},
-                        {"alpha", tensors["alpha"]},
+                    cs,
+                    "TriadKernel",
+                    {
+                            {"b",     tensors["b"].slice({idx}, {idx + numItems})},
+                            {"a",     tensors["a"].slice({idx}, {idx + numItems})},
+                            {"c",     tensors["c"].slice({idx}, {idx + numItems})},
+                            {"alpha", tensors["alpha"]},
 
-                }
+                    }
             );
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
 
         }
-        
+
         return Execute(cs);
     }
 
@@ -227,14 +226,14 @@ private:
             auto worker = w % numWorkersPerTile;
             auto numItems = numItemsForTileAndWorker(tile, worker);
             const auto v = graph.addVertex(
-                dotCs,
-                "DotProdKernel",
-                {
-                        {"b",   tensors["b"].slice({idx}, {idx + numItems})},
-                        {"a",   tensors["a"].slice({idx}, {idx + numItems})},
-                        {"sum", tensors["partialSumsPerWorker"][tile * numWorkersPerTile +
-                                                                worker]},
-                }
+                    dotCs,
+                    "DotProdKernel",
+                    {
+                            {"b",   tensors["b"].slice({idx}, {idx + numItems})},
+                            {"a",   tensors["a"].slice({idx}, {idx + numItems})},
+                            {"sum", tensors["partialSumsPerWorker"][tile * numWorkersPerTile +
+                                                                    worker]},
+                    }
             );
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
@@ -246,13 +245,13 @@ private:
         for (unsigned tile = 0; tile < totalTilesThatWillBeUsed; tile++) {
             auto workersUsedOnThisTile = numWorkersUsedOnTile(tile);
             const auto v = graph.addVertex(
-                partialReduxCs,
-                "ReduceSum",
-                {
-                        {"partialSums", tensors["partialSumsPerWorker"].slice(
-                            {idx}, {idx + workersUsedOnThisTile})},
-                        {"sum",         tensors["partialSumsPerTile"][tile]},
-                }
+                    partialReduxCs,
+                    "ReduceSum",
+                    {
+                            {"partialSums", tensors["partialSumsPerWorker"].slice(
+                                    {idx}, {idx + workersUsedOnThisTile})},
+                            {"sum",         tensors["partialSumsPerTile"][tile]},
+                    }
             );
             graph.setCycleEstimate(v, workersUsedOnThisTile);
             graph.setTileMapping(v, tile);
@@ -261,19 +260,19 @@ private:
 
         ComputeSet finalReduxCs = graph.addComputeSet("finalReduction");
         const auto v = graph.addVertex(
-            finalReduxCs,
-            "ReduceSum",
-            {
-                    {"partialSums", tensors["partialSumsPerTile"]},
-                    {"sum",         tensors["sum"]},
-            });
+                finalReduxCs,
+                "ReduceSum",
+                {
+                        {"partialSums", tensors["partialSumsPerTile"]},
+                        {"sum",         tensors["sum"]},
+                });
         graph.setCycleEstimate(v, numTiles);
         graph.setTileMapping(v, numTiles - 1);
 
         return Sequence(
-            Execute(dotCs), 
-            Execute(partialReduxCs),
-            Execute(finalReduxCs)
+                Execute(dotCs),
+                Execute(partialReduxCs),
+                Execute(finalReduxCs)
         );
     }
 
@@ -288,25 +287,25 @@ private:
         tensors["alpha"] = graph.addConstant(type, {}, startScalar, "alpha");
         graph.createHostRead("sum", tensors["sum"]);
 
-        
-            auto idx = 0u;
-            for (auto tile = 0u; tile < totalTilesThatWillBeUsed; tile++) {
-                if (auto numItems = numItemsForTile(tile); numItems > 0) {
-                    graph.setTileMapping(tensors["a"].slice(idx, idx + numItems), tile);
-                    graph.setTileMapping(tensors["b"].slice(idx, idx + numItems), tile);
-                    graph.setTileMapping(tensors["c"].slice(idx, idx + numItems), tile);
-                    idx += numItems;
 
-                }
-
-                graph.setTileMapping(tensors["partialSumsPerWorker"].slice(
-                        {tile * numWorkersPerTile}, {tile * numWorkersPerTile + numWorkersUsedOnTile(tile)}),
-                                     tile);
-                graph.setTileMapping(tensors["partialSumsPerTile"].slice(tile, tile + 1), tile);
+        auto idx = 0u;
+        for (auto tile = 0u; tile < totalTilesThatWillBeUsed; tile++) {
+            if (auto numItems = numItemsForTile(tile); numItems > 0) {
+                graph.setTileMapping(tensors["a"].slice(idx, idx + numItems), tile);
+                graph.setTileMapping(tensors["b"].slice(idx, idx + numItems), tile);
+                graph.setTileMapping(tensors["c"].slice(idx, idx + numItems), tile);
+                idx += numItems;
 
             }
-            graph.setTileMapping(tensors["sum"], numTiles - 1);
-            graph.setTileMapping(tensors["alpha"], 0);
+
+            graph.setTileMapping(tensors["partialSumsPerWorker"].slice(
+                    {tile * numWorkersPerTile}, {tile * numWorkersPerTile + numWorkersUsedOnTile(tile)}),
+                                 tile);
+            graph.setTileMapping(tensors["partialSumsPerTile"].slice(tile, tile + 1), tile);
+
+        }
+        graph.setTileMapping(tensors["sum"], numTiles - 1);
+        graph.setTileMapping(tensors["alpha"], 0);
     }
 
     void createDataStreams(poplar::Type type, Graph &graph) {
@@ -319,17 +318,17 @@ private:
         dataStreams["out_c"] = graph.addDeviceToHostFIFO("out_c", type, arraySize);
     }
 
-    constexpr unsigned numWorkersNeeded(unsigned arraySize, unsigned numTiles, unsigned numWorkersPerTile) {
+    [[nodiscard]] const unsigned numWorkersNeeded(unsigned arraySize, unsigned numTiles, unsigned numWorkersPerTile) const {
         return std::min(
-            arraySize, 
-            std::min(
-                numTiles * numWorkersPerTile, 
-                unsigned(std::ceil(arraySize / (numWorkersPerTile * 1.0))) * 6
-            )
+                arraySize,
+                std::min(
+                        numTiles * numWorkersPerTile,
+                        unsigned(std::ceil(arraySize / (numWorkersPerTile * 1.0))) * 6
+                )
         );
     }
 
-    constexpr unsigned numTilesNeeded(unsigned arraySize, unsigned numTiles, unsigned numWorkersPerTile) {
+    [[nodiscard]] const unsigned numTilesNeeded(unsigned arraySize, unsigned numTiles, unsigned numWorkersPerTile) const {
         return std::min(numTiles, unsigned(std::ceil(arraySize / (numWorkersPerTile * 1.0))));
     }
 
@@ -387,7 +386,7 @@ std::unique_ptr <Engine> PoplarStreamUtil::prepareEngine(const Device &device,
                                                          void *a,
                                                          void *b,
                                                          void *c) {
-    assert(programs.size() > 0);
+    assert(!programs.empty());
     auto engine = std::make_unique<Engine>(graph, programs, POPLAR_ENGINE_OPTIONS);
 
 
@@ -407,11 +406,11 @@ std::unique_ptr <Engine> PoplarStreamUtil::prepareEngine(const Device &device,
 
 
 template<class T>
-PoplarStream<T>::PoplarStream(const unsigned int arraySize, const int device_num) {
-    this->arraySize = arraySize;
-    this->a = std::unique_ptr<T[]>(new T[arraySize]());
-    this->b = std::unique_ptr<T[]>(new T[arraySize]());
-    this->c = std::unique_ptr<T[]>(new T[arraySize]());
+PoplarStream<T>::PoplarStream(const unsigned int arraySize, const int device_num):
+    arraySize(arraySize),
+    a(std::unique_ptr<T[]>(new T[arraySize]())),
+    b(std::unique_ptr<T[]>(new T[arraySize]())),
+    c(std::unique_ptr<T[]>(new T[arraySize]())) {
 
     auto device = getIpuDevice(device_num);
 
@@ -453,8 +452,7 @@ PoplarStream<T>::PoplarStream(const unsigned int arraySize, const int device_num
 
 
 template<class T>
-PoplarStream<T>::~PoplarStream() {
-}
+PoplarStream<T>::~PoplarStream() = default;
 
 template<class T>
 void PoplarStream<T>::copy() {
