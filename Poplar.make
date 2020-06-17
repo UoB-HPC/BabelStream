@@ -17,10 +17,17 @@ FLAGS_GNU = -O3 -std=c++17 -Wall
 CXXFLAGS=$(FLAGS_$(COMPILER))
 
 PLATFORM = $(shell uname -s)
-LIBS = -lpoplar -lpopops
+LIBS = -lpoplar -lpopops -lpoputil
 
 poplar-stream: main.cpp PoplarStream.cpp 
 	$(CXX) $(CXXFLAGS) -DPOPLAR $^ $(EXTRA_FLAGS) $(LIBS) -o $@
+
+popops-stream: main.cpp PopopsStream.cpp 
+	$(CXX) $(CXXFLAGS) -DPOPLAR $^ $(EXTRA_FLAGS) $(LIBS) -o $@
+
+
+.PHONY: all
+all: poplar-stream popops-stream
 
 .PHONY: clean
 clean:

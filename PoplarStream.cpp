@@ -11,13 +11,17 @@
 #include <poplin/codelets.hpp>
 #include <map>
 #include <cmath>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <optional>
 
 using namespace poplar;
 using namespace poplar::program;
 
-
-enum Programs {
-    STREAM_TO_DEVICE_PROGRAM,
+enum Programs
+{
+    INIT_PROGRAM,
     COPY_PROGRAM,
     MUL_PROGRAM,
     ADD_PROGRAM,
@@ -25,7 +29,6 @@ enum Programs {
     DOT_PROGRAM,
     STREAM_BACK_TO_HOST_PROGRAM
 };
-
 
 // const OptionFlags POPLAR_ENGINE_OPTIONS{
 //         {"target.saveArchive",                "archive.a"},
@@ -36,47 +39,110 @@ enum Programs {
 //         {"debug.computeInstrumentationLevel", "tile"}
 // };
 
-
 const OptionFlags POPLAR_ENGINE_OPTIONS{
-        {"debug.instrument", "false"}
-};
+    {"debug.instrument", "false"}};
 
+// This is due to https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion,
+// and is an ultra-hacky way to convert the initial array values to half without having a full half library
+// on the host
+uint16_t toHalf(float val)
+{
+    uint32_t x = static_cast<uint32_t>(val);
+    return ((x >> 16) & 0x8000) | ((((x & 0x7f800000) - 0x38000000) >> 13) & 0x7c00) | ((x >> 13) & 0x03ff);
+}
 
-std::optional <Device> getIpuDevice(const unsigned deviceType = 0) {
-    if (deviceType == 0) { // Target an IPUDevice
-        DeviceManager manager = DeviceManager::createDeviceManager();
-        Device device;
-        for (auto &hwDevice : manager.getDevices(poplar::TargetType::IPU, 1)) {
-            device = std::move(hwDevice);
-            if (device.attach()) {
-                std::cout << "Attached to IPU " << device.getId() << std::endl;
-                return std::optional<Device>(std::move(device));
+void captureProfileInfo(Engine &engine)
+{
+    std::ofstream graphOfs;
+    graphOfs.open("graph.json", std::ofstream::out | std::ofstream::trunc);
+
+    std::ofstream executionOfs;
+    executionOfs.open("execution.json", std::ofstream::out | std::ofstream::trunc);
+
+    poplar::serializeToJSON(graphOfs, engine.getGraphProfile(), false);
+    poplar::serializeToJSON(executionOfs, engine.getExecutionProfile(), false);
+
+    graphOfs.close();
+    executionOfs.close();
+}
+
+std::optional<Device> getIpuDevice(const unsigned deviceType = 0)
+{
+    const auto validOptions = std::array<unsigned, 6>{0, 1, 2, 4, 8, 16};
+    const bool isValid = std::find(validOptions.begin(), validOptions.end(), deviceType) != validOptions.end();
+    if (isValid)
+    {
+        if (deviceType == 0)
+        { // Use the CPUDevice
+            // Note that as of Poplar v1.1.11, this ony returns a useless device with 1 tile and 256Kb of memory!
+            return std::optional<Device>(Device::createCPUDevice());
+        }
+        else
+        {
+            // Target an IPUDevice
+            DeviceManager manager = DeviceManager::createDeviceManager();
+            Device device;
+            for (auto &hwDevice : manager.getDevices(poplar::TargetType::IPU, deviceType))
+            {
+                device = std::move(hwDevice);
+                if (device.attach())
+                {
+                    std::cout << "Attached to IPU " << device.getId() << std::endl;
+                    return std::optional<Device>(std::move(device));
+                }
             }
         }
-    } else if (deviceType == 1) { // Use the CPUDevice
-        // Note that as of Poplar v1.1.11, this ony returns a useless device with 1 tile and 256Kb of memory!
-        return std::optional<Device>(Device::createCPUDevice());
-
     }
     return std::nullopt;
 }
 
+void listDevices()
+{
 
-void listDevices() {
-    std::cout << 0 << ": " << "CPUDevice" << std::endl;
-
-    // For now we just support the IPU device rather than the CPU device
-    // Create the DeviceManager which is used to discover devices
     DeviceManager manager = DeviceManager::createDeviceManager();
+
+    std::cout << 0 << ": "
+              << "CPUDevice" << std::endl;
 
     // Attempt to attach to a single IPU:
     Device device;
-    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 1); !devices.empty()) {
-        std::cout << 1 << ": " << "CPUDevice" << std::endl;
+    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 1); !devices.empty())
+    {
+        std::cout << 1 << ": "
+                  << "IPUDevice" << std::endl;
+    }
+
+    // Attempt to attach to 2 IPUs:
+    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 2); !devices.empty())
+    {
+        std::cout << 2 << ": "
+                  << "2x IPUDevices" << std::endl;
+    }
+
+    // Attempt to attach to 4 IPUs:
+    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 4); !devices.empty())
+    {
+        std::cout << 4 << ": "
+                  << "4x IPUDevices" << std::endl;
+    }
+
+    // Attempt to attach to 8 IPUs:
+    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 8); !devices.empty())
+    {
+        std::cout << 8 << ": "
+                  << "8x IPUDevices" << std::endl;
+    }
+
+    // Attempt to attach to 16 IPUs:
+    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 16); !devices.empty())
+    {
+        std::cout << 16 << ": "
+                  << "16x IPUDevices" << std::endl;
     }
 }
 
-class PoplarStreamUtil {
+class PoplarStreamUtil
+{
 private:
     const unsigned numTiles;
     const unsigned numWorkersPerTile;
@@ -85,14 +151,18 @@ private:
     const unsigned totalTilesThatWillBeUsed;
     const unsigned totalWorkersThatWillBeUsed;
 
-    std::map <std::string, Tensor> tensors = {};
-    std::vector <Program> programs = {};
-    std::map <std::string, DataStream> dataStreams = {};
+    std::map<std::string, Tensor> tensors = {};
+    std::vector<Program> programs = {};
+    std::map<std::string, DataStream> dataStreams = {};
 
-    [[nodiscard]] unsigned numItemsForTileAndWorker(const unsigned tileNum, const unsigned workerNum) const {
-        if (arraySize <= numTiles) { // Just use 1 item per worker
+    [[nodiscard]] unsigned numItemsForTileAndWorker(const unsigned tileNum, const unsigned workerNum) const
+    {
+        if (arraySize <= numTiles)
+        { // Just use 1 item per worker
             return 1;
-        } else { // Balance as fairly as possible
+        }
+        else
+        { // Balance as fairly as possible
             auto extra = tileNum < arraySize % numTiles;
             auto totalForTile = unsigned(arraySize / numTiles) + extra;
             auto extraForThread = workerNum < totalForTile % numWorkersPerTile;
@@ -100,33 +170,69 @@ private:
         }
     }
 
-    [[nodiscard]] unsigned numItemsForTile(const unsigned tileNum) const {
-        if (arraySize <= numTiles) { // We'll just use one item per worker
+    [[nodiscard]] unsigned numItemsForTile(const unsigned tileNum) const
+    {
+        if (arraySize <= numTiles)
+        { // We'll just use one item per worker
             return numWorkersUsedOnTile(tileNum);
-        } else { // Now we must balance as fairly as possible
+        }
+        else
+        { // Now we must balance as fairly as possible
             auto extra = tileNum < arraySize % numTiles;
             return unsigned(arraySize / numTiles) + extra;
         }
     }
 
-    [[nodiscard]] unsigned numWorkersUsedOnTile(const unsigned tileNum) const {
+    [[nodiscard]] unsigned numWorkersUsedOnTile(const unsigned tileNum) const
+    {
         return std::min(numWorkersPerTile, totalWorkersThatWillBeUsed - tileNum * numWorkersPerTile);
     }
 
-    Program copyProgram(Graph &graph) {
+    // This could be done faster with a Stream copy, but that creates a very large FIFO
+    // which limits the array size even further
+    Program initProgram(const std::string &templateStr, Graph &graph)
+    {
+        ComputeSet cs = graph.addComputeSet("init");
+
+        unsigned idx = 0u;
+        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++)
+        {
+            auto tile = w / numWorkersPerTile;
+            auto worker = w % numWorkersPerTile;
+            auto numItems = numItemsForTileAndWorker(tile, worker);
+            const auto v = graph.addVertex(
+                cs,
+                "InitKernel" + templateStr,
+                {{"a", tensors["a"].slice({idx}, {idx + numItems}).flatten()},
+                 {"b", tensors["b"].slice({idx}, {idx + numItems}).flatten()},
+                 {"c", tensors["c"].slice({idx}, {idx + numItems}).flatten()},
+                 {"initA", tensors["initA"]},
+                 {"initB", tensors["initB"]},
+                 {"initC", tensors["initC"]},
+                 {"len", uint32_t(numItems)}});
+            graph.setCycleEstimate(v, numItems);
+            graph.setTileMapping(v, tile);
+            idx += numItems;
+        }
+
+        return Execute(cs);
+    }
+
+    Program copyProgram(const std::string &templateStr, Graph &graph)
+    {
         ComputeSet cs = graph.addComputeSet("copy");
 
         unsigned idx = 0u;
-        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++) {
+        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++)
+        {
             auto tile = w / numWorkersPerTile;
             auto worker = w % numWorkersPerTile;
             auto numItems = numItemsForTileAndWorker(tile, worker);
             const auto v = graph.addVertex(cs,
-                                           "CopyKernel",
-                                           {
-                                                   {"a", tensors["a"].slice({idx}, {idx + numItems}).flatten()},
-                                                   {"c", tensors["c"].slice({idx}, {idx + numItems}).flatten()}
-                                           });
+                                           "CopyKernel" + templateStr,
+                                           {{"a", tensors["a"].slice({idx}, {idx + numItems}).flatten()},
+                                            {"c", tensors["c"].slice({idx}, {idx + numItems}).flatten()},
+                                            {"len", uint32_t(numItems)}});
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
@@ -135,23 +241,25 @@ private:
         return Execute(cs);
     }
 
-    Program mulProgram(Graph &graph) {
+    Program mulProgram(const std::string &templateStr, Graph &graph)
+    {
         ComputeSet cs = graph.addComputeSet("mul");
 
         unsigned idx = 0u;
-        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++) {
+        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++)
+        {
             auto tile = w / numWorkersPerTile;
             auto worker = w % numWorkersPerTile;
             auto numItems = numItemsForTileAndWorker(tile, worker);
             const auto v = graph.addVertex(
-                    cs,
-                    "MulKernel",
-                    {
-                            {"b",     tensors["b"].slice({idx}, {idx + numItems})},
-                            {"c",     tensors["c"].slice({idx}, {idx + numItems})},
-                            {"alpha", tensors["alpha"]},
-                    }
-            );
+                cs,
+                "MulKernel" + templateStr,
+                {
+                    {"b", tensors["b"].slice({idx}, {idx + numItems})},
+                    {"c", tensors["c"].slice({idx}, {idx + numItems})},
+                    {"len", (uint32_t)numItems},
+                    {"alpha", (float)startScalar},
+                });
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
@@ -160,25 +268,23 @@ private:
         return Execute(cs);
     }
 
-
-    Program addProgram(Graph &graph) {
+    Program addProgram(const std::string &templateStr, Graph &graph)
+    {
         ComputeSet cs = graph.addComputeSet("add");
 
         unsigned idx = 0u;
-        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++) {
+        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++)
+        {
             auto tile = w / numWorkersPerTile;
             auto worker = w % numWorkersPerTile;
             auto numItems = numItemsForTileAndWorker(tile, worker);
             const auto v = graph.addVertex(
-                    cs,
-                    "AddKernel",
-                    {
-                            {"b", tensors["b"].slice({idx}, {idx + numItems})},
-                            {"a", tensors["a"].slice({idx}, {idx + numItems})},
-                            {"c", tensors["c"].slice({idx}, {idx + numItems})},
-
-                    }
-            );
+                cs,
+                "AddKernel" + templateStr,
+                {{"b", tensors["b"].slice({idx}, {idx + numItems})},
+                 {"a", tensors["a"].slice({idx}, {idx + numItems})},
+                 {"c", tensors["c"].slice({idx}, {idx + numItems})},
+                 {"len", (uint32_t)numItems}});
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
@@ -187,54 +293,54 @@ private:
         return Execute(cs);
     }
 
-
-    Program triadProgram(Graph &graph) {
+    Program triadProgram(const std::string &templateStr, Graph &graph)
+    {
         ComputeSet cs = graph.addComputeSet("triad");
 
         unsigned idx = 0u;
-        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++) {
+        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++)
+        {
             auto tile = w / numWorkersPerTile;
             auto worker = w % numWorkersPerTile;
 
             auto numItems = numItemsForTileAndWorker(tile, worker);
             const auto v = graph.addVertex(
-                    cs,
-                    "TriadKernel",
-                    {
-                            {"b",     tensors["b"].slice({idx}, {idx + numItems})},
-                            {"a",     tensors["a"].slice({idx}, {idx + numItems})},
-                            {"c",     tensors["c"].slice({idx}, {idx + numItems})},
-                            {"alpha", tensors["alpha"]},
+                cs,
+                "TriadKernel" + templateStr,
+                {{"b", tensors["b"].slice({idx}, {idx + numItems})},
+                 {"a", tensors["a"].slice({idx}, {idx + numItems})},
+                 {"c", tensors["c"].slice({idx}, {idx + numItems})},
+                 {"alpha", (float)startScalar},
+                 {"len", (uint32_t)numItems}
 
-                    }
-            );
+                });
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
-
         }
 
         return Execute(cs);
     }
 
-
-    Program dotProdProgram(Graph &graph) {
+    Program dotProdProgram(const std::string &templateStr, Graph &graph)
+    {
         ComputeSet dotCs = graph.addComputeSet("dot");
         unsigned idx = 0u;
-        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++) {
+        for (unsigned w = 0; w < totalWorkersThatWillBeUsed; w++)
+        {
             auto tile = w / numWorkersPerTile;
             auto worker = w % numWorkersPerTile;
             auto numItems = numItemsForTileAndWorker(tile, worker);
             const auto v = graph.addVertex(
-                    dotCs,
-                    "DotProdKernel",
-                    {
-                            {"b",   tensors["b"].slice({idx}, {idx + numItems})},
-                            {"a",   tensors["a"].slice({idx}, {idx + numItems})},
-                            {"sum", tensors["partialSumsPerWorker"][tile * numWorkersPerTile +
-                                                                    worker]},
-                    }
-            );
+                dotCs,
+                "DotProdKernel" + templateStr,
+                {{"b", tensors["b"].slice({idx}, {idx + numItems})},
+                 {"a", tensors["a"].slice({idx}, {idx + numItems})},
+                 {"sum", tensors["partialSumsPerWorker"][tile * numWorkersPerTile +
+                                                         worker]},
+                 {"len", (uint32_t)numItems}
+
+                });
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
@@ -242,17 +348,18 @@ private:
 
         ComputeSet partialReduxCs = graph.addComputeSet("reductionPerTile");
         idx = 0u;
-        for (unsigned tile = 0; tile < totalTilesThatWillBeUsed; tile++) {
+        for (unsigned tile = 0; tile < totalTilesThatWillBeUsed; tile++)
+        {
             auto workersUsedOnThisTile = numWorkersUsedOnTile(tile);
             const auto v = graph.addVertex(
-                    partialReduxCs,
-                    "ReduceSum",
-                    {
-                            {"partialSums", tensors["partialSumsPerWorker"].slice(
-                                    {idx}, {idx + workersUsedOnThisTile})},
-                            {"sum",         tensors["partialSumsPerTile"][tile]},
-                    }
-            );
+                partialReduxCs,
+                "ReduceSum",
+                {{"partialSums", tensors["partialSumsPerWorker"].slice(
+                                     {idx}, {idx + workersUsedOnThisTile})},
+                 {"sum", tensors["partialSumsPerTile"][tile]},
+                 {"len", (uint32_t)workersUsedOnThisTile}
+
+                });
             graph.setCycleEstimate(v, workersUsedOnThisTile);
             graph.setTileMapping(v, tile);
             idx += workersUsedOnThisTile;
@@ -260,161 +367,160 @@ private:
 
         ComputeSet finalReduxCs = graph.addComputeSet("finalReduction");
         const auto v = graph.addVertex(
-                finalReduxCs,
-                "ReduceSum",
-                {
-                        {"partialSums", tensors["partialSumsPerTile"]},
-                        {"sum",         tensors["sum"]},
-                });
+            finalReduxCs,
+            "ReduceSum",
+            {{"partialSums", tensors["partialSumsPerTile"]},
+             {"sum", tensors["sum"]},
+             {"len", (uint32_t)totalTilesThatWillBeUsed}
+
+            });
         graph.setCycleEstimate(v, numTiles);
         graph.setTileMapping(v, numTiles - 1);
 
         return Sequence(
-                Execute(dotCs),
-                Execute(partialReduxCs),
-                Execute(finalReduxCs)
-        );
+            Execute(dotCs),
+            Execute(partialReduxCs),
+            Execute(finalReduxCs));
     }
 
-    void createAndLayOutTensors(poplar::Type type, Graph &graph) {
+    void createAndLayOutTensors(poplar::Type type, Graph &graph)
+    {
+        tensors["initA"] = graph.addVariable(type, {}, "initA");
+        tensors["initB"] = graph.addVariable(type, {}, "initB");
+        tensors["initC"] = graph.addVariable(type, {}, "initC");
+
         tensors["a"] = graph.addVariable(type, {arraySize}, "a");
         tensors["b"] = graph.addVariable(type, {arraySize}, "b");
         tensors["c"] = graph.addVariable(type, {arraySize}, "c");
-        tensors["sum"] = graph.addVariable(type, {}, "sum");
-        tensors["partialSumsPerWorker"] = graph.addVariable(type, {totalWorkersThatWillBeUsed},
+        tensors["sum"] = graph.addVariable(FLOAT, {}, "sum");
+        tensors["partialSumsPerWorker"] = graph.addVariable(FLOAT, {totalWorkersThatWillBeUsed},
                                                             "partialSumsPerWorker");
-        tensors["partialSumsPerTile"] = graph.addVariable(type, {totalTilesThatWillBeUsed}, "partialSumsPerTile");
-        tensors["alpha"] = graph.addConstant(type, {}, startScalar, "alpha");
+        tensors["partialSumsPerTile"] = graph.addVariable(FLOAT, {totalTilesThatWillBeUsed}, "partialSumsPerTile");
         graph.createHostRead("sum", tensors["sum"]);
-
+        graph.createHostWrite("initA", tensors["initA"]);
+        graph.createHostWrite("initB", tensors["initB"]);
+        graph.createHostWrite("initC", tensors["initC"]);
 
         auto idx = 0u;
-        for (auto tile = 0u; tile < totalTilesThatWillBeUsed; tile++) {
-            if (auto numItems = numItemsForTile(tile); numItems > 0) {
-                graph.setTileMapping(tensors["a"].slice(idx, idx + numItems), tile);
-                graph.setTileMapping(tensors["b"].slice(idx, idx + numItems), tile);
-                graph.setTileMapping(tensors["c"].slice(idx, idx + numItems), tile);
+        for (auto tile = 0u; tile < totalTilesThatWillBeUsed; tile++)
+        {
+            if (auto numItems = numItemsForTile(tile); numItems > 0)
+            {
+                graph.setTileMapping(tensors["a"].slice(idx, idx + numItems), (tile + 1) % totalTilesThatWillBeUsed );
+                graph.setTileMapping(tensors["b"].slice(idx, idx + numItems), (tile + 1) % totalTilesThatWillBeUsed );
+                graph.setTileMapping(tensors["c"].slice(idx, idx + numItems), (tile + 1) % totalTilesThatWillBeUsed );
                 idx += numItems;
-
             }
 
             graph.setTileMapping(tensors["partialSumsPerWorker"].slice(
-                    {tile * numWorkersPerTile}, {tile * numWorkersPerTile + numWorkersUsedOnTile(tile)}),
-                                 tile);
-            graph.setTileMapping(tensors["partialSumsPerTile"].slice(tile, tile + 1), tile);
-
+                                     {tile * numWorkersPerTile}, {tile * numWorkersPerTile + numWorkersUsedOnTile(tile)}),
+                                 (tile + 1) % totalTilesThatWillBeUsed );
+            graph.setTileMapping(tensors["partialSumsPerTile"].slice(tile, tile + 1), (tile + 1) % totalTilesThatWillBeUsed );
         }
         graph.setTileMapping(tensors["sum"], numTiles - 1);
-        graph.setTileMapping(tensors["alpha"], 0);
+        graph.setTileMapping(tensors["initA"], 0);
+        graph.setTileMapping(tensors["initB"], 0);
+        graph.setTileMapping(tensors["initC"], 0);
     }
 
-    void createDataStreams(poplar::Type type, Graph &graph) {
-        dataStreams["in_a"] = graph.addHostToDeviceFIFO("in_a", type, arraySize);
-        dataStreams["in_b"] = graph.addHostToDeviceFIFO("in_b", type, arraySize);
-        dataStreams["in_c"] = graph.addHostToDeviceFIFO("in_c", type, arraySize);
+    void createDataStreams(poplar::Type type, Graph &graph)
+    {
+        // dataStreams["in_a"] = graph.addHostToDeviceFIFO("in_a", type, arraySize);
+        // dataStreams["in_b"] = graph.addHostToDeviceFIFO("in_b", type, arraySize);
+        // dataStreams["in_c"] = graph.addHostToDeviceFIFO("in_c", type, arraySize);
 
         dataStreams["out_a"] = graph.addDeviceToHostFIFO("out_a", type, arraySize);
         dataStreams["out_b"] = graph.addDeviceToHostFIFO("out_b", type, arraySize);
         dataStreams["out_c"] = graph.addDeviceToHostFIFO("out_c", type, arraySize);
     }
 
-    [[nodiscard]] const unsigned numWorkersNeeded(unsigned arraySize, unsigned numTiles, unsigned numWorkersPerTile) const {
+    [[nodiscard]] const unsigned numWorkersNeeded(unsigned arraySize, unsigned numTiles, unsigned numWorkersPerTile) const
+    {
         return std::min(
-                arraySize,
-                std::min(
-                        numTiles * numWorkersPerTile,
-                        unsigned(std::ceil(arraySize / (numWorkersPerTile * 1.0))) * 6
-                )
-        );
+            arraySize,
+            std::min(
+                numTiles * numWorkersPerTile,
+                unsigned(std::ceil(arraySize / (numWorkersPerTile * 1.0))) * 6));
     }
 
-    [[nodiscard]] const unsigned numTilesNeeded(unsigned arraySize, unsigned numTiles, unsigned numWorkersPerTile) const {
+    [[nodiscard]] const unsigned numTilesNeeded(unsigned arraySize, unsigned numTiles, unsigned numWorkersPerTile) const
+    {
         return std::min(numTiles, unsigned(std::ceil(arraySize / (numWorkersPerTile * 1.0))));
     }
 
 public:
-    PoplarStreamUtil(unsigned numTiles, unsigned numWorkersPerTile, unsigned arraySize) :
-            numTiles(numTiles),
-            numWorkersPerTile(numWorkersPerTile),
-            arraySize(arraySize),
-            totalTilesThatWillBeUsed(numTilesNeeded(arraySize, numTiles, numWorkersPerTile)),
-            totalWorkersThatWillBeUsed(numWorkersNeeded(arraySize, numTiles, numWorkersPerTile)) {
+    PoplarStreamUtil(unsigned numTiles, unsigned numWorkersPerTile, unsigned arraySize) : numTiles(numTiles),
+                                                                                          numWorkersPerTile(numWorkersPerTile),
+                                                                                          arraySize(arraySize),
+                                                                                          totalTilesThatWillBeUsed(numTilesNeeded(arraySize, numTiles, numWorkersPerTile)),
+                                                                                          totalWorkersThatWillBeUsed(numWorkersNeeded(arraySize, numTiles, numWorkersPerTile))
+    {
     }
 
-    template<typename T>
-    std::unique_ptr <Engine> prepareEngine(const Device &device,
-                                           const Graph &graph,
-                                           void *a,
-                                           void *b,
-                                           void *c);
+    std::unique_ptr<Engine> prepareEngine(const Device &device,
+                                          const Graph &graph,
+                                          void *a,
+                                          void *b,
+                                          void *c)
+    {
+        assert(!programs.empty());
+        auto engine = std::make_unique<Engine>(graph, programs, POPLAR_ENGINE_OPTIONS);
 
+        // engine->connectStream("in_a", a);
+        // engine->connectStream("in_b", b);
+        // engine->connectStream("in_c", c);
 
-    void buildComputeGraph(poplar::Type type, Graph &graph) {
+        engine->connectStream("out_a", a);
+        engine->connectStream("out_b", b);
+        engine->connectStream("out_c", c);
+
+        engine->load(device);
+
+        return std::move(engine);
+    }
+
+    void buildComputeGraph(poplar::Type type, Graph &graph)
+    {
         // Set up data streams to copy data in and out of graph
-        createDataStreams(type, graph);
+        auto typeStr = type == FLOAT ? "<float>" : "<half>";
 
+        createDataStreams(type, graph);
 
         createAndLayOutTensors(type, graph);
 
+        // auto StreamToDeviceProg = Sequence(Copy(dataStreams["in_a"], tensors["a"]),
+        //                                    Copy(dataStreams["in_b"], tensors["b"]),
+        //                                    Copy(dataStreams["in_c"], tensors["c"]));
+        auto InitProg = initProgram(typeStr, graph);
 
-        auto StreamToDeviceProg = Sequence(Copy(dataStreams["in_a"], tensors["a"]),
-                                           Copy(dataStreams["in_b"], tensors["b"]),
-                                           Copy(dataStreams["in_c"], tensors["c"]));
-
-        auto CopyProg = copyProgram(graph);
-        auto MulProg = mulProgram(graph);
-        auto AddProg = addProgram(graph);
-        auto TriadProg = triadProgram(graph);
-        auto DotProg = dotProdProgram(graph);
+        //auto CopyProg = copyProgram(graph);
+        auto CopyProg = Copy(tensors["a"], tensors["c"]);
+        auto MulProg = mulProgram(typeStr, graph);
+        auto AddProg = addProgram(typeStr, graph);
+        auto TriadProg = triadProgram(typeStr, graph);
+        auto DotProg = dotProdProgram(typeStr, graph);
 
         auto StreamToHostProg = Sequence(Copy(tensors["a"], dataStreams["out_a"]),
                                          Copy(tensors["b"], dataStreams["out_b"]),
                                          Copy(tensors["c"], dataStreams["out_c"]));
 
-        programs = {StreamToDeviceProg, CopyProg, MulProg, AddProg, TriadProg, DotProg,
+        programs = {InitProg, CopyProg, MulProg, AddProg, TriadProg, DotProg,
                     StreamToHostProg};
-
-
     }
-
-
 };
 
-template<typename T>
-std::unique_ptr <Engine> PoplarStreamUtil::prepareEngine(const Device &device,
-                                                         const Graph &graph,
-                                                         void *a,
-                                                         void *b,
-                                                         void *c) {
-    assert(!programs.empty());
-    auto engine = std::make_unique<Engine>(graph, programs, POPLAR_ENGINE_OPTIONS);
-
-
-    engine->connectStream("in_a", a);
-    engine->connectStream("in_b", b);
-    engine->connectStream("in_c", c);
-
-    engine->connectStream("out_a", a);
-    engine->connectStream("out_b", b);
-    engine->connectStream("out_c", c);
-
-
-    engine->load(device);
-
-    return std::move(engine);
-}
-
-
-template<class T>
-PoplarStream<T>::PoplarStream(const unsigned int arraySize, const int device_num):
-    arraySize(arraySize),
-    a(std::unique_ptr<T[]>(new T[arraySize]())),
-    b(std::unique_ptr<T[]>(new T[arraySize]())),
-    c(std::unique_ptr<T[]>(new T[arraySize]())) {
+template <class T>
+PoplarStream<T>::PoplarStream(const unsigned int arraySize, const int device_num, const bool halfPrecision) : arraySize(arraySize),
+                                                                                                              halfPrecision(halfPrecision),
+                                                                                                              a(std::unique_ptr<T[]>(new T[arraySize]())),
+                                                                                                              b(std::unique_ptr<T[]>(new T[arraySize]())),
+                                                                                                              c(std::unique_ptr<T[]>(new T[arraySize]()))
+{
 
     auto device = getIpuDevice(device_num);
 
-    if (!device.has_value()) {
+    if (!device.has_value())
+    {
         throw std::runtime_error("Could not allocate IPU device");
     }
 
@@ -424,97 +530,112 @@ PoplarStream<T>::PoplarStream(const unsigned int arraySize, const int device_num
     const auto maxBytesPerTile = graph.getTarget().getBytesPerTile();
     const auto clockFrequency = graph.getTarget().getTileClockFrequency();
 
-    std::cout << "Using IPU with " << numTiles << " tiles, each with " << numWorkers <<
-              " workers and " << maxBytesPerTile / 1024 << "KB of memory per tile, and clock frequency " <<
-              (int) clockFrequency / 1000 / 1000 << " MHz" << std::endl;
+    const auto maxArraySize = ((double)numTiles) * maxBytesPerTile / 1024.0 / 1024.0 / 3;
 
+    std::cout << "Using IPU with " << numTiles << " tiles, each with " << numWorkers
+              << " workers and " << maxBytesPerTile / 1024 << "KB of memory per tile, and clock frequency "
+              << (int)clockFrequency / 1000 / 1000 << " MHz. Maximum array size will be slightly less than "
+              << std::fixed << std::setprecision(2) << std::floor(maxArraySize) << " MB"
+              << std::endl;
 
     auto util = PoplarStreamUtil(numTiles, numWorkers, arraySize);
 
     graph.addCodelets("PoplarKernels.cpp");
 
-    if (sizeof(T) > sizeof(float)) {
+    if (sizeof(T) > sizeof(float))
+    {
         throw std::runtime_error("Device does not support double precision, please use --float");
     }
 
     // Check buffers fit on the device
-    unsigned long maxbuffer = numTiles * maxBytesPerTile;
-    unsigned long totalmem = numTiles * maxBytesPerTile;
-    if (maxbuffer < sizeof(T) * arraySize)
+    size_t sizeT = (sizeof(T) == sizeof(float) && halfPrecision) ? sizeof(T) / 2 : sizeof(T);
+    unsigned long maxbuffer = ((unsigned long)numTiles) * maxBytesPerTile;
+    unsigned long totalmem = ((unsigned long)numTiles) * maxBytesPerTile;
+    if (maxbuffer < sizeT * ((unsigned long)arraySize))
         throw std::runtime_error("Device cannot allocate a buffer big enough");
-    if (totalmem < 3 * sizeof(T) * arraySize)
+    if (totalmem < 3L * sizeT * arraySize)
         throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
-
-    util.buildComputeGraph(FLOAT, graph);
-    engine = util.prepareEngine<float>(device.value(), graph, a.get(), b.get(), c.get());
+    util.buildComputeGraph(halfPrecision ? HALF : FLOAT, graph);
+    engine = util.prepareEngine(device.value(), graph, a.get(), b.get(), c.get());
 }
 
-
-template<class T>
+template <class T>
 PoplarStream<T>::~PoplarStream() = default;
 
-template<class T>
-void PoplarStream<T>::copy() {
+template <class T>
+void PoplarStream<T>::copy()
+{
     engine->run(COPY_PROGRAM);
 }
 
-template<class T>
-void PoplarStream<T>::mul() {
+template <class T>
+void PoplarStream<T>::mul()
+{
     engine->run(MUL_PROGRAM);
 }
 
-template<class T>
-void PoplarStream<T>::add() {
+template <class T>
+void PoplarStream<T>::add()
+{
     engine->run(ADD_PROGRAM);
 }
 
-template<class T>
-void PoplarStream<T>::triad() {
+template <class T>
+void PoplarStream<T>::triad()
+{
     engine->run(TRIAD_PROGRAM);
 }
 
-template<class T>
-T PoplarStream<T>::dot() {
+template <class T>
+T PoplarStream<T>::dot()
+{
     engine->run(DOT_PROGRAM);
     engine->readTensor("sum", &sum);
     return sum;
 }
 
-template<class T>
-void PoplarStream<T>::init_arrays(T initA, T initB, T initC) {
-    for (unsigned i = 0; i < this->arraySize; i++) {
-        a[i] = initA;
-        b[i] = initB;
-        c[i] = initC;
-    }
+template <class T>
+void PoplarStream<T>::init_arrays(T initA, T initB, T initC)
+{
 
-    engine->run(STREAM_TO_DEVICE_PROGRAM);
+    if (halfPrecision)
+    {
+        const uint32_t fakeA = toHalf(initA);
+        const uint32_t fakeB = toHalf(initB);
+        const uint32_t fakeC = toHalf(initC);
+
+        engine->writeTensor("initA", &fakeA);
+        engine->writeTensor("initB", &fakeB);
+        engine->writeTensor("initC", &fakeC);
+    }
+    else
+    {
+        engine->writeTensor("initA", &initA);
+        engine->writeTensor("initB", &initB);
+        engine->writeTensor("initC", &initC);
+    }
+    engine->run(INIT_PROGRAM);
 }
 
-
-template<class T>
-void PoplarStream<T>::read_arrays(std::vector <T> &h_a, std::vector <T> &h_b, std::vector <T> &h_c) {
+template <class T>
+void PoplarStream<T>::read_arrays(std::vector<T> &h_a, std::vector<T> &h_b, std::vector<T> &h_c)
+{
 
     engine->run(STREAM_BACK_TO_HOST_PROGRAM);
 
-
-    for (unsigned i = 0; i < arraySize; i++) {
+    for (unsigned i = 0; i < arraySize; i++)
+    {
         h_a[i] = a[i];
         h_b[i] = b[i];
         h_c[i] = c[i];
-
     }
 
-    //engine->printProfileSummary(std::cout,
-    //                          OptionFlags{{"showExecutionSteps", "false"}});
+    // captureProfileInfo(*engine);
+    // engine->printProfileSummary(std::cout,
+    //                          OptionFlags{{"showExecutionSteps", "true"}});
 }
 
+template class PoplarStream<float>;
 
-template
-class PoplarStream<float>;
-
-template
-class PoplarStream<double>;
-
-
+template class PoplarStream<double>; // Not usable, but needs to exist for stream.cpp

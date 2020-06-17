@@ -19,3 +19,11 @@ poplar-stream
 .DS_Store
 
 Makefile
+
+vars.capnp
+graph.json
+execution.json
+*.csv
+arhive.a
+*.gp
+popops-stream

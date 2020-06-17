@@ -25,6 +25,7 @@ class PoplarStream : public Stream<T> {
 
 protected:
     unsigned int arraySize;
+    const bool halfPrecision;
     T sum = 0;
     std::unique_ptr <poplar::Engine> engine;
     std::unique_ptr<T[]> a;
@@ -33,7 +34,7 @@ protected:
 
 public:
 
-    PoplarStream(const unsigned int, const int);
+    PoplarStream(const unsigned int, const int, const bool halfPrecision);
 
     ~PoplarStream();
 

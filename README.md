@@ -94,15 +94,18 @@ For a single IPU (with 1216 tiles), the largest array size we used was 16185000.
 
 Run with
 ```
-./poplar-stream --arraysize 16185000  --device 0  --float 
+./poplar-stream --arraysize 16185000  --device 1  --float 
 ```
+
+You can run on multiple IPU targets (such as the 2 IPUs on 1 C2 IPU Processor card) by selecting a device appropriately
+using the `--device` flag. The options are 2,4,8 or 16 for the respective number of IPUs.
 
 You can run the Poplar program on a CPU target, but as of v1.1.11 this only gives you 1 tile with 256Kb of 
 memory. The largest array size we used was 21845.
 
 Run with
 ```
-./poplar-stream --arraysize 21845  --device 1  --float 
+./poplar-stream --arraysize 21845  --device 0  --float 
 ```
 
 Results
