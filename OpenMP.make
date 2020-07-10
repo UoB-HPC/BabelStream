@@ -32,7 +32,7 @@ CXX = $(COMPILER_$(COMPILER))
 
 FLAGS_GNU = -O3 -std=c++11 -march=native
 FLAGS_INTEL = -O3 -std=c++11 -xHOST -qopt-streaming-stores=always
-FLAGS_CRAY = -O3 -hstd=c++11
+FLAGS_CRAY = -O3 -std=c++11
 FLAGS_CLANG = -O3 -std=c++11
 FLAGS_XL = -O5 -qarch=auto -qtune=auto -std=c++11
 FLAGS_PGI = -O3 -std=c++11
@@ -42,7 +42,7 @@ CXXFLAGS = $(FLAGS_$(COMPILER))
 # OpenMP flags for CPUs
 OMP_GNU_CPU   = -fopenmp
 OMP_INTEL_CPU = -qopenmp
-OMP_CRAY_CPU  = -homp
+OMP_CRAY_CPU  = -fopenmp
 OMP_CLANG_CPU = -fopenmp=libomp
 OMP_XL_CPU = -qsmp=omp -qthreaded
 OMP_PGI_CPU = -mp

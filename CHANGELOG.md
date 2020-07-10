@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Update local copy of OpenCL C++ header file.
 - Ensure correct SYCL queue constructor with explicit async_handler.
 - Use built in SYCL runtime device discovery.
+- Cray compiler OpenMP flags updated
 
 ### Removed
 - Pre-building of kernels in SYCL version to ensure compatibility with SYCL 1.2.1.
