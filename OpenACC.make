@@ -3,14 +3,13 @@ ifndef COMPILER
 define compiler_help
 Set COMPILER to ensure correct flags are set.
 Available compilers are:
-  PGI CRAY GNU
+  PGI GNU
 endef
 $(info $(compiler_help))
 endif
 
 COMPILER_ = $(CXX)
 COMPILER_PGI = pgc++
-COMPILER_CRAY = CC
 COMPILER_GNU = g++
 
 FLAGS_ = -O3 -std=c++11
@@ -48,7 +47,6 @@ FLAGS_PGI += $(TARGET_FLAGS_$(TARGET))
 
 endif
 
-FLAGS_CRAY = -hstd=c++11
 FLAGS_GNU = -O3 -std=c++11 -Drestrict=__restrict -fopenacc
 CXXFLAGS = $(FLAGS_$(COMPILER))
 
