@@ -61,14 +61,17 @@ The binaries are named in the form `<model>-stream`.
 Building Kokkos
 ---------------
 
-We use the following command to build Kokkos using the Intel Compiler, specifying the `arch` appropriately, e.g. `KNL`.
+Kokkos version >= 3 requires setting the `KOKKOS_PATH` flag to the *source* directory of a distribution. 
+For example:
+
 ```
-../generate_makefile.bash --prefix=<prefix> --with-openmp --with-pthread --arch=<arch> --compiler=icpc --cxxflags=-DKOKKOS_MEMORY_ALIGNMENT=2097152
+cd 
+wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
+tar -xvf 3.1.01.tar.gz # should end up with ~/kokkos-3.1.01
+cd BabelStream
+make -f Kokkos.make KOKKOS_PATH=~/kokkos-3.1.01 
 ```
-For building with CUDA support, we use the following command, specifying the `arch` appropriately, e.g. `Kepler35`.
-```
-../generate_makefile.bash --prefix=<prefix> --with-cuda --with-openmp --with-pthread --arch=<arch> --with-cuda-options=enable_lambda --compiler=<path_to_kokkos_src>/bin/nvcc_wrapper
-```
+See make output for more information on supported flags.
 
 Building RAJA
 -------------

@@ -1,7 +1,36 @@
 
 default: kokkos-stream
 
-include $(KOKKOS_PATH)/Makefile.kokkos
+ifndef DEVICE
+define device_help
+Set DEVICE to change flags (defaulting to OpenMP).
+Available devices are:
+  OpenMP, Serial, Pthreads, Cuda
+
+endef
+$(info $(device_help))
+DEVICE="OpenMP"
+endif
+KOKKOS_DEVICES="$(DEVICE)"
+
+ifndef ARCH
+define arch_help
+Set ARCH to change flags (defaulting to empty).
+Available architectures are:
+  AMDAVX
+  ARMv80 ARMv81 ARMv8-ThunderX
+  BGQ Power7 Power8 Power9
+  WSM SNB HSW BDW SKX KNC KNL 
+  Kepler30 Kepler32 Kepler35 Kepler37 
+  Maxwell50 Maxwell52 Maxwell53 
+  Pascal60 Pascal61 
+  Volta70 Volta72
+
+endef
+$(info $(arch_help))
+ARCH=""
+endif
+KOKKOS_ARCH="$(ARCH)"
 
 ifndef COMPILER
 define compiler_help
@@ -34,14 +63,19 @@ CXX = $(NVCC_WRAPPER)
 endif
 
 OBJ = main.o KokkosStream.o
+CXXFLAGS = -O3 
+LINKFLAGS = # empty for now
 
-kokkos-stream: $(OBJ) $(KOKKOS_CPP_DEPENDS)
-	$(CXX) $(KOKKOS_LDFLAGS) -DKOKKOS -O3 $(EXTRA_FLAGS) $(OBJ) $(KOKKOS_LIBS) -o $@
 
-%.o: %.cpp
-	$(CXX) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DKOKKOS -O3 $(EXTRA_FLAGS) -c $<
+include $(KOKKOS_PATH)/Makefile.kokkos
+
+kokkos-stream: $(OBJ) $(KOKKOS_LINK_DEPENDS)
+	$(CXX) $(KOKKOS_LDFLAGS) $(LINKFLAGS) $(EXTRA_PATH) $(OBJ) $(KOKKOS_LIBS) $(LIB) -DKOKKOS -o $@
+
+%.o: %.cpp $(KOKKOS_CPP_DEPENDS)
+	$(CXX) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(CXXFLAGS) $(EXTRA_INC) -DKOKKOS -c $<
 
 .PHONY: clean
 clean:
-	rm -f kokkos-stream main.o KokkosStream.o
+	rm -f kokkos-stream main.o KokkosStream.o Kokkos_*.o
 
