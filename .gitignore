@@ -13,6 +13,9 @@ hip-stream
 *.sycl
 *.tar
 *.gz
+*.a
+
+KokkosCore_config.*
 
 .DS_Store
 
