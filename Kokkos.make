@@ -36,15 +36,18 @@ ifndef COMPILER
 define compiler_help
 Set COMPILER to change flags (defaulting to GNU).
 Available compilers are:
-  GNU INTEL
+  GNU INTEL CRAY PGI ARMCLANG
 
 endef
 $(info $(compiler_help))
 COMPILER=GNU
 endif
 
+COMPILER_ARMCLANG = armclang++
 COMPILER_GNU = g++
 COMPILER_INTEL = icpc -qopt-streaming-stores=always
+COMPILER_CRAY = CC
+COMPILER_PGI = pgc++
 CXX = $(COMPILER_$(COMPILER))
 
 ifndef TARGET
@@ -66,6 +69,14 @@ OBJ = main.o KokkosStream.o
 CXXFLAGS = -O3 
 LINKFLAGS = # empty for now
 
+
+
+ifeq ($(COMPILER), GNU)
+ifeq ($(DEVICE), OpenMP)
+CXXFLAGS += -fopenmp
+LINKFLAGS += -fopenmp
+endif 
+endif
 
 include $(KOKKOS_PATH)/Makefile.kokkos
 

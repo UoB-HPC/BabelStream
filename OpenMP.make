@@ -3,7 +3,7 @@ ifndef COMPILER
 define compiler_help
 Set COMPILER to change flags (defaulting to GNU).
 Available compilers are:
-  CLANG CRAY GNU INTEL XL PGI NEC
+  CLANG CRAY GNU INTEL XL PGI NEC ARMCLANG
 
 endef
 $(info $(compiler_help))
@@ -21,6 +21,7 @@ $(info $(target_help))
 TARGET=CPU
 endif
 
+COMPILER_ARMCLANG = armclang++
 COMPILER_GNU = g++
 COMPILER_INTEL = icpc
 COMPILER_CRAY = CC
