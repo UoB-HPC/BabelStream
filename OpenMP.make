@@ -41,6 +41,7 @@ FLAGS_NEC = -O4 -finline -std=c++11
 CXXFLAGS = $(FLAGS_$(COMPILER))
 
 # OpenMP flags for CPUs
+OMP_ARMCLANG_CPU   = -fopenmp
 OMP_GNU_CPU   = -fopenmp
 OMP_INTEL_CPU = -qopenmp
 OMP_CRAY_CPU  = -fopenmp
