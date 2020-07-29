@@ -3,7 +3,9 @@ ifndef COMPILER
 define compiler_help
 Set COMPILER to change flags (defaulting to GNU).
 Available compilers are:
-  CLANG CRAY GNU INTEL XL PGI NEC ARMCLANG
+  CLANG CRAY GNU GNU_PPC INTEL XL PGI NEC ARMCLANG 
+
+Note: GCC on PPC requires -mcpu=native instead of -march=native so we have a special case for it
 
 endef
 $(info $(compiler_help))
@@ -23,6 +25,7 @@ endif
 
 COMPILER_ARMCLANG = armclang++
 COMPILER_GNU = g++
+COMPILER_GNU_PPC = g++
 COMPILER_INTEL = icpc
 COMPILER_CRAY = CC
 COMPILER_CLANG = clang++
@@ -32,6 +35,7 @@ COMPILER_NEC = /opt/nec/ve/bin/nc++
 CXX = $(COMPILER_$(COMPILER))
 
 FLAGS_GNU = -O3 -std=c++11 -march=native
+FLAGS_GNU_PPC = -O3 -std=c++11 -mcpu=native
 FLAGS_INTEL = -O3 -std=c++11 -xHOST -qopt-streaming-stores=always
 FLAGS_CRAY = -O3 -std=c++11
 FLAGS_CLANG = -O3 -std=c++11
@@ -43,6 +47,7 @@ CXXFLAGS = $(FLAGS_$(COMPILER))
 # OpenMP flags for CPUs
 OMP_ARMCLANG_CPU   = -fopenmp
 OMP_GNU_CPU   = -fopenmp
+OMP_GNU_PPC_CPU = -fopenmp
 OMP_INTEL_CPU = -qopenmp
 OMP_CRAY_CPU  = -fopenmp
 OMP_CLANG_CPU = -fopenmp=libomp
