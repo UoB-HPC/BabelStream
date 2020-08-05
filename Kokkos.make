@@ -5,7 +5,7 @@ ifndef DEVICE
 define device_help
 Set DEVICE to change flags (defaulting to OpenMP).
 Available devices are:
-  OpenMP, Serial, Pthreads, Cuda
+  OpenMP, Serial, Pthreads, Cuda, HIP
 
 endef
 $(info $(device_help))
@@ -36,7 +36,9 @@ ifndef COMPILER
 define compiler_help
 Set COMPILER to change flags (defaulting to GNU).
 Available compilers are:
-  GNU INTEL CRAY PGI ARMCLANG
+  GNU INTEL CRAY PGI ARMCLANG HIPCC
+
+  Note: you may have to do `export CXX=\path\to\hipcc` in case Kokkos detects the wrong compiler
 
 endef
 $(info $(compiler_help))
@@ -44,6 +46,7 @@ COMPILER=GNU
 endif
 
 COMPILER_ARMCLANG = armclang++
+COMPILER_HIPCC = hipcc
 COMPILER_GNU = g++
 COMPILER_INTEL = icpc -qopt-streaming-stores=always
 COMPILER_CRAY = CC
@@ -56,6 +59,9 @@ Set TARGET to change to offload device. Defaulting to CPU.
 Available targets are:
   CPU (default)
   GPU
+
+  Note: Use CPU or leave default if compiling with HIPCC
+
 endef
 $(info $(target_help))
 TARGET=CPU
