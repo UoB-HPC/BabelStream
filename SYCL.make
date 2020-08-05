@@ -63,6 +63,7 @@ SYCL_HIPSYCL_CXX = $(SYCL_HIPSYCL_SYCLCXX)
 
 
 SYCL_DPCPP_SYCLFLAGS_CPU = -O3 --std=c++17
+SYCL_DPCPP_SYCLFLAGS_NVIDIA = -O3 --std=c++17 -fsycl -fsycl-targets=nvptx64-nvidia-cuda-sycldevice -fsycl-unnamed-lambda
 SYCL_DPCPP_SYCLCXX = dpcpp
 SYCL_DPCPP_FLAGS = $(SYCL_DPCPP_SYCLFLAGS_CPU)
 SYCL_DPCPP_LINK_FLAGS =  
