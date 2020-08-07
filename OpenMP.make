@@ -16,7 +16,7 @@ ifndef TARGET
 define target_help
 Set TARGET to change device (defaulting to CPU).
 Available targets are:
-  CPU NVIDIA AMD INTEL_GT
+  CPU NVIDIA AMD INTEL_GPU
 
 endef
 $(info $(target_help))
@@ -62,7 +62,7 @@ OMP_GNU_NVIDIA = -DOMP_TARGET_GPU -fopenmp -foffload=nvptx-none
 OMP_GNU_AMD = -DOMP_TARGET_GPU -fopenmp -foffload=amdgcn-amdhsa
 
 OMP_INTEL_CPU = -xHOST -qopt-streaming-stores=always
-OMP_INTEL_INTEL_GT = -DOMP_TARGET_GPU -qnextgen -fiopenmp -fopenmp-targets=spir64
+OMP_INTEL_INTEL_GPU = -DOMP_TARGET_GPU -qnextgen -fiopenmp -fopenmp-targets=spir64
 
 ifndef OMP_$(COMPILER)_$(TARGET)
 $(error Targeting $(TARGET) with $(COMPILER) not supported)

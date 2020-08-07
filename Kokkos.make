@@ -60,15 +60,15 @@ Available targets are:
   CPU (default)
   GPU
 
-  Note: Use CPU or leave default if compiling with HIPCC
-
 endef
 $(info $(target_help))
 TARGET=CPU
 endif
 
 ifeq ($(TARGET), GPU)
+ifneq ($(COMPILER), HIPCC)
 CXX = $(NVCC_WRAPPER)
+endif
 endif
 
 OBJ = main.o KokkosStream.o
