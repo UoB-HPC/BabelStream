@@ -43,6 +43,7 @@ FLAGS_XL = -O5 -qarch=auto -qtune=auto -std=c++11
 FLAGS_PGI = -O3 -std=c++11
 FLAGS_NEC = -O4 -finline -std=c++11
 CXXFLAGS = $(FLAGS_$(COMPILER))
+FLAGS_ARMCLANG = -O3 -std=c++11
 
 # OpenMP flags for CPUs
 OMP_ARMCLANG_CPU   = -fopenmp
