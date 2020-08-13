@@ -3,7 +3,7 @@ ifndef COMPILER
 define compiler_help
 Set COMPILER to change flags (defaulting to GNU).
 Available compilers are:
-  CLANG CRAY GNU GNU_PPC INTEL XL PGI NEC ARMCLANG 
+  CLANG CRAY GNU GNU_PPC INTEL XL PGI NEC ARMCLANG AOMP
 
 Note: GCC on PPC requires -mcpu=native instead of -march=native so we have a special case for it
 
@@ -32,6 +32,7 @@ COMPILER_CLANG = clang++
 COMPILER_XL = xlc++
 COMPILER_PGI = pgc++
 COMPILER_NEC = /opt/nec/ve/bin/nc++
+COMPILER_AOMP = clang++
 CXX = $(COMPILER_$(COMPILER))
 
 FLAGS_GNU = -O3 -std=c++11 -march=native
@@ -43,6 +44,7 @@ FLAGS_XL = -O5 -qarch=auto -qtune=auto -std=c++11
 FLAGS_PGI = -O3 -std=c++11
 FLAGS_NEC = -O4 -finline -std=c++11
 FLAGS_ARMCLANG = -O3 -std=c++11
+FLAGS_AOMP = -O3 -std=c++11
 CXXFLAGS = $(FLAGS_$(COMPILER))
 
 # OpenMP flags for CPUs
@@ -64,6 +66,8 @@ OMP_GNU_AMD = -DOMP_TARGET_GPU -fopenmp -foffload=amdgcn-amdhsa
 
 OMP_INTEL_CPU = -xHOST -qopt-streaming-stores=always
 OMP_INTEL_INTEL_GPU = -DOMP_TARGET_GPU -qnextgen -fiopenmp -fopenmp-targets=spir64
+
+OMP_AOMP_GPU = -DOMP_TARGET_GPU -fopenmp -fopenmp-targets=amdgcn-amd-amdhsa -Xopenmp-target=amdgcn-amd-amdhsa -march=gfx906
 
 ifndef OMP_$(COMPILER)_$(TARGET)
 $(error Targeting $(TARGET) with $(COMPILER) not supported)
