@@ -19,16 +19,21 @@ CXXFLAGS=$(FLAGS_$(COMPILER))
 PLATFORM = $(shell uname -s)
 LIBS = -lpoplar -lpopops -lpoputil
 
+
+.PHONY: all
+all: poplar-stream popops-stream poplar-stream-vectorised
+
+.PHONY: clean
+clean:
+	rm -f poplar-stream popops-stream poplar-stream-vectorised PoplarKernels.gc
+
 poplar-stream: main.cpp PoplarStream.cpp 
 	$(CXX) $(CXXFLAGS) -DPOPLAR $^ $(EXTRA_FLAGS) $(LIBS) -o $@
+
+poplar-stream-vectorised: main.cpp PoplarStream.cpp 
+	$(CXX) $(CXXFLAGS) -DPOPLAR -DVECTORISED=true $^ $(EXTRA_FLAGS) $(LIBS) -o $@	
 
 popops-stream: main.cpp PopopsStream.cpp 
 	$(CXX) $(CXXFLAGS) -DPOPLAR $^ $(EXTRA_FLAGS) $(LIBS) -o $@
 
 
-.PHONY: all
-all: poplar-stream popops-stream
-
-.PHONY: clean
-clean:
-	rm -f poplar-stream PoplarKernels.gc

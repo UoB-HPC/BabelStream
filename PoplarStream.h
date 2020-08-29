@@ -28,6 +28,7 @@ protected:
     const bool halfPrecision;
     T sum = 0;
     std::unique_ptr <poplar::Engine> engine;
+    poplar::Target target;
     std::unique_ptr<T[]> a;
     std::unique_ptr<T[]> b;
     std::unique_ptr<T[]> c;
@@ -51,6 +52,7 @@ public:
     virtual void init_arrays(T initA, T initB, T initC) override;
 
     virtual void read_arrays(std::vector <T> &a, std::vector <T> &b, std::vector <T> &c) override;
+    virtual void copyArrays(const T *src, T *dst);
 
 };
 

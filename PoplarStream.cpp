@@ -7,6 +7,7 @@
 
 #include "PoplarStream.h"
 #include <poplar/Engine.hpp>
+#include <poplar/Target.hpp>
 #include <poplar/DeviceManager.hpp>
 #include <poplin/codelets.hpp>
 #include <map>
@@ -30,17 +31,19 @@ enum Programs
     STREAM_BACK_TO_HOST_PROGRAM
 };
 
-// const OptionFlags POPLAR_ENGINE_OPTIONS{
-//         {"target.saveArchive",                "archive.a"},
-//         {"debug.instrument",                  "true"},
-//         {"debug.instrumentCompute",           "true"},
-//         {"debug.loweredVarDumpFile",          "vars.capnp"},
-//         {"debug.instrumentControlFlow",       "true"},
-//         {"debug.computeInstrumentationLevel", "tile"}
-// };
-
+#ifdef DEBUG
+const OptionFlags POPLAR_ENGINE_OPTIONS{
+    {"target.saveArchive", "archive.a"},
+    {"debug.instrument", "true"},
+    {"debug.instrumentCompute", "true"},
+    {"debug.loweredVarDumpFile", "vars.capnp"},
+    {"debug.instrumentControlFlow", "true"},
+    {"debug.computeInstrumentationLevel", "tile"}};
+#else
 const OptionFlags POPLAR_ENGINE_OPTIONS{
     {"debug.instrument", "false"}};
+#endif
+
 
 // This is due to https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion,
 // and is an ultra-hacky way to convert the initial array values to half without having a full half library
@@ -106,38 +109,14 @@ void listDevices()
 
     // Attempt to attach to a single IPU:
     Device device;
-    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 1); !devices.empty())
+    auto multiIpu = std::array<unsigned, 4>{2, 4, 8, 16};
+    for (auto i : multiIpu)
     {
-        std::cout << 1 << ": "
-                  << "IPUDevice" << std::endl;
-    }
-
-    // Attempt to attach to 2 IPUs:
-    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 2); !devices.empty())
-    {
-        std::cout << 2 << ": "
-                  << "2x IPUDevices" << std::endl;
-    }
-
-    // Attempt to attach to 4 IPUs:
-    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 4); !devices.empty())
-    {
-        std::cout << 4 << ": "
-                  << "4x IPUDevices" << std::endl;
-    }
-
-    // Attempt to attach to 8 IPUs:
-    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 8); !devices.empty())
-    {
-        std::cout << 8 << ": "
-                  << "8x IPUDevices" << std::endl;
-    }
-
-    // Attempt to attach to 16 IPUs:
-    if (auto devices = manager.getDevices(poplar::TargetType::IPU, 16); !devices.empty())
-    {
-        std::cout << 16 << ": "
-                  << "16x IPUDevices" << std::endl;
+        if (auto devices = manager.getDevices(poplar::TargetType::IPU, i); !devices.empty())
+        {
+            std::cout << i << ": "
+                      << "IPUDevice" << std::endl;
+        }
     }
 }
 
@@ -203,13 +182,15 @@ private:
             const auto v = graph.addVertex(
                 cs,
                 "InitKernel" + templateStr,
-                {{"a", tensors["a"].slice({idx}, {idx + numItems}).flatten()},
-                 {"b", tensors["b"].slice({idx}, {idx + numItems}).flatten()},
-                 {"c", tensors["c"].slice({idx}, {idx + numItems}).flatten()},
-                 {"initA", tensors["initA"]},
-                 {"initB", tensors["initB"]},
-                 {"initC", tensors["initC"]},
-                 {"len", uint32_t(numItems)}});
+                {
+                    {"a", tensors["a"].slice({idx}, {idx + numItems}).flatten()},
+                    {"b", tensors["b"].slice({idx}, {idx + numItems}).flatten()},
+                    {"c", tensors["c"].slice({idx}, {idx + numItems}).flatten()},
+                    {"initA", tensors["initA"]},
+                    {"initB", tensors["initB"]},
+                    {"initC", tensors["initC"]},
+                });
+            graph.setInitialValue(v["size"], unsigned(numItems));
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
@@ -231,8 +212,9 @@ private:
             const auto v = graph.addVertex(cs,
                                            "CopyKernel" + templateStr,
                                            {{"a", tensors["a"].slice({idx}, {idx + numItems}).flatten()},
-                                            {"c", tensors["c"].slice({idx}, {idx + numItems}).flatten()},
-                                            {"len", uint32_t(numItems)}});
+                                            {"c", tensors["c"].slice({idx}, {idx + numItems}).flatten()}});
+            graph.setInitialValue(v["size"], unsigned(numItems));
+
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
@@ -257,9 +239,9 @@ private:
                 {
                     {"b", tensors["b"].slice({idx}, {idx + numItems})},
                     {"c", tensors["c"].slice({idx}, {idx + numItems})},
-                    {"len", (uint32_t)numItems},
-                    {"alpha", (float)startScalar},
                 });
+            graph.setInitialValue(v["size"], unsigned(numItems));
+            graph.setInitialValue(v["alpha"], float(startScalar));
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
@@ -281,10 +263,12 @@ private:
             const auto v = graph.addVertex(
                 cs,
                 "AddKernel" + templateStr,
-                {{"b", tensors["b"].slice({idx}, {idx + numItems})},
-                 {"a", tensors["a"].slice({idx}, {idx + numItems})},
-                 {"c", tensors["c"].slice({idx}, {idx + numItems})},
-                 {"len", (uint32_t)numItems}});
+                {
+                    {"b", tensors["b"].slice({idx}, {idx + numItems})},
+                    {"a", tensors["a"].slice({idx}, {idx + numItems})},
+                    {"c", tensors["c"].slice({idx}, {idx + numItems})},
+                });
+            graph.setInitialValue(v["size"], unsigned(numItems));
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
@@ -307,13 +291,13 @@ private:
             const auto v = graph.addVertex(
                 cs,
                 "TriadKernel" + templateStr,
-                {{"b", tensors["b"].slice({idx}, {idx + numItems})},
-                 {"a", tensors["a"].slice({idx}, {idx + numItems})},
-                 {"c", tensors["c"].slice({idx}, {idx + numItems})},
-                 {"alpha", (float)startScalar},
-                 {"len", (uint32_t)numItems}
-
+                {
+                    {"b", tensors["b"].slice({idx}, {idx + numItems})},
+                    {"a", tensors["a"].slice({idx}, {idx + numItems})},
+                    {"c", tensors["c"].slice({idx}, {idx + numItems})},
                 });
+            graph.setInitialValue(v["size"], unsigned(numItems));
+            graph.setInitialValue(v["alpha"], float(startScalar));
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
@@ -337,10 +321,10 @@ private:
                 {{"b", tensors["b"].slice({idx}, {idx + numItems})},
                  {"a", tensors["a"].slice({idx}, {idx + numItems})},
                  {"sum", tensors["partialSumsPerWorker"][tile * numWorkersPerTile +
-                                                         worker]},
-                 {"len", (uint32_t)numItems}
+                                                         worker]}
 
                 });
+            graph.setInitialValue(v["size"], unsigned(numItems));
             graph.setCycleEstimate(v, numItems);
             graph.setTileMapping(v, tile);
             idx += numItems;
@@ -354,12 +338,13 @@ private:
             const auto v = graph.addVertex(
                 partialReduxCs,
                 "ReduceSum",
-                {{"partialSums", tensors["partialSumsPerWorker"].slice(
-                                     {idx}, {idx + workersUsedOnThisTile})},
-                 {"sum", tensors["partialSumsPerTile"][tile]},
-                 {"len", (uint32_t)workersUsedOnThisTile}
-
+                {
+                    {"partialSums", tensors["partialSumsPerWorker"].slice(
+                                        {idx}, {idx + workersUsedOnThisTile})},
+                    {"sum", tensors["partialSumsPerTile"][tile]},
                 });
+            graph.setInitialValue(v["size"], unsigned(workersUsedOnThisTile));
+
             graph.setCycleEstimate(v, workersUsedOnThisTile);
             graph.setTileMapping(v, tile);
             idx += workersUsedOnThisTile;
@@ -370,10 +355,9 @@ private:
             finalReduxCs,
             "ReduceSum",
             {{"partialSums", tensors["partialSumsPerTile"]},
-             {"sum", tensors["sum"]},
-             {"len", (uint32_t)totalTilesThatWillBeUsed}
+             {"sum", tensors["sum"]}});
+        graph.setInitialValue(v["size"], unsigned(totalTilesThatWillBeUsed));
 
-            });
         graph.setCycleEstimate(v, numTiles);
         graph.setTileMapping(v, numTiles - 1);
 
@@ -385,9 +369,9 @@ private:
 
     void createAndLayOutTensors(poplar::Type type, Graph &graph)
     {
-        tensors["initA"] = graph.addVariable(type, {}, "initA");
-        tensors["initB"] = graph.addVariable(type, {}, "initB");
-        tensors["initC"] = graph.addVariable(type, {}, "initC");
+        tensors["initA"] = graph.addVariable(FLOAT, {}, "initA");
+        tensors["initB"] = graph.addVariable(FLOAT, {}, "initB");
+        tensors["initC"] = graph.addVariable(FLOAT, {}, "initC");
 
         tensors["a"] = graph.addVariable(type, {arraySize}, "a");
         tensors["b"] = graph.addVariable(type, {arraySize}, "b");
@@ -404,18 +388,26 @@ private:
         auto idx = 0u;
         for (auto tile = 0u; tile < totalTilesThatWillBeUsed; tile++)
         {
+            auto mapMem = [=]() -> unsigned {
+#ifdef MEM_ON_NEXT_TILE
+                return (tile + 1) % totalTilesThatWillBeUsed;
+#else
+                return tile;
+#endif
+            };
+
             if (auto numItems = numItemsForTile(tile); numItems > 0)
             {
-                graph.setTileMapping(tensors["a"].slice(idx, idx + numItems), (tile + 1) % totalTilesThatWillBeUsed );
-                graph.setTileMapping(tensors["b"].slice(idx, idx + numItems), (tile + 1) % totalTilesThatWillBeUsed );
-                graph.setTileMapping(tensors["c"].slice(idx, idx + numItems), (tile + 1) % totalTilesThatWillBeUsed );
+                graph.setTileMapping(tensors["a"].slice(idx, idx + numItems), mapMem());
+                graph.setTileMapping(tensors["b"].slice(idx, idx + numItems), mapMem());
+                graph.setTileMapping(tensors["c"].slice(idx, idx + numItems), mapMem());
                 idx += numItems;
             }
 
             graph.setTileMapping(tensors["partialSumsPerWorker"].slice(
                                      {tile * numWorkersPerTile}, {tile * numWorkersPerTile + numWorkersUsedOnTile(tile)}),
-                                 (tile + 1) % totalTilesThatWillBeUsed );
-            graph.setTileMapping(tensors["partialSumsPerTile"].slice(tile, tile + 1), (tile + 1) % totalTilesThatWillBeUsed );
+                                 mapMem());
+            graph.setTileMapping(tensors["partialSumsPerTile"].slice(tile, tile + 1), mapMem());
         }
         graph.setTileMapping(tensors["sum"], numTiles - 1);
         graph.setTileMapping(tensors["initA"], 0);
@@ -466,10 +458,6 @@ public:
         assert(!programs.empty());
         auto engine = std::make_unique<Engine>(graph, programs, POPLAR_ENGINE_OPTIONS);
 
-        // engine->connectStream("in_a", a);
-        // engine->connectStream("in_b", b);
-        // engine->connectStream("in_c", c);
-
         engine->connectStream("out_a", a);
         engine->connectStream("out_b", b);
         engine->connectStream("out_c", c);
@@ -482,19 +470,23 @@ public:
     void buildComputeGraph(poplar::Type type, Graph &graph)
     {
         // Set up data streams to copy data in and out of graph
-        auto typeStr = type == FLOAT ? "<float>" : "<half>";
+
+        auto typeStr1 = type == FLOAT ? "<float," : "<half,";
+#ifdef VECTORISED
+        auto typeStr2 = type == FLOAT ? "float2>" : "half4>";
+#else
+        auto typeStr2 = type == FLOAT ? "float>" : "half>";
+#endif
+
+        auto typeStr = std::string(typeStr1) + std::string(typeStr2);
 
         createDataStreams(type, graph);
 
         createAndLayOutTensors(type, graph);
 
-        // auto StreamToDeviceProg = Sequence(Copy(dataStreams["in_a"], tensors["a"]),
-        //                                    Copy(dataStreams["in_b"], tensors["b"]),
-        //                                    Copy(dataStreams["in_c"], tensors["c"]));
         auto InitProg = initProgram(typeStr, graph);
 
-        //auto CopyProg = copyProgram(graph);
-        auto CopyProg = Copy(tensors["a"], tensors["c"]);
+        auto CopyProg = copyProgram(typeStr, graph);
         auto MulProg = mulProgram(typeStr, graph);
         auto AddProg = addProgram(typeStr, graph);
         auto TriadProg = triadProgram(typeStr, graph);
@@ -523,6 +515,7 @@ PoplarStream<T>::PoplarStream(const unsigned int arraySize, const int device_num
     {
         throw std::runtime_error("Could not allocate IPU device");
     }
+    target = device->getTarget();
 
     Graph graph(device.value());
     const auto numTiles = graph.getTarget().getNumTiles();
@@ -540,7 +533,7 @@ PoplarStream<T>::PoplarStream(const unsigned int arraySize, const int device_num
 
     auto util = PoplarStreamUtil(numTiles, numWorkers, arraySize);
 
-    graph.addCodelets("PoplarKernels.cpp");
+    graph.addCodelets("PoplarKernels.cpp", CodeletFileType::Auto, "-O3");
 
     if (sizeof(T) > sizeof(float))
     {
@@ -618,22 +611,33 @@ void PoplarStream<T>::init_arrays(T initA, T initB, T initC)
     engine->run(INIT_PROGRAM);
 }
 
+
+
+template<> void PoplarStream<double>::copyArrays( const double *src, double *dst) {
+    std::memcpy(dst, src, arraySize * sizeof(double));
+}
+
+template<> void PoplarStream<float>::copyArrays(const float *src, float *dst) {
+    copyDeviceHalfToFloat(target, src, dst, arraySize);
+}
+
+
+
 template <class T>
 void PoplarStream<T>::read_arrays(std::vector<T> &h_a, std::vector<T> &h_b, std::vector<T> &h_c)
 {
 
     engine->run(STREAM_BACK_TO_HOST_PROGRAM);
+    copyArrays(a.get(), h_a.data());
+    copyArrays(b.get(), h_b.data());
+    copyArrays(c.get(), h_c.data());
 
-    for (unsigned i = 0; i < arraySize; i++)
-    {
-        h_a[i] = a[i];
-        h_b[i] = b[i];
-        h_c[i] = c[i];
-    }
 
-    // captureProfileInfo(*engine);
-    // engine->printProfileSummary(std::cout,
-    //                          OptionFlags{{"showExecutionSteps", "true"}});
+#ifdef DEBUG
+    captureProfileInfo(*engine);
+    engine->printProfileSummary(std::cout,
+                                OptionFlags{{"showExecutionSteps", "true"}});
+#endif
 }
 
 template class PoplarStream<float>;
