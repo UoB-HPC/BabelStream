@@ -31,16 +31,16 @@ class OCLStream : public Stream<T>
     // Host array for partial sums for dot kernel
     std::vector<T> sums;
 
+    // OpenCL objects
+    cl::Device device;
+    cl::Context context;
+    cl::CommandQueue queue;
+
     // Device side pointers to arrays
     cl::Buffer d_a;
     cl::Buffer d_b;
     cl::Buffer d_c;
     cl::Buffer d_sum;
-
-    // OpenCL objects
-    cl::Device device;
-    cl::Context context;
-    cl::CommandQueue queue;
 
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, T, T, T> *init_kernel;
     cl::KernelFunctor<cl::Buffer, cl::Buffer> *copy_kernel;
