@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Ensure correct SYCL queue constructor with explicit async_handler.
 - Use built in SYCL runtime device discovery.
 - Cray compiler OpenMP flags updated
+- Reorder OpenCL objects in class so destructors are called in safe order.
 
 ### Removed
 - Pre-building of kernels in SYCL version to ensure compatibility with SYCL 1.2.1.
