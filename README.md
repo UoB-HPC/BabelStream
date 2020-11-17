@@ -15,6 +15,7 @@ Currently implemented are:
   - CUDA
   - OpenACC
   - OpenMP 3 and 4.5
+  - C++ Parallel STL
   - Kokkos
   - RAJA
   - SYCL

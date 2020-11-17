@@ -21,6 +21,8 @@
 
 #if defined(CUDA)
 #include "CUDAStream.h"
+#elif defined(STD)
+#include "STDStream.h"
 #elif defined(HIP)
 #include "HIPStream.h"
 #elif defined(HC)
@@ -161,6 +163,10 @@ void run()
 #elif defined(KOKKOS)
   // Use the Kokkos implementation
   stream = new KokkosStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(STD)
+  // Use the STD implementation
+  stream = new STDStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
 
 #elif defined(ACC)
   // Use the OpenACC implementation
@@ -362,6 +368,10 @@ void run_triad()
 #elif defined(ACC)
   // Use the OpenACC implementation
   stream = new ACCStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+
+#elif defined(STD)
+  // Use the STD implementation
+  stream = new STDStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
 
 #elif defined(SYCL)
   // Use the SYCL implementation
