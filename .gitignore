@@ -5,6 +5,7 @@ omp-stream
 acc-stream
 raja-stream
 kokkos-stream
+std-stream
 sycl-stream
 hip-stream
 
