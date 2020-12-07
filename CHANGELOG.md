@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- New implementation using the C++ parallel STL.
+- New implementation using the C++ parallel STL (C++17).
+- New implementation using C++20 range factories and `for_each_n`.
 - Compiler options for OpenMP and OpenACC GNU offloading to NVIDIA and AMD.
 - Compiler options for Arm Clang added to OpenMP and Kokkos.
 - Kokkos 3 build system (No code changes made).

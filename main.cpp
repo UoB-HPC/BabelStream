@@ -23,6 +23,8 @@
 #include "CUDAStream.h"
 #elif defined(STD)
 #include "STDStream.h"
+#elif defined(STD20)
+#include "STD20Stream.hpp"
 #elif defined(HIP)
 #include "HIPStream.h"
 #elif defined(HC)
@@ -159,6 +161,10 @@ void run()
 #elif defined(STD)
   // Use the STD implementation
   stream = new STDStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(STD20)
+  // Use the C++20 implementation
+  stream = new STD20Stream<T>(ARRAY_SIZE, deviceIndex);
 
 #elif defined(ACC)
   // Use the OpenACC implementation
@@ -367,6 +373,10 @@ void run_triad()
 #elif defined(STD)
   // Use the STD implementation
   stream = new STDStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(STD20)
+  // Use the C++20 implementation
+  stream = new STD20Stream<T>(ARRAY_SIZE, deviceIndex);
 
 #elif defined(SYCL)
   // Use the SYCL implementation
