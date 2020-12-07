@@ -29,7 +29,7 @@ class OMPStream : public Stream<T>
     T *c;
 
   public:
-    OMPStream(const unsigned int, T*, T*, T*, int);
+    OMPStream(const unsigned int, int);
     ~OMPStream();
 
     virtual void copy() override;

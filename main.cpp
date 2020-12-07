@@ -170,7 +170,7 @@ void run()
 
 #elif defined(OMP)
   // Use the OpenMP implementation
-  stream = new OMPStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+  stream = new OMPStream<T>(ARRAY_SIZE, deviceIndex);
 
 #endif
 
@@ -374,7 +374,7 @@ void run_triad()
 
 #elif defined(OMP)
   // Use the OpenMP implementation
-  stream = new OMPStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+  stream = new OMPStream<T>(ARRAY_SIZE, deviceIndex);
 
 #endif
 

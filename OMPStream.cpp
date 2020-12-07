@@ -12,24 +12,22 @@
 #endif
 
 template <class T>
-OMPStream<T>::OMPStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int device)
+OMPStream<T>::OMPStream(const unsigned int ARRAY_SIZE, int device)
 {
   array_size = ARRAY_SIZE;
 
-#ifdef OMP_TARGET_GPU
-  omp_set_default_device(device);
-  // Set up data region on device
-  this->a = a;
-  this->b = b;
-  this->c = c;
-  #pragma omp target enter data map(alloc: a[0:array_size], b[0:array_size], c[0:array_size])
-  {}
-#else
   // Allocate on the host
   this->a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
   this->b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
   this->c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+
+#ifdef OMP_TARGET_GPU
+  omp_set_default_device(device);
+  // Set up data region on device
+  #pragma omp target enter data map(alloc: a[0:array_size], b[0:array_size], c[0:array_size])
+  {}
 #endif
+
 }
 
 template <class T>
@@ -43,11 +41,10 @@ OMPStream<T>::~OMPStream()
   T *c = this->c;
   #pragma omp target exit data map(release: a[0:array_size], b[0:array_size], c[0:array_size])
   {}
-#else
+#endif
   free(a);
   free(b);
   free(c);
-#endif
 }
 
 template <class T>
@@ -78,13 +75,15 @@ void OMPStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void OMPStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
+
 #ifdef OMP_TARGET_GPU
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
   #pragma omp target update from(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
-#else
+#endif
+
   #pragma omp parallel for
   for (int i = 0; i < array_size; i++)
   {
@@ -92,7 +91,7 @@ void OMPStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
     h_b[i] = b[i];
     h_c[i] = c[i];
   }
-#endif
+
 }
 
 template <class T>
