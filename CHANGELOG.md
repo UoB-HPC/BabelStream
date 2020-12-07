@@ -17,7 +17,8 @@ All notable changes to this project will be documented in this file.
 - Update local copy of OpenCL C++ header file.
 - Ensure correct SYCL queue constructor with explicit async_handler.
 - Use built in SYCL runtime device discovery.
-- Cray compiler OpenMP flags updated
+- Cray compiler OpenMP flags updated.
+- Clang compiler OpenMP flags corrected for NVIDIA target.
 - Reorder OpenCL objects in class so destructors are called in safe order.
 
 ### Removed

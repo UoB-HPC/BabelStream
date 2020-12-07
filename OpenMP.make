@@ -23,6 +23,22 @@ $(info $(target_help))
 TARGET=CPU
 endif
 
+ifeq ("$(COMPILER)", "CLANG")
+  ifdef TARGET
+    ifeq ("$(TARGET)", "NVIDIA")
+      ifndef NVARCH
+        define nvarch_help
+        Set NVARCH to select sm_?? version.
+        Default: sm_60
+
+        endef
+        $(info $(nvarch_help))
+        NVARCH=sm_60
+      endif
+    endif
+  endif
+endif
+
 COMPILER_ARMCLANG = armclang++
 COMPILER_GNU = g++
 COMPILER_GNU_PPC = g++
@@ -60,7 +76,7 @@ OMP_NEC_CPU = -fopenmp
 
 # OpenMP flags for NVIDIA
 OMP_CRAY_NVIDIA  = -DOMP_TARGET_GPU
-OMP_CLANG_NVIDIA = -DOMP_TARGET_GPU -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda
+OMP_CLANG_NVIDIA = -DOMP_TARGET_GPU -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda -Xopenmp-target -march=$(NVARCH)
 OMP_GNU_NVIDIA = -DOMP_TARGET_GPU -fopenmp -foffload=nvptx-none
 OMP_GNU_AMD = -DOMP_TARGET_GPU -fopenmp -foffload=amdgcn-amdhsa
 
