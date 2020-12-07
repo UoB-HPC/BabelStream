@@ -15,9 +15,17 @@
 auto exe_policy = std::execution::par_unseq;
 
 template <class T>
-STDStream<T>::STDStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int device)
-  noexcept : array_size{ARRAY_SIZE}, a{a}, b{b}, c{c}
+STDStream<T>::STDStream(const unsigned int ARRAY_SIZE, int device)
+  noexcept : array_size{ARRAY_SIZE}, a{new T[array_size]}, b{new T[array_size]}, c{new T[array_size]}
 {
+}
+
+template <class T>
+STDStream<T>::~STDStream()
+{
+  delete[] a;
+  delete[] b;
+  delete[] c;
 }
 
 template <class T>
@@ -87,3 +95,4 @@ std::string getDeviceDriver(const int)
 }
 template class STDStream<float>;
 template class STDStream<double>;
+

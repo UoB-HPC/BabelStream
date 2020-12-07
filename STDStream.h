@@ -24,8 +24,8 @@ class STDStream : public Stream<T>
     T *c;
 
   public:
-    STDStream(const unsigned int, T*, T*, T*, int);
-    ~STDStream() = default;
+    STDStream(const unsigned int, int);
+    ~STDStream();
 
     virtual void copy() override;
     virtual void add() override;
@@ -36,3 +36,4 @@ class STDStream : public Stream<T>
     virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
 };
+

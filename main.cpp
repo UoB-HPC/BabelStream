@@ -158,7 +158,7 @@ void run()
 
 #elif defined(STD)
   // Use the STD implementation
-  stream = new STDStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+  stream = new STDStream<T>(ARRAY_SIZE, deviceIndex);
 
 #elif defined(ACC)
   // Use the OpenACC implementation
@@ -366,7 +366,7 @@ void run_triad()
 
 #elif defined(STD)
   // Use the STD implementation
-  stream = new STDStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+  stream = new STDStream<T>(ARRAY_SIZE, deviceIndex);
 
 #elif defined(SYCL)
   // Use the SYCL implementation
