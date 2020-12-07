@@ -9,7 +9,8 @@ All notable changes to this project will be documented in this file.
 - Compiler options for OpenMP and OpenACC GNU offloading to NVIDIA and AMD.
 - Compiler options for Arm Clang added to OpenMP and Kokkos.
 - Kokkos 3 build system (No code changes made).
-- SYCL build rules for ComputeCpp, DPCPP and HipSYCL
+- SYCL build rules for ComputeCpp, DPCPP and HipSYCL.
+- Support for CUDA Managed Memory and Page Fault memory.
 
 ### Changed
 - Default branch renamed from `master` to `main`.
