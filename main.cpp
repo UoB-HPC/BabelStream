@@ -130,14 +130,6 @@ void run()
 
   }
 
-  // Create host vectors
-  std::vector<T> a(ARRAY_SIZE);
-  std::vector<T> b(ARRAY_SIZE);
-  std::vector<T> c(ARRAY_SIZE);
-
-  // Result of the Dot kernel
-  T sum;
-
   Stream<T> *stream;
 
 #if defined(CUDA)
@@ -184,6 +176,9 @@ void run()
 
   stream->init_arrays(startA, startB, startC);
 
+  // Result of the Dot kernel
+  T sum;
+
   // List of times
   std::vector<std::vector<double>> timings(5);
 
@@ -226,6 +221,11 @@ void run()
   }
 
   // Check solutions
+  // Create host vectors
+  std::vector<T> a(ARRAY_SIZE);
+  std::vector<T> b(ARRAY_SIZE);
+  std::vector<T> c(ARRAY_SIZE);
+
   stream->read_arrays(a, b, c);
   check_solution<T>(num_times, a, b, c, sum);
 
@@ -338,11 +338,6 @@ void run_triad()
     std::cout.precision(ss);
   }
 
-  // Create host vectors
-  std::vector<T> a(ARRAY_SIZE);
-  std::vector<T> b(ARRAY_SIZE);
-  std::vector<T> c(ARRAY_SIZE);
-
   Stream<T> *stream;
 
 #if defined(CUDA)
@@ -399,7 +394,13 @@ void run_triad()
   double runtime = std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
 
   // Check solutions
+  // Create host vectors
+  std::vector<T> a(ARRAY_SIZE);
+  std::vector<T> b(ARRAY_SIZE);
+  std::vector<T> c(ARRAY_SIZE);
+
   T sum = 0.0;
+
   stream->read_arrays(a, b, c);
   check_solution<T>(num_times, a, b, c, sum);
 
