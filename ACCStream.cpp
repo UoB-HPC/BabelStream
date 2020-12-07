@@ -8,7 +8,7 @@
 #include "ACCStream.h"
 
 template <class T>
-ACCStream<T>::ACCStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int device)
+ACCStream<T>::ACCStream(const unsigned int ARRAY_SIZE, int device)
 {
   acc_device_t device_type = acc_get_device_type();
   acc_set_device_num(device, device_type);
@@ -16,9 +16,9 @@ ACCStream<T>::ACCStream(const unsigned int ARRAY_SIZE, T *a, T *b, T *c, int dev
   array_size = ARRAY_SIZE;
 
   // Set up data region on device
-  this->a = a;
-  this->b = b;
-  this->c = c;
+  a = new T[array_size];
+  b = new T[array_size];
+  c = new T[array_size];
   #pragma acc enter data create(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
 }
@@ -28,11 +28,12 @@ ACCStream<T>::~ACCStream()
 {
   // End data region on device
   unsigned int array_size = this->array_size;
-  T *a = this->a;
-  T *b = this->b;
-  T *c = this->c;
   #pragma acc exit data delete(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
+
+  delete[] a;
+  delete[] b;
+  delete[] c;
 }
 
 template <class T>
