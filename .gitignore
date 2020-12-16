@@ -8,10 +8,12 @@ kokkos-stream
 std-stream
 sycl-stream
 hip-stream
+poplar-stream
 
 *.o
 *.bc
 *.sycl
+*.gc
 *.tar
 *.gz
 *.a
@@ -21,3 +23,11 @@ KokkosCore_config.*
 .DS_Store
 
 Makefile
+
+vars.capnp
+graph.json
+execution.json
+*.csv
+arhive.a
+*.gp
+popops-stream

@@ -39,6 +39,8 @@
 #include "SYCLStream.h"
 #elif defined(OMP)
 #include "OMPStream.h"
+#elif defined(POPLAR)
+#include "PoplarStream.h"
 #endif
 
 // Default size of 2^25
@@ -46,6 +48,7 @@ unsigned int ARRAY_SIZE = 33554432;
 unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
+bool use_half = false;
 bool triad_only = false;
 bool output_as_csv = false;
 bool mibibytes = false;
@@ -55,10 +58,10 @@ template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
 
 template <typename T>
-void run();
+void run(bool halfPrecision=false);
 
 template <typename T>
-void run_triad();
+void run_triad(bool halfPrecision=false);
 
 void parseArguments(int argc, char *argv[]);
 
@@ -78,15 +81,15 @@ int main(int argc, char *argv[])
   // TODO: Fix Kokkos to allow multiple template specializations
   if (triad_only)
   {
-    if (use_float)
-      run_triad<float>();
+    if (use_float || use_half)
+      run_triad<float>(use_half);
     else
       run_triad<double>();
   }
   else
   {
-    if (use_float)
-      run<float>();
+    if (use_float || use_half)
+      run<float>(use_half);
     else
       run<double>();
   }
@@ -94,17 +97,21 @@ int main(int argc, char *argv[])
 }
 
 template <typename T>
-void run()
+void run(bool halfPrecision)
 {
   std::streamsize ss = std::cout.precision();
+  size_t sizeT = (sizeof(T) == sizeof(float) && halfPrecision) ? sizeof(T)/2 : sizeof(T);
 
   if (!output_as_csv)
   {
     std::cout << "Running kernels " << num_times << " times" << std::endl;
 
-    if (sizeof(T) == sizeof(float))
-      std::cout << "Precision: float" << std::endl;
-    else
+    if (sizeof(T) == sizeof(float)) {
+      if (halfPrecision)
+        std::cout << "Precision: half (if implemented, else float)" << std::endl;
+      else
+        std::cout << "Precision: float" << std::endl;   
+   } else
       std::cout << "Precision: double" << std::endl;
 
 
@@ -112,19 +119,19 @@ void run()
     {
       // MiB = 2^20
       std::cout << std::setprecision(1) << std::fixed
-                << "Array size: " << ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB"
-                << " (=" << ARRAY_SIZE*sizeof(T)*pow(2.0, -30.0) << " GiB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB"
-                << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -30.0) << " GiB)" << std::endl;
+                << "Array size: " << ARRAY_SIZE*sizeT*pow(2.0, -20.0) << " MiB"
+                << " (=" << ARRAY_SIZE*sizeT*pow(2.0, -30.0) << " GiB)" << std::endl;
+      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeT*pow(2.0, -20.0) << " MiB"
+                << " (=" << 3.0*ARRAY_SIZE*sizeT*pow(2.0, -30.0) << " GiB)" << std::endl;
     }
     else
     {
       // MB = 10^6
       std::cout << std::setprecision(1) << std::fixed
-                << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-                << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-                << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
+                << "Array size: " << ARRAY_SIZE*sizeT*1.0E-6 << " MB"
+                << " (=" << ARRAY_SIZE*sizeT*1.0E-9 << " GB)" << std::endl;
+      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeT*1.0E-6 << " MB"
+                << " (=" << 3.0*ARRAY_SIZE*sizeT*1.0E-9 << " GB)" << std::endl;
     }
     std::cout.precision(ss);
 
@@ -179,6 +186,10 @@ void run()
 #elif defined(OMP)
   // Use the OpenMP implementation
   stream = new OMPStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
+
+#elif defined(POPLAR)
+  // Use the Graphcore Poplar implementation
+  stream = new PoplarStream<T>(ARRAY_SIZE, deviceIndex, halfPrecision);
 
 #endif
 
@@ -255,14 +266,13 @@ void run()
   }
 
 
-
   std::string labels[5] = {"Copy", "Mul", "Add", "Triad", "Dot"};
   size_t sizes[5] = {
-    2 * sizeof(T) * ARRAY_SIZE,
-    2 * sizeof(T) * ARRAY_SIZE,
-    3 * sizeof(T) * ARRAY_SIZE,
-    3 * sizeof(T) * ARRAY_SIZE,
-    2 * sizeof(T) * ARRAY_SIZE
+    2 * sizeT * ARRAY_SIZE,
+    2 * sizeT * ARRAY_SIZE,
+    3 * sizeT * ARRAY_SIZE,
+    3 * sizeT * ARRAY_SIZE,
+    2 * sizeT * ARRAY_SIZE
   };
 
   for (int i = 0; i < 5; i++)
@@ -280,7 +290,7 @@ void run()
         << labels[i] << csv_separator
         << num_times << csv_separator
         << ARRAY_SIZE << csv_separator
-        << sizeof(T) << csv_separator
+        << sizeT << csv_separator
         << ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first) << csv_separator
         << *minmax.first << csv_separator
         << *minmax.second << csv_separator
@@ -305,16 +315,21 @@ void run()
 }
 
 template <typename T>
-void run_triad()
+void run_triad(const bool halfPrecision)
 {
+  size_t sizeT = (sizeof(T) == sizeof(float) && halfPrecision) ? sizeof(T)/2 : sizeof(T);
 
   if (!output_as_csv)
   {
     std::cout << "Running triad " << num_times << " times" << std::endl;
     std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
 
-    if (sizeof(T) == sizeof(float))
-      std::cout << "Precision: float" << std::endl;
+    if (sizeof(T) == sizeof(float)) {
+      if (halfPrecision)
+        std::cout << "Precision: half (if implemented, else float)" << std::endl;
+      else
+        std::cout << "Precision: float" << std::endl;
+    }
     else
       std::cout << "Precision: double" << std::endl;
 
@@ -322,18 +337,18 @@ void run_triad()
     if (mibibytes)
     {
       std::cout << std::setprecision(1) << std::fixed
-        << "Array size: " << ARRAY_SIZE*sizeof(T)*pow(2.0, -10.0) << " KiB"
-        << " (=" << ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -10.0) << " KiB"
-        << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB)" << std::endl;
+        << "Array size: " << ARRAY_SIZE*sizeT*pow(2.0, -10.0) << " KiB"
+        << " (=" << ARRAY_SIZE*sizeT*pow(2.0, -20.0) << " MiB)" << std::endl;
+      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeT*pow(2.0, -10.0) << " KiB"
+        << " (=" << 3.0*ARRAY_SIZE*sizeT*pow(2.0, -20.0) << " MiB)" << std::endl;
     }
     else
     {
       std::cout << std::setprecision(1) << std::fixed
-        << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-3 << " KB"
-        << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-3 << " KB"
-        << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB)" << std::endl;
+        << "Array size: " << ARRAY_SIZE*sizeT*1.0E-3 << " KB"
+        << " (=" << ARRAY_SIZE*sizeT*1.0E-6 << " MB)" << std::endl;
+      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeT*1.0E-3 << " KB"
+        << " (=" << 3.0*ARRAY_SIZE*sizeT*1.0E-6 << " MB)" << std::endl;
     }
     std::cout.precision(ss);
   }
@@ -381,6 +396,10 @@ void run_triad()
   // Use the OpenMP implementation
   stream = new OMPStream<T>(ARRAY_SIZE, a.data(), b.data(), c.data(), deviceIndex);
 
+#elif defined(POPLAR)
+  // Use the Graphcore Poplar implementation
+  stream = new PoplarStream<T>(ARRAY_SIZE, deviceIndex, halfPrecision);
+
 #endif
 
   stream->init_arrays(startA, startB, startC);
@@ -404,7 +423,7 @@ void run_triad()
   check_solution<T>(num_times, a, b, c, sum);
 
   // Display timing results
-  double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
+  double total_bytes = 3 * sizeT * ARRAY_SIZE * num_times;
   double bandwidth = ((mibibytes) ? pow(2.0, -30.0) : 1.0E-9) * (total_bytes / runtime);
 
   if (output_as_csv)
@@ -421,7 +440,7 @@ void run_triad()
       << "Triad" << csv_separator
       << num_times << csv_separator
       << ARRAY_SIZE << csv_separator
-      << sizeof(T) << csv_separator
+      << sizeT << csv_separator
       << bandwidth << csv_separator
       << runtime
       << std::endl;
@@ -551,6 +570,10 @@ void parseArguments(int argc, char *argv[])
     {
       use_float = true;
     }
+    else if (!std::string("--half").compare(argv[i]))
+    {
+      use_half = true;
+    }
     else if (!std::string("--triad-only").compare(argv[i]))
     {
       triad_only = true;
@@ -575,6 +598,7 @@ void parseArguments(int argc, char *argv[])
       std::cout << "  -s  --arraysize  SIZE    Use SIZE elements in the array" << std::endl;
       std::cout << "  -n  --numtimes   NUM     Run the test NUM times (NUM >= 2)" << std::endl;
       std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
+      std::cout << "      --half               Use half-length (16-bit) floats on supported platforms" << std::endl;
       std::cout << "      --triad-only         Only run triad" << std::endl;
       std::cout << "      --csv                Output as csv table" << std::endl;
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;
