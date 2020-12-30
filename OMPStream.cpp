@@ -23,6 +23,9 @@ OMPStream<T>::OMPStream(const unsigned int ARRAY_SIZE, int device)
 
 #ifdef OMP_TARGET_GPU
   omp_set_default_device(device);
+  T *a = this->a;
+  T *b = this->b;
+  T *c = this->c;
   // Set up data region on device
   #pragma omp target enter data map(alloc: a[0:array_size], b[0:array_size], c[0:array_size])
   {}
