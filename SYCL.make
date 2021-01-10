@@ -41,13 +41,13 @@ endif
 
 endif
 
-SYCL_COMPUTECPP_SYCLFLAGS = $(shell $(SYCL_SDK_DIR)/bin/computecpp_info --dump-device-compiler-flags)
+SYCL_COMPUTECPP_SYCLFLAGS = $(shell $(SYCL_SDK_DIR)/bin/computecpp_info --dump-device-compiler-flags) -no-serial-memop -sycl-driver
 SYCL_COMPUTECPP_SYCLFLAGS_AMD = $(SYCL_COMPUTECPP_SYCLFLAGS)
 SYCL_COMPUTECPP_SYCLFLAGS_CPU = $(SYCL_COMPUTECPP_SYCLFLAGS)
 SYCL_COMPUTECPP_SYCLFLAGS_NVIDIA = $(SYCL_COMPUTECPP_SYCLFLAGS) -sycl-target ptx64
 SYCL_COMPUTECPP_SYCLCXX = $(SYCL_SDK_DIR)/bin/compute++
-SYCL_COMPUTECPP_FLAGS = -O3 --std=c++17
-SYCL_COMPUTECPP_LINK_FLAGS = -L$(SYCL_SDK_DIR)/lib -lComputeCpp -lOpenCL -Wl,--rpath=$(SYCL_SDK_DIR)/lib/
+SYCL_COMPUTECPP_FLAGS = -O3 -std=c++17
+SYCL_COMPUTECPP_LINK_FLAGS = -Wl,-rpath=$(SYCL_SDK_DIR)/lib/ $(SYCL_SDK_DIR)/lib/libComputeCpp.so -lOpenCL 
 SYCL_COMPUTECPP_INCLUDE = -I$(SYCL_SDK_DIR)/include 
 SYCL_COMPUTECPP_CXX = g++
 SYCL_COMPUTECPP_DEPS = SYCLStream.sycl
@@ -81,6 +81,13 @@ SYCL_INCLUDE = $(SYCL_$(COMPILER)_INCLUDE)
 SYCL_CXX = $(SYCL_$(COMPILER)_CXX)
 SYCL_DEPS = $(SYCL_$(COMPILER)_DEPS)
 
+ifeq ($(COMPILER), COMPUTECPP)
+
+sycl-stream: main.cpp SYCLStream.cpp
+	$(SYCL_SYCLCXX) $(SYCL_SYCLFLAGS) $(SYCL_FLAGS) $(SYCL_INCLUDE) -DSYCL $(EXTRA_FLAGS) $(SYCL_LINK_FLAGS) $^ -o $@ 
+
+else 
+
 sycl-stream: main.o SYCLStream.o $(SYCL_DEPS)
 	$(SYCL_CXX) $(SYCL_FLAGS) -DSYCL main.o SYCLStream.o $(EXTRA_FLAGS) $(SYCL_LINK_FLAGS) -o $@ 
 
@@ -92,6 +99,8 @@ SYCLStream.o: SYCLStream.cpp $(SYCL_DEPS)
 
 SYCLStream.sycl: SYCLStream.cpp
 	$(SYCL_SYCLCXX) -DSYCL SYCLStream.cpp $(SYCL_SYCLFLAGS) -c $(SYCL_INCLUDE) -o $@ 
+
+endif
 
 .PHONY: clean
 clean:
