@@ -9,7 +9,7 @@
 
 template <class T>
 KokkosStream<T>::KokkosStream(
-        const unsigned int ARRAY_SIZE, const int device_index)
+        const int ARRAY_SIZE, const int device_index)
     : array_size(ARRAY_SIZE)
 {
   Kokkos::initialize();

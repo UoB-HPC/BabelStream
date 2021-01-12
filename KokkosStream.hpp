@@ -22,7 +22,7 @@ class KokkosStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    unsigned int array_size;
+    int array_size;
 
     // Device side pointers to arrays
      typename Kokkos::View<T*>* d_a;
@@ -34,7 +34,7 @@ class KokkosStream : public Stream<T>
 
   public:
 
-    KokkosStream(const unsigned int, const int);
+    KokkosStream(const int, const int);
     ~KokkosStream();
 
     virtual void copy() override;
