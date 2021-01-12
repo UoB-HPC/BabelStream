@@ -15,7 +15,7 @@
 auto exe_policy = std::execution::par_unseq;
 
 template <class T>
-STDStream<T>::STDStream(const unsigned int ARRAY_SIZE, int device)
+STDStream<T>::STDStream(const int ARRAY_SIZE, int device)
   noexcept : array_size{ARRAY_SIZE}, a{new T[array_size]}, b{new T[array_size]}, c{new T[array_size]}
 {
 }

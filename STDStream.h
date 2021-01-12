@@ -16,7 +16,7 @@ class STDStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    unsigned int array_size;
+    int array_size;
 
     // Device side pointers
     T *a;
@@ -24,7 +24,7 @@ class STDStream : public Stream<T>
     T *c;
 
   public:
-    STDStream(const unsigned int, int);
+    STDStream(const int, int);
     ~STDStream();
 
     virtual void copy() override;
