@@ -292,6 +292,5 @@ std::string getDeviceDriver(const int device)
   return driver;
 }
 
-// TODO: Fix kernel names to allow multiple template specializations
 template class SYCLStream<float>;
 template class SYCLStream<double>;
