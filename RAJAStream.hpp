@@ -32,7 +32,7 @@ class RAJAStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    unsigned int array_size;
+    int array_size;
 
     // Contains iteration space
     RAJA::IndexSet index_set;
@@ -44,7 +44,7 @@ class RAJAStream : public Stream<T>
 
   public:
 
-    RAJAStream(const unsigned int, const int);
+    RAJAStream(const int, const int);
     ~RAJAStream();
 
     virtual void copy() override;

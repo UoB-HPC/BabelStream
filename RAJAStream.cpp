@@ -15,7 +15,7 @@ using RAJA::RangeSegment;
 #endif
 
 template <class T>
-RAJAStream<T>::RAJAStream(const unsigned int ARRAY_SIZE, const int device_index)
+RAJAStream<T>::RAJAStream(const int ARRAY_SIZE, const int device_index)
     : array_size(ARRAY_SIZE)
 {
   RangeSegment seg(0, ARRAY_SIZE);
