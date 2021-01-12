@@ -518,6 +518,13 @@ int parseUInt(const char *str, unsigned int *output)
   return !strlen(next);
 }
 
+int parseInt(const char *str, int *output)
+{
+  char *next;
+  *output = strtol(str, &next, 10);
+  return !strlen(next);
+}
+
 void parseArguments(int argc, char *argv[])
 {
   for (int i = 1; i < argc; i++)
@@ -538,13 +545,11 @@ void parseArguments(int argc, char *argv[])
     else if (!std::string("--arraysize").compare(argv[i]) ||
              !std::string("-s").compare(argv[i]))
     {
-      unsigned int tmp_array_size = static_cast<unsigned int>(ARRAY_SIZE);
-      if (++i >= argc || !parseUInt(argv[i], &tmp_array_size))
+      if (++i >= argc || !parseInt(argv[i], &ARRAY_SIZE))
       {
         std::cerr << "Invalid array size." << std::endl;
         exit(EXIT_FAILURE);
       }
-      ARRAY_SIZE = static_cast<int>(tmp_array_size);
     }
     else if (!std::string("--numtimes").compare(argv[i]) ||
              !std::string("-n").compare(argv[i]))
