@@ -88,8 +88,8 @@ void SYCLStream<T>::copy()
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    auto ka = d_a->template get_access<sycl::access::mode::read>(cgh);
-    auto kc = d_c->template get_access<sycl::access::mode::write>(cgh);
+    sycl::accessor ka {*d_a, cgh, sycl::read_only};
+    sycl::accessor kc {*d_c, cgh, sycl::write_only};
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       kc[idx] = ka[idx];
@@ -104,8 +104,8 @@ void SYCLStream<T>::mul()
   const T scalar = startScalar;
   queue->submit([&](sycl::handler &cgh)
   {
-    auto kb = d_b->template get_access<sycl::access::mode::write>(cgh);
-    auto kc = d_c->template get_access<sycl::access::mode::read>(cgh);
+    sycl::accessor kb {*d_b, cgh, sycl::write_only};
+    sycl::accessor kc {*d_c, cgh, sycl::read_only};
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       kb[idx] = scalar * kc[idx];
@@ -119,9 +119,9 @@ void SYCLStream<T>::add()
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    auto ka = d_a->template get_access<sycl::access::mode::read>(cgh);
-    auto kb = d_b->template get_access<sycl::access::mode::read>(cgh);
-    auto kc = d_c->template get_access<sycl::access::mode::write>(cgh);
+    sycl::accessor ka {*d_a, cgh, sycl::read_only};
+    sycl::accessor kb {*d_b, cgh, sycl::read_only};
+    sycl::accessor kc {*d_c, cgh, sycl::write_only};
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       kc[idx] = ka[idx] + kb[idx];
@@ -136,9 +136,9 @@ void SYCLStream<T>::triad()
   const T scalar = startScalar;
   queue->submit([&](sycl::handler &cgh)
   {
-    auto ka = d_a->template get_access<sycl::access::mode::write>(cgh);
-    auto kb = d_b->template get_access<sycl::access::mode::read>(cgh);
-    auto kc = d_c->template get_access<sycl::access::mode::read>(cgh);
+    sycl::accessor ka {*d_a, cgh, sycl::write_only};
+    sycl::accessor kb {*d_b, cgh, sycl::read_only};
+    sycl::accessor kc {*d_c, cgh, sycl::read_only};
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       ka[idx] = kb[idx] + scalar * kc[idx];
@@ -152,10 +152,11 @@ T SYCLStream<T>::dot()
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    auto ka   = d_a->template get_access<sycl::access::mode::read>(cgh);
-    auto kb   = d_b->template get_access<sycl::access::mode::read>(cgh);
-    auto ksum = d_sum->template get_access<sycl::access::mode::write>(cgh);
+    sycl::accessor ka {*d_a, cgh, sycl::read_only};
+    sycl::accessor kb {*d_b, cgh, sycl::read_only};
+    sycl::accessor ksum {*d_sum, cgh, sycl::write_only};
 
+    //sycl::local_accessor wg_sum {sycl::range<1>(dot_wgsize), cgh};
     auto wg_sum = sycl::accessor<T, 1, sycl::access::mode::read_write, sycl::access::target::local>(sycl::range<1>(dot_wgsize), cgh);
 
     size_t N = array_size;
@@ -197,9 +198,10 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    auto ka = d_a->template get_access<sycl::access::mode::write>(cgh);
-    auto kb = d_b->template get_access<sycl::access::mode::write>(cgh);
-    auto kc = d_c->template get_access<sycl::access::mode::write>(cgh);
+    // TODO: could add the sycl::no_init property
+    sycl::accessor ka {*d_a, cgh, sycl::write_only};
+    sycl::accessor kb {*d_b, cgh, sycl::write_only};
+    sycl::accessor kc {*d_c, cgh, sycl::write_only};
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       ka[idx] = initA;
