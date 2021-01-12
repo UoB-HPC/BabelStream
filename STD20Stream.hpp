@@ -18,7 +18,7 @@ class STD20Stream : public Stream<T>
 {
   protected:
     // Size of arrays
-    unsigned int array_size;
+    int array_size;
 
     // Device side pointers
     std::vector<T> a;
@@ -26,7 +26,7 @@ class STD20Stream : public Stream<T>
     std::vector<T> c;
 
   public:
-    STD20Stream(const unsigned int, int);
+    STD20Stream(const int, int);
     ~STD20Stream() = default;
 
     virtual void copy() override;

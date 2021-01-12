@@ -11,7 +11,7 @@
 #include <ranges>
 
 template <class T>
-STD20Stream<T>::STD20Stream(const unsigned int ARRAY_SIZE, int device)
+STD20Stream<T>::STD20Stream(const int ARRAY_SIZE, int device)
  : array_size{ARRAY_SIZE}
 {
   a = std::vector<T>(array_size);
