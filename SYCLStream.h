@@ -30,7 +30,7 @@ class SYCLStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    unsigned int array_size;
+    int array_size;
 
     // SYCL objects
     cl::sycl::queue *queue;
@@ -53,7 +53,7 @@ class SYCLStream : public Stream<T>
 
   public:
 
-    SYCLStream(const unsigned int, const int);
+    SYCLStream(const int, const int);
     ~SYCLStream();
 
     virtual void copy() override;
