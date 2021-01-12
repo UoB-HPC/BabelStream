@@ -200,12 +200,11 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
     auto ka = d_a->template get_access<sycl::access::mode::write>(cgh);
     auto kb = d_b->template get_access<sycl::access::mode::write>(cgh);
     auto kc = d_c->template get_access<sycl::access::mode::write>(cgh);
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::item<1> item)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
-      auto id = item.get_id(0);
-      ka[id] = initA;
-      kb[id] = initB;
-      kc[id] = initC;
+      ka[idx] = initA;
+      kb[idx] = initB;
+      kc[idx] = initC;
     });
   });
   queue->wait();
