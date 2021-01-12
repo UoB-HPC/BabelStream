@@ -26,7 +26,7 @@ class OCLStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    unsigned int array_size;
+    int array_size;
 
     // Host array for partial sums for dot kernel
     std::vector<T> sums;
@@ -55,7 +55,7 @@ class OCLStream : public Stream<T>
 
   public:
 
-    OCLStream(const unsigned int, const int);
+    OCLStream(const int, const int);
     ~OCLStream();
 
     virtual void copy() override;

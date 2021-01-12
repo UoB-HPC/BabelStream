@@ -92,7 +92,7 @@ std::string kernels{R"CLC(
 
 
 template <class T>
-OCLStream<T>::OCLStream(const unsigned int ARRAY_SIZE, const int device_index)
+OCLStream<T>::OCLStream(const int ARRAY_SIZE, const int device_index)
 {
   if (!cached)
     getDeviceList();
