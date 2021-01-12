@@ -22,7 +22,7 @@ void check_error(void)
 }
 
 template <class T>
-HIPStream<T>::HIPStream(const unsigned int ARRAY_SIZE, const int device_index)
+HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
 {
 
   // The array size must be divisible by TBSIZE for kernel launches
@@ -183,7 +183,7 @@ void HIPStream<T>::triad()
 }
 
 template <class T>
-__global__ void dot_kernel(const T * a, const T * b, T * sum, unsigned int array_size)
+__global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
 {
   __shared__ T tb_sum[TBSIZE];
 

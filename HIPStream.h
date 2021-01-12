@@ -20,7 +20,7 @@ class HIPStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    unsigned int array_size;
+    int array_size;
 
     // Host array for partial sums for dot kernel
     T *sums;
@@ -34,7 +34,7 @@ class HIPStream : public Stream<T>
 
   public:
 
-    HIPStream(const unsigned int, const int);
+    HIPStream(const int, const int);
     ~HIPStream();
 
     virtual void copy() override;
