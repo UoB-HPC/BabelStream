@@ -8,7 +8,7 @@
 #include "ACCStream.h"
 
 template <class T>
-ACCStream<T>::ACCStream(const unsigned int ARRAY_SIZE, int device)
+ACCStream<T>::ACCStream(const int ARRAY_SIZE, int device)
 {
   acc_device_t device_type = acc_get_device_type();
   acc_set_device_num(device, device_type);
@@ -27,7 +27,7 @@ template <class T>
 ACCStream<T>::~ACCStream()
 {
   // End data region on device
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   #pragma acc exit data delete(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
 
@@ -39,7 +39,7 @@ ACCStream<T>::~ACCStream()
 template <class T>
 void ACCStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
@@ -65,7 +65,7 @@ void ACCStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
 template <class T>
 void ACCStream<T>::copy()
 {
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict c = this->c;
   #pragma acc parallel loop present(a[0:array_size], c[0:array_size]) wait
@@ -80,7 +80,7 @@ void ACCStream<T>::mul()
 {
   const T scalar = startScalar;
 
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T * restrict b = this->b;
   T * restrict c = this->c;
   #pragma acc parallel loop present(b[0:array_size], c[0:array_size]) wait
@@ -93,7 +93,7 @@ void ACCStream<T>::mul()
 template <class T>
 void ACCStream<T>::add()
 {
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
@@ -109,7 +109,7 @@ void ACCStream<T>::triad()
 {
   const T scalar = startScalar;
 
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
@@ -125,7 +125,7 @@ T ACCStream<T>::dot()
 {
   T sum = 0.0;
 
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
   #pragma acc parallel loop reduction(+:sum) present(a[0:array_size], b[0:array_size]) wait

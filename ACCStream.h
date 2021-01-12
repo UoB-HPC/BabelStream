@@ -21,14 +21,14 @@ class ACCStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    unsigned int array_size;
+    int array_size;
     // Device side pointers
     T *a;
     T *b;
     T *c;
 
   public:
-    ACCStream(const unsigned int, int);
+    ACCStream(const int, int);
     ~ACCStream();
 
     virtual void copy() override;
