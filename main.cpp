@@ -44,7 +44,7 @@
 #endif
 
 // Default size of 2^25
-unsigned int ARRAY_SIZE = 33554432;
+int ARRAY_SIZE = 33554432;
 unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
@@ -538,11 +538,13 @@ void parseArguments(int argc, char *argv[])
     else if (!std::string("--arraysize").compare(argv[i]) ||
              !std::string("-s").compare(argv[i]))
     {
-      if (++i >= argc || !parseUInt(argv[i], &ARRAY_SIZE))
+      unsigned int tmp_array_size = static_cast<unsigned int>(ARRAY_SIZE);
+      if (++i >= argc || !parseUInt(argv[i], &tmp_array_size))
       {
         std::cerr << "Invalid array size." << std::endl;
         exit(EXIT_FAILURE);
       }
+      ARRAY_SIZE = static_cast<int>(tmp_array_size);
     }
     else if (!std::string("--numtimes").compare(argv[i]) ||
              !std::string("-n").compare(argv[i]))
