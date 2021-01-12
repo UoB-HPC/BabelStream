@@ -23,11 +23,11 @@ class SYCLStream : public Stream<T>
     int array_size;
 
     // SYCL objects
-    cl::sycl::queue *queue;
-    cl::sycl::buffer<T> *d_a;
-    cl::sycl::buffer<T> *d_b;
-    cl::sycl::buffer<T> *d_c;
-    cl::sycl::buffer<T> *d_sum;
+    sycl::queue *queue;
+    sycl::buffer<T> *d_a;
+    sycl::buffer<T> *d_b;
+    sycl::buffer<T> *d_c;
+    sycl::buffer<T> *d_sum;
 
     // NDRange configuration for the dot kernel
     size_t dot_num_groups;
