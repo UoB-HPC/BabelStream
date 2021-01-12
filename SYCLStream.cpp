@@ -215,9 +215,9 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void SYCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-  auto _a = d_a->template get_access<sycl::access::mode::read>();
-  auto _b = d_b->template get_access<sycl::access::mode::read>();
-  auto _c = d_c->template get_access<sycl::access::mode::read>();
+  sycl::host_accessor _a {*d_a, sycl::read_only};
+  sycl::host_accessor _b {*d_b, sycl::read_only};
+  sycl::host_accessor _c {*d_c, sycl::read_only};
   for (int i = 0; i < array_size; i++)
   {
     a[i] = _a[i];
