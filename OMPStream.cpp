@@ -12,7 +12,7 @@
 #endif
 
 template <class T>
-OMPStream<T>::OMPStream(const unsigned int ARRAY_SIZE, int device)
+OMPStream<T>::OMPStream(const int ARRAY_SIZE, int device)
 {
   array_size = ARRAY_SIZE;
 
@@ -38,7 +38,7 @@ OMPStream<T>::~OMPStream()
 {
 #ifdef OMP_TARGET_GPU
   // End data region on device
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
@@ -53,7 +53,7 @@ OMPStream<T>::~OMPStream()
 template <class T>
 void OMPStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
 #ifdef OMP_TARGET_GPU
   T *a = this->a;
   T *b = this->b;
@@ -101,7 +101,7 @@ template <class T>
 void OMPStream<T>::copy()
 {
 #ifdef OMP_TARGET_GPU
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T *a = this->a;
   T *c = this->c;
   #pragma omp target teams distribute parallel for simd
@@ -125,7 +125,7 @@ void OMPStream<T>::mul()
   const T scalar = startScalar;
 
 #ifdef OMP_TARGET_GPU
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T *b = this->b;
   T *c = this->c;
   #pragma omp target teams distribute parallel for simd
@@ -147,7 +147,7 @@ template <class T>
 void OMPStream<T>::add()
 {
 #ifdef OMP_TARGET_GPU
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
@@ -172,7 +172,7 @@ void OMPStream<T>::triad()
   const T scalar = startScalar;
 
 #ifdef OMP_TARGET_GPU
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
@@ -197,7 +197,7 @@ T OMPStream<T>::dot()
   T sum = 0.0;
 
 #ifdef OMP_TARGET_GPU
-  unsigned int array_size = this->array_size;
+  int array_size = this->array_size;
   T *a = this->a;
   T *b = this->b;
   #pragma omp target teams distribute parallel for simd map(tofrom: sum) reduction(+:sum)
