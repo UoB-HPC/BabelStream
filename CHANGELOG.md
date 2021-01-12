@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Default branch renamed from `master` to `main`.
+- Array size is now a signed integer, which follows best practice.
 - Driver now delays allocating large checking vectors until after computation has finished.
 - Use cl::sycl::id parameters instead of cl::sycl::item.
 - Update local copy of OpenCL C++ header file.
