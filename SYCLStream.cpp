@@ -179,10 +179,10 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    // TODO: could add the sycl::no_init property
-    sycl::accessor ka {*d_a, cgh, sycl::write_only};
-    sycl::accessor kb {*d_b, cgh, sycl::write_only};
-    sycl::accessor kc {*d_c, cgh, sycl::write_only};
+    sycl::accessor ka {*d_a, cgh, sycl::write_only, sycl::no_init};
+    sycl::accessor kb {*d_b, cgh, sycl::write_only, sycl::no_init};
+    sycl::accessor kc {*d_c, cgh, sycl::write_only, sycl::no_init};
+
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       ka[idx] = initA;
@@ -190,6 +190,7 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
       kc[idx] = initC;
     });
   });
+
   queue->wait();
 }
 
