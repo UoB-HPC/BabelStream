@@ -69,7 +69,7 @@ SYCLStream<T>::SYCLStream(const int ARRAY_SIZE, const int device_index)
   d_a = new sycl::buffer<T>(array_size);
   d_b = new sycl::buffer<T>(array_size);
   d_c = new sycl::buffer<T>(array_size);
-  d_sum = new sycl::buffer<T>(dot_num_groups);
+  d_sum = new sycl::buffer<T>(1);
 }
 
 template <class T>
@@ -150,47 +150,28 @@ void SYCLStream<T>::triad()
 template <class T>
 T SYCLStream<T>::dot()
 {
+
   queue->submit([&](sycl::handler &cgh)
   {
     sycl::accessor ka {*d_a, cgh, sycl::read_only};
     sycl::accessor kb {*d_b, cgh, sycl::read_only};
-    sycl::accessor ksum {*d_sum, cgh, sycl::write_only};
 
-    //sycl::local_accessor wg_sum {sycl::range<1>(dot_wgsize), cgh};
-    auto wg_sum = sycl::accessor<T, 1, sycl::access::mode::read_write, sycl::access::target::local>(sycl::range<1>(dot_wgsize), cgh);
+    // Reduction object, to perform summation
+    // Initialises the result to zero
+    auto sumReducer = sycl::reduction(*d_sum, cgh, std::plus<T>(), sycl::property::reduction::initialize_to_identity);
 
-    size_t N = array_size;
-    cgh.parallel_for(sycl::nd_range<1>(dot_num_groups*dot_wgsize, dot_wgsize), [=](sycl::nd_item<1> item)
+    cgh.parallel_for(sycl::range<1>{array_size}, sumReducer, [=](sycl::id<1> idx, auto& sum)
     {
-      size_t i = item.get_global_id(0);
-      size_t li = item.get_local_id(0);
-      size_t global_size = item.get_global_range()[0];
-
-      wg_sum[li] = 0.0;
-      for (; i < N; i += global_size)
-        wg_sum[li] += ka[i] * kb[i];
-
-      size_t local_size = item.get_local_range()[0];
-      for (int offset = local_size / 2; offset > 0; offset /= 2)
-      {
-        item.barrier(sycl::access::fence_space::local_space);
-        if (li < offset)
-          wg_sum[li] += wg_sum[li + offset];
-      }
-
-      if (li == 0)
-        ksum[item.get_group(0)] = wg_sum[0];
+      sum += ka[idx] * kb[idx];
     });
+
   });
 
-  T sum = 0.0;
-  auto h_sum = d_sum->template get_access<sycl::access::mode::read>();
-  for (int i = 0; i < dot_num_groups; i++)
-  {
-    sum += h_sum[i];
-  }
+  // Get access on the host, and return a copy of the data (single number)
+  // This will block until the result is available, so no need to wait on the queue.
+  sycl::host_accessor result {*d_sum, sycl::read_only};
+  return result[0];
 
-  return sum;
 }
 
 template <class T>
