@@ -11,7 +11,7 @@
 
 #include "Stream.h"
 
-#include "CL/sycl.hpp"
+#include <sycl/sycl.hpp>
 
 #define IMPLEMENTATION_STRING "SYCL"
 
