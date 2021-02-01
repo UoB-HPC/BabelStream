@@ -186,7 +186,7 @@ void run()
   T sum;
 
   // List of times
-  std::vector<std::vector<double>> timings(5);
+  std::vector<std::vector<double>> timings(6);
 
   // Declare timers
   std::chrono::high_resolution_clock::time_point t1, t2;
@@ -218,11 +218,17 @@ void run()
     t2 = std::chrono::high_resolution_clock::now();
     timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
+    // Execute nstream
+    t1 = std::chrono::high_resolution_clock::now();
+    stream->nstream();
+    t2 = std::chrono::high_resolution_clock::now();
+    timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
     // Execute Dot
     t1 = std::chrono::high_resolution_clock::now();
     sum = stream->dot();
     t2 = std::chrono::high_resolution_clock::now();
-    timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+    timings[5].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
   }
 
@@ -262,16 +268,17 @@ void run()
 
 
 
-  std::string labels[5] = {"Copy", "Mul", "Add", "Triad", "Dot"};
-  size_t sizes[5] = {
+  std::string labels[6] = {"Copy", "Mul", "Add", "Triad", "nstream", "Dot"};
+  size_t sizes[6] = {
     2 * sizeof(T) * ARRAY_SIZE,
     2 * sizeof(T) * ARRAY_SIZE,
     3 * sizeof(T) * ARRAY_SIZE,
     3 * sizeof(T) * ARRAY_SIZE,
+    4 * sizeof(T) * ARRAY_SIZE,
     2 * sizeof(T) * ARRAY_SIZE
   };
 
-  for (int i = 0; i < 5; i++)
+  for (int i = 0; i < 6; i++)
   {
     // Get min/max; ignore the first result
     auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
@@ -473,6 +480,10 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
       goldC = goldA + goldB;
     }
     goldA = goldB + scalar * goldC;
+    if (!triad_only)
+    {
+      goldA += goldB + scalar * goldC;
+    }
   }
 
   // Do the reduction
