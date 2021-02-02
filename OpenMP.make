@@ -80,7 +80,7 @@ OMP_CLANG_NVIDIA = -DOMP_TARGET_GPU -fopenmp=libomp -fopenmp-targets=nvptx64-nvi
 OMP_GNU_NVIDIA = -DOMP_TARGET_GPU -fopenmp -foffload=nvptx-none
 OMP_GNU_AMD = -DOMP_TARGET_GPU -fopenmp -foffload=amdgcn-amdhsa
 
-OMP_INTEL_CPU = -xHOST -qopt-streaming-stores=always
+OMP_INTEL_CPU = -xHOST -qopt-streaming-stores=always -qopenmp
 OMP_INTEL_INTEL_GPU = -DOMP_TARGET_GPU -qnextgen -fiopenmp -fopenmp-targets=spir64
 
 OMP_AOMP_GPU = -DOMP_TARGET_GPU -fopenmp -fopenmp-targets=amdgcn-amd-amdhsa -Xopenmp-target=amdgcn-amd-amdhsa -march=gfx906
