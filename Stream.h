@@ -29,7 +29,6 @@ class Stream
     virtual void mul() = 0;
     virtual void add() = 0;
     virtual void triad() = 0;
-    virtual void nstream() = 0;
     virtual T dot() = 0;
 
     // Copy memory between host and device
