@@ -11,10 +11,10 @@
 #include <string>
 
 // Array values
-#define startA (0.1)
-#define startB (0.2)
+#define startA (1.0)
+#define startB (0.02)
 #define startC (0.0)
-#define startScalar (0.4)
+#define startScalar (0.04)
 
 template <class T>
 class Stream

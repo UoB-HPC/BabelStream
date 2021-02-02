@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Cray compiler OpenMP flags updated.
 - Clang compiler OpenMP flags corrected for NVIDIA target.
 - Reorder OpenCL objects in class so destructors are called in safe order.
+- Initial values updated to support additional kernel.
 
 ### Removed
 - Pre-building of kernels in SYCL version to ensure compatibility with SYCL 1.2.1.
