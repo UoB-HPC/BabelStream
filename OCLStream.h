@@ -47,6 +47,7 @@ class OCLStream : public Stream<T>
     cl::KernelFunctor<cl::Buffer, cl::Buffer> * mul_kernel;
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *add_kernel;
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *triad_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *nstream_kernel;
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_int> *dot_kernel;
 
     // NDRange configuration for the dot kernel
@@ -62,6 +63,7 @@ class OCLStream : public Stream<T>
     virtual void add() override;
     virtual void mul() override;
     virtual void triad() override;
+    virtual void nstream() override;
     virtual T dot() override;
 
     virtual void init_arrays(T initA, T initB, T initC) override;
