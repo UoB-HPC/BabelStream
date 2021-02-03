@@ -73,6 +73,17 @@ void STDStream<T>::triad()
 }
 
 template <class T>
+void STDStream<T>::nstream()
+{
+  //  a[i] += b[i] + scalar * c[i];
+  //  Need to do in two stages with C++11 STL.
+  //  1: a[i] += b[i]
+  //  2: a[i] += scalar * c[i];
+  std::transform(exe_policy, a, a+array_size, b, a, [](T ai, T bi){ return ai + bi; });
+  std::transform(exe_policy, a, a+array_size, c, a, [](T ai, T ci){ return ai + startScalar*ci; });
+}
+
+template <class T>
 T STDStream<T>::dot()
 {
   // sum = 0; sum += a[i]*b[i]; return sum;
