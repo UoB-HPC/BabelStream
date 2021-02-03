@@ -496,7 +496,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   errB /= b.size();
   double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldC); });
   errC /= c.size();
-  double errSum = fabs(sum - goldSum);
+  double errSum = fabs((sum - goldSum)/goldSum);
 
   double epsi = std::numeric_limits<T>::epsilon() * 100.0;
 
