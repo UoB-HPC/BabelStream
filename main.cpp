@@ -545,7 +545,7 @@ void parseArguments(int argc, char *argv[])
     else if (!std::string("--arraysize").compare(argv[i]) ||
              !std::string("-s").compare(argv[i]))
     {
-      if (++i >= argc || !parseInt(argv[i], &ARRAY_SIZE))
+      if (++i >= argc || !parseInt(argv[i], &ARRAY_SIZE) || ARRAY_SIZE <= 0)
       {
         std::cerr << "Invalid array size." << std::endl;
         exit(EXIT_FAILURE);
