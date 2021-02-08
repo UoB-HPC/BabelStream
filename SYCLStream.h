@@ -29,10 +29,6 @@ class SYCLStream : public Stream<T>
     sycl::buffer<T> *d_c;
     sycl::buffer<T> *d_sum;
 
-    // NDRange configuration for the dot kernel
-    size_t dot_num_groups;
-    size_t dot_wgsize;
-
   public:
 
     SYCLStream(const int, const int);

@@ -27,22 +27,9 @@ SYCLStream<T>::SYCLStream(const int ARRAY_SIZE, const int device_index)
 
   sycl::device dev = devices[device_index];
 
-  // Determine sensible dot kernel NDRange configuration
-  if (dev.is_cpu())
-  {
-    dot_num_groups = dev.get_info<sycl::info::device::max_compute_units>();
-    dot_wgsize     = dev.get_info<sycl::info::device::native_vector_width_double>() * 2;
-  }
-  else
-  {
-    dot_num_groups = dev.get_info<sycl::info::device::max_compute_units>() * 4;
-    dot_wgsize     = dev.get_info<sycl::info::device::max_work_group_size>();
-  }
-
   // Print out device information
   std::cout << "Using SYCL device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
-  std::cout << "Reduction kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
 
   queue = new sycl::queue(dev, sycl::async_handler{[&](sycl::exception_list l)
   {
