@@ -8,6 +8,7 @@
 #pragma once
 
 #include <sstream>
+#include <memory>
 
 #include "Stream.h"
 
@@ -23,16 +24,16 @@ class SYCLStream : public Stream<T>
     int array_size;
 
     // SYCL objects
-    sycl::queue *queue;
-    sycl::buffer<T> *d_a;
-    sycl::buffer<T> *d_b;
-    sycl::buffer<T> *d_c;
-    sycl::buffer<T> *d_sum;
+    std::unique_ptr<sycl::queue> queue;
+    std::unique_ptr<sycl::buffer<T>> d_a;
+    std::unique_ptr<sycl::buffer<T>> d_b;
+    std::unique_ptr<sycl::buffer<T>> d_c;
+    std::unique_ptr<sycl::buffer<T>> d_sum;
 
   public:
 
     SYCLStream(const int, const int);
-    ~SYCLStream();
+    ~SYCLStream() = default;
 
     virtual void copy() override;
     virtual void add() override;

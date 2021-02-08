@@ -51,24 +51,20 @@ SYCLStream<T>::SYCLStream(const int ARRAY_SIZE, const int device_index)
       throw std::runtime_error("SYCL errors detected");
     }
   }});
+
+  // No longer need list of devices
+  devices.clear();
+  cached = true;
   
   // Create buffers
-  d_a = new sycl::buffer<T>(array_size);
-  d_b = new sycl::buffer<T>(array_size);
-  d_c = new sycl::buffer<T>(array_size);
-  d_sum = new sycl::buffer<T>(1);
+  // Only in the constructor at runtime do we know the size, so need to use (smart) pointers
+  d_a = std::make_unique<sycl::buffer<T>>(array_size);
+  d_b = std::make_unique<sycl::buffer<T>>(array_size);
+  d_c = std::make_unique<sycl::buffer<T>>(array_size);
+  d_sum = std::make_unique<sycl::buffer<T>>(1);
+
 }
 
-template <class T>
-SYCLStream<T>::~SYCLStream()
-{
-  delete d_a;
-  delete d_b;
-  delete d_c;
-  delete d_sum;
-  delete queue;
-  devices.clear();
-}
 
 template <class T>
 void SYCLStream<T>::copy()
