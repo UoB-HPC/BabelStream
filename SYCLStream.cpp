@@ -16,11 +16,14 @@ void getDeviceList(void);
 
 template <class T>
 SYCLStream<T>::SYCLStream(const int ARRAY_SIZE, const int device_index)
+: array_size {ARRAY_SIZE},
+  d_a {ARRAY_SIZE},
+  d_b {ARRAY_SIZE},
+  d_c {ARRAY_SIZE},
+  d_sum {1}
 {
   if (!cached)
     getDeviceList();
-
-  array_size = ARRAY_SIZE;
 
   if (device_index >= devices.size())
     throw std::runtime_error("Invalid device index");
@@ -55,13 +58,7 @@ SYCLStream<T>::SYCLStream(const int ARRAY_SIZE, const int device_index)
   // No longer need list of devices
   devices.clear();
   cached = true;
-  
-  // Create buffers
-  // Only in the constructor at runtime do we know the size, so need to use (smart) pointers
-  d_a = std::make_unique<sycl::buffer<T>>(array_size);
-  d_b = std::make_unique<sycl::buffer<T>>(array_size);
-  d_c = std::make_unique<sycl::buffer<T>>(array_size);
-  d_sum = std::make_unique<sycl::buffer<T>>(1);
+
 
 }
 
@@ -71,8 +68,8 @@ void SYCLStream<T>::copy()
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {*d_a, cgh, sycl::read_only};
-    sycl::accessor kc {*d_c, cgh, sycl::write_only};
+    sycl::accessor ka {d_a, cgh, sycl::read_only};
+    sycl::accessor kc {d_c, cgh, sycl::write_only};
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       kc[idx] = ka[idx];
@@ -87,8 +84,8 @@ void SYCLStream<T>::mul()
   const T scalar = startScalar;
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor kb {*d_b, cgh, sycl::write_only};
-    sycl::accessor kc {*d_c, cgh, sycl::read_only};
+    sycl::accessor kb {d_b, cgh, sycl::write_only};
+    sycl::accessor kc {d_c, cgh, sycl::read_only};
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       kb[idx] = scalar * kc[idx];
@@ -102,9 +99,9 @@ void SYCLStream<T>::add()
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {*d_a, cgh, sycl::read_only};
-    sycl::accessor kb {*d_b, cgh, sycl::read_only};
-    sycl::accessor kc {*d_c, cgh, sycl::write_only};
+    sycl::accessor ka {d_a, cgh, sycl::read_only};
+    sycl::accessor kb {d_b, cgh, sycl::read_only};
+    sycl::accessor kc {d_c, cgh, sycl::write_only};
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       kc[idx] = ka[idx] + kb[idx];
@@ -119,9 +116,9 @@ void SYCLStream<T>::triad()
   const T scalar = startScalar;
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {*d_a, cgh, sycl::write_only};
-    sycl::accessor kb {*d_b, cgh, sycl::read_only};
-    sycl::accessor kc {*d_c, cgh, sycl::read_only};
+    sycl::accessor ka {d_a, cgh, sycl::write_only};
+    sycl::accessor kb {d_b, cgh, sycl::read_only};
+    sycl::accessor kc {d_c, cgh, sycl::read_only};
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       ka[idx] = kb[idx] + scalar * kc[idx];
@@ -136,12 +133,12 @@ T SYCLStream<T>::dot()
 
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {*d_a, cgh, sycl::read_only};
-    sycl::accessor kb {*d_b, cgh, sycl::read_only};
+    sycl::accessor ka {d_a, cgh, sycl::read_only};
+    sycl::accessor kb {d_b, cgh, sycl::read_only};
 
     cgh.parallel_for(sycl::range<1>{array_size},
       // Reduction object, to perform summation - initialises the result to zero
-      sycl::reduction(*d_sum, cgh, std::plus<T>(), sycl::property::reduction::initialize_to_identity);
+      sycl::reduction(d_sum, cgh, std::plus<T>(), sycl::property::reduction::initialize_to_identity);
       [=](sycl::id<1> idx, auto& sum)
       {
         sum += ka[idx] * kb[idx];
@@ -151,7 +148,7 @@ T SYCLStream<T>::dot()
 
   // Get access on the host, and return a copy of the data (single number)
   // This will block until the result is available, so no need to wait on the queue.
-  sycl::host_accessor result {*d_sum, sycl::read_only};
+  sycl::host_accessor result {d_sum, sycl::read_only};
   return result[0];
 
 }
@@ -161,9 +158,9 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {*d_a, cgh, sycl::write_only, sycl::no_init};
-    sycl::accessor kb {*d_b, cgh, sycl::write_only, sycl::no_init};
-    sycl::accessor kc {*d_c, cgh, sycl::write_only, sycl::no_init};
+    sycl::accessor ka {d_a, cgh, sycl::write_only, sycl::no_init};
+    sycl::accessor kb {d_b, cgh, sycl::write_only, sycl::no_init};
+    sycl::accessor kc {d_c, cgh, sycl::write_only, sycl::no_init};
 
     cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
@@ -179,9 +176,9 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void SYCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-  sycl::host_accessor _a {*d_a, sycl::read_only};
-  sycl::host_accessor _b {*d_b, sycl::read_only};
-  sycl::host_accessor _c {*d_c, sycl::read_only};
+  sycl::host_accessor _a {d_a, sycl::read_only};
+  sycl::host_accessor _b {d_b, sycl::read_only};
+  sycl::host_accessor _c {d_c, sycl::read_only};
   for (int i = 0; i < array_size; i++)
   {
     a[i] = _a[i];

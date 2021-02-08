@@ -24,11 +24,14 @@ class SYCLStream : public Stream<T>
     int array_size;
 
     // SYCL objects
+    // Queue is a pointer because we allow device selection
     std::unique_ptr<sycl::queue> queue;
-    std::unique_ptr<sycl::buffer<T>> d_a;
-    std::unique_ptr<sycl::buffer<T>> d_b;
-    std::unique_ptr<sycl::buffer<T>> d_c;
-    std::unique_ptr<sycl::buffer<T>> d_sum;
+
+    // Buffers
+    sycl::buffer<T> d_a;
+    sycl::buffer<T> d_b;
+    sycl::buffer<T> d_c;
+    sycl::buffer<T> d_sum;
 
   public:
 
