@@ -31,7 +31,7 @@ SYCLStream<T>::SYCLStream(const int ARRAY_SIZE, const int device_index)
   std::cout << "Using SYCL device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
 
-  queue = new sycl::queue(dev, sycl::async_handler{[&](sycl::exception_list l)
+  queue = std::make_unique<sycl::queue>(dev, sycl::async_handler{[&](sycl::exception_list l)
   {
     bool error = false;
     for(auto e: l)
