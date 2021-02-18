@@ -48,7 +48,6 @@ int ARRAY_SIZE = 33554432;
 unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
-bool triad_only = false;
 bool output_as_csv = false;
 bool mibibytes = false;
 std::string csv_separator = ",";
@@ -61,6 +60,14 @@ void run();
 
 template <typename T>
 void run_triad();
+
+// Options for running the benchmark:
+// - All 5 kernels (Copy, Add, Mul, Triad, Dot).
+// - Triad only.
+enum class Benchmark {All, Triad};
+
+// Selected run options.
+Benchmark selection = Benchmark::All;
 
 void parseArguments(int argc, char *argv[]);
 
@@ -77,24 +84,91 @@ int main(int argc, char *argv[])
       << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
   }
 
-  // TODO: Fix Kokkos to allow multiple template specializations
-  if (triad_only)
-  {
-    if (use_float)
-      run_triad<float>();
-    else
-      run_triad<double>();
-  }
+  if (use_float)
+    run<float>();
   else
-  {
-    if (use_float)
-      run<float>();
-    else
-      run<double>();
-  }
+    run<double>(); 
 
 }
 
+
+// Run the 5 main kernels
+template <typename T>
+std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
+{
+
+  // List of times
+  std::vector<std::vector<double>> timings(5);
+
+  // Declare timers
+  std::chrono::high_resolution_clock::time_point t1, t2;
+
+  // Main loop
+  for (unsigned int k = 0; k < num_times; k++)
+  {
+    // Execute Copy
+    t1 = std::chrono::high_resolution_clock::now();
+    stream->copy();
+    t2 = std::chrono::high_resolution_clock::now();
+    timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
+    // Execute Mul
+    t1 = std::chrono::high_resolution_clock::now();
+    stream->mul();
+    t2 = std::chrono::high_resolution_clock::now();
+    timings[1].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
+    // Execute Add
+    t1 = std::chrono::high_resolution_clock::now();
+    stream->add();
+    t2 = std::chrono::high_resolution_clock::now();
+    timings[2].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
+    // Execute Triad
+    t1 = std::chrono::high_resolution_clock::now();
+    stream->triad();
+    t2 = std::chrono::high_resolution_clock::now();
+    timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
+    // Execute Dot
+    t1 = std::chrono::high_resolution_clock::now();
+    sum = stream->dot();
+    t2 = std::chrono::high_resolution_clock::now();
+    timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+
+  }
+
+  // Compiler should use a move
+  return timings;
+}
+
+// Run the Triad kernel
+template <typename T>
+std::vector<std::vector<double>> run_triad(Stream<T> *stream)
+{
+
+  std::vector<std::vector<double>> timings(1);
+
+  // Declare timers
+  std::chrono::high_resolution_clock::time_point t1, t2;
+
+  // Run triad in loop
+  t1 = std::chrono::high_resolution_clock::now();
+  for (unsigned int k = 0; k < num_times; k++)
+  {
+    stream->triad();
+  }
+  t2 = std::chrono::high_resolution_clock::now();
+
+  double runtime = std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+  timings[0].push_back(runtime);
+
+  return timings;
+}
+
+
+// Generic run routine
+// Runs the kernel(s) and prints output.
 template <typename T>
 void run()
 {
@@ -102,7 +176,14 @@ void run()
 
   if (!output_as_csv)
   {
-    std::cout << "Running kernels " << num_times << " times" << std::endl;
+    if (selection == Benchmark::All)
+      std::cout << "Running kernels " << num_times << " times" << std::endl;
+    else if (selection == Benchmark::Triad)
+    {
+      std::cout << "Running triad " << num_times << " times" << std::endl;
+      std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
+    }
+
 
     if (sizeof(T) == sizeof(float))
       std::cout << "Precision: float" << std::endl;
@@ -182,55 +263,26 @@ void run()
 
   stream->init_arrays(startA, startB, startC);
 
-  // Result of the Dot kernel
-  T sum;
+  // Result of the Dot kernel, if used.
+  T sum = 0.0;
 
-  // List of times
-  std::vector<std::vector<double>> timings(5);
+  std::vector<std::vector<double>> timings;
 
-  // Declare timers
-  std::chrono::high_resolution_clock::time_point t1, t2;
-
-  // Main loop
-  for (unsigned int k = 0; k < num_times; k++)
+  switch (selection)
   {
-    // Execute Copy
-    t1 = std::chrono::high_resolution_clock::now();
-    stream->copy();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
-
-    // Execute Mul
-    t1 = std::chrono::high_resolution_clock::now();
-    stream->mul();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[1].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
-
-    // Execute Add
-    t1 = std::chrono::high_resolution_clock::now();
-    stream->add();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[2].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
-
-    // Execute Triad
-    t1 = std::chrono::high_resolution_clock::now();
-    stream->triad();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
-
-    // Execute Dot
-    t1 = std::chrono::high_resolution_clock::now();
-    sum = stream->dot();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
-
-  }
+    case Benchmark::All:
+      timings = run_all<T>(stream, sum);
+      break;
+    case Benchmark::Triad:
+      timings = run_triad<T>(stream);
+  };
 
   // Check solutions
   // Create host vectors
   std::vector<T> a(ARRAY_SIZE);
   std::vector<T> b(ARRAY_SIZE);
   std::vector<T> c(ARRAY_SIZE);
+
 
   stream->read_arrays(a, b, c);
   check_solution<T>(num_times, a, b, c, sum);
@@ -261,48 +313,87 @@ void run()
   }
 
 
-
-  std::string labels[6] = {"Copy", "Mul", "Add", "Triad", "Dot"};
-  size_t sizes[5] = {
-    2 * sizeof(T) * ARRAY_SIZE,
-    2 * sizeof(T) * ARRAY_SIZE,
-    3 * sizeof(T) * ARRAY_SIZE,
-    3 * sizeof(T) * ARRAY_SIZE,
-    2 * sizeof(T) * ARRAY_SIZE
-  };
-
-  for (int i = 0; i < 5; i++)
+  if (selection == Benchmark::All)
   {
-    // Get min/max; ignore the first result
-    auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
 
-    // Calculate average; ignore the first result
-    double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
+    std::string labels[5] = {"Copy", "Mul", "Add", "Triad", "Dot"};
+    size_t sizes[5] = {
+      2 * sizeof(T) * ARRAY_SIZE,
+      2 * sizeof(T) * ARRAY_SIZE,
+      3 * sizeof(T) * ARRAY_SIZE,
+      3 * sizeof(T) * ARRAY_SIZE,
+      2 * sizeof(T) * ARRAY_SIZE
+    };
 
-    // Display results
+    for (int i = 0; i < timings.size(); ++i)
+    {
+      // Get min/max; ignore the first result
+      auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
+
+      // Calculate average; ignore the first result
+      double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
+
+      // Display results
+      if (output_as_csv)
+      {
+        std::cout
+          << labels[i] << csv_separator
+          << num_times << csv_separator
+          << ARRAY_SIZE << csv_separator
+          << sizeof(T) << csv_separator
+          << ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first) << csv_separator
+          << *minmax.first << csv_separator
+          << *minmax.second << csv_separator
+          << average
+          << std::endl;
+      }
+      else
+      {
+        std::cout
+          << std::left << std::setw(12) << labels[i]
+          << std::left << std::setw(12) << std::setprecision(3) << 
+            ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first)
+          << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
+          << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
+          << std::left << std::setw(12) << std::setprecision(5) << average
+          << std::endl;
+      }
+    }
+  } else if (selection == Benchmark::Triad)
+  {
+    // Display timing results
+    double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
+    double bandwidth = ((mibibytes) ? pow(2.0, -30.0) : 1.0E-9) * (total_bytes / timings[0][0]);
+
     if (output_as_csv)
     {
       std::cout
-        << labels[i] << csv_separator
+        << "function" << csv_separator
+        << "num_times" << csv_separator
+        << "n_elements" << csv_separator
+        << "sizeof" << csv_separator
+        << ((mibibytes) ? "gibytes_per_sec" : "gbytes_per_sec") << csv_separator
+        << "runtime"
+        << std::endl;
+      std::cout
+        << "Triad" << csv_separator
         << num_times << csv_separator
         << ARRAY_SIZE << csv_separator
         << sizeof(T) << csv_separator
-        << ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first) << csv_separator
-        << *minmax.first << csv_separator
-        << *minmax.second << csv_separator
-        << average
+        << bandwidth << csv_separator
+        << timings[0][0]
         << std::endl;
     }
     else
     {
       std::cout
-        << std::left << std::setw(12) << labels[i]
-        << std::left << std::setw(12) << std::setprecision(3) << 
-          ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first)
-        << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
-        << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
-        << std::left << std::setw(12) << std::setprecision(5) << average
-        << std::endl;
+        << "--------------------------------"
+        << std::endl << std::fixed
+        << "Runtime (seconds): " << std::left << std::setprecision(5)
+        << timings[0][0] << std::endl
+        << "Bandwidth (" << ((mibibytes) ? "GiB/s" : "GB/s") << "):  "
+        << std::left << std::setprecision(3)
+        << bandwidth << std::endl;
     }
   }
 
@@ -310,147 +401,6 @@ void run()
 
 }
 
-template <typename T>
-void run_triad()
-{
-
-  if (!output_as_csv)
-  {
-    std::cout << "Running triad " << num_times << " times" << std::endl;
-    std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
-
-    if (sizeof(T) == sizeof(float))
-      std::cout << "Precision: float" << std::endl;
-    else
-      std::cout << "Precision: double" << std::endl;
-
-    std::streamsize ss = std::cout.precision();
-    if (mibibytes)
-    {
-      std::cout << std::setprecision(1) << std::fixed
-        << "Array size: " << ARRAY_SIZE*sizeof(T)*pow(2.0, -10.0) << " KiB"
-        << " (=" << ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -10.0) << " KiB"
-        << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB)" << std::endl;
-    }
-    else
-    {
-      std::cout << std::setprecision(1) << std::fixed
-        << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-3 << " KB"
-        << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-3 << " KB"
-        << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB)" << std::endl;
-    }
-    std::cout.precision(ss);
-  }
-
-  Stream<T> *stream;
-
-#if defined(CUDA)
-  // Use the CUDA implementation
-  stream = new CUDAStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(HIP)
-  // Use the HIP implementation
-  stream = new HIPStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(OCL)
-  // Use the OpenCL implementation
-  stream = new OCLStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(USE_RAJA)
-  // Use the RAJA implementation
-  stream = new RAJAStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(KOKKOS)
-  // Use the Kokkos implementation
-  stream = new KokkosStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(ACC)
-  // Use the OpenACC implementation
-  stream = new ACCStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(STD)
-  // Use the STD implementation
-  stream = new STDStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(STD20)
-  // Use the C++20 implementation
-  stream = new STD20Stream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(SYCL)
-  // Use the SYCL implementation
-  stream = new SYCLStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(OMP)
-  // Use the OpenMP implementation
-  stream = new OMPStream<T>(ARRAY_SIZE, deviceIndex);
-
-#endif
-
-  stream->init_arrays(startA, startB, startC);
-
-  // Declare timers
-  std::chrono::high_resolution_clock::time_point t1, t2;
-
-  // Run triad in loop
-  t1 = std::chrono::high_resolution_clock::now();
-  for (unsigned int k = 0; k < num_times; k++)
-  {
-    stream->triad();
-  }
-  t2 = std::chrono::high_resolution_clock::now();
-
-  double runtime = std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-
-  // Check solutions
-  // Create host vectors
-  std::vector<T> a(ARRAY_SIZE);
-  std::vector<T> b(ARRAY_SIZE);
-  std::vector<T> c(ARRAY_SIZE);
-
-  T sum = 0.0;
-
-  stream->read_arrays(a, b, c);
-  check_solution<T>(num_times, a, b, c, sum);
-
-  // Display timing results
-  double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
-  double bandwidth = ((mibibytes) ? pow(2.0, -30.0) : 1.0E-9) * (total_bytes / runtime);
-
-  if (output_as_csv)
-  {
-    std::cout
-      << "function" << csv_separator
-      << "num_times" << csv_separator
-      << "n_elements" << csv_separator
-      << "sizeof" << csv_separator
-      << ((mibibytes) ? "gibytes_per_sec" : "gbytes_per_sec") << csv_separator
-      << "runtime"
-      << std::endl;
-    std::cout
-      << "Triad" << csv_separator
-      << num_times << csv_separator
-      << ARRAY_SIZE << csv_separator
-      << sizeof(T) << csv_separator
-      << bandwidth << csv_separator
-      << runtime
-      << std::endl;
-  }
-  else
-  {
-    std::cout
-      << "--------------------------------"
-      << std::endl << std::fixed
-      << "Runtime (seconds): " << std::left << std::setprecision(5)
-      << runtime << std::endl
-      << "Bandwidth (" << ((mibibytes) ? "GiB/s" : "GB/s") << "):  "
-      << std::left << std::setprecision(3)
-      << bandwidth << std::endl;
-  }
-
-  delete stream;
-}
 
 template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum)
@@ -466,7 +416,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   for (unsigned int i = 0; i < ntimes; i++)
   {
     // Do STREAM!
-    if (!triad_only)
+    if (! (selection == Benchmark::Triad))
     {
       goldC = goldA;
       goldB = scalar * goldC;
@@ -502,7 +452,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
       << "Validation failed on c[]. Average error " << errC
       << std::endl;
   // Check sum to 8 decimal places
-  if (!triad_only && errSum > 1.0E-8)
+  if (!(selection == Benchmark::Triad) && errSum > 1.0E-8)
     std::cerr
       << "Validation failed on sum. Error " << errSum
       << std::endl << std::setprecision(15)
@@ -571,7 +521,7 @@ void parseArguments(int argc, char *argv[])
     }
     else if (!std::string("--triad-only").compare(argv[i]))
     {
-      triad_only = true;
+      selection = Benchmark::Triad;
     }
     else if (!std::string("--csv").compare(argv[i]))
     {
