@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - Clang compiler OpenMP flags corrected for NVIDIA target.
 - Reorder OpenCL objects in class so destructors are called in safe order.
 - Ensure all OpenCL kernels are present in destructor.
+- Unified run function in driver code to reduce code duplication, output should be uneffected.
 
 ### Removed
 - Pre-building of kernels in SYCL version to ensure compatibility with SYCL 1.2.1.
