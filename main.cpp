@@ -58,13 +58,11 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 template <typename T>
 void run();
 
-template <typename T>
-void run_triad();
-
 // Options for running the benchmark:
 // - All 5 kernels (Copy, Add, Mul, Triad, Dot).
 // - Triad only.
-enum class Benchmark {All, Triad};
+// - Nstream only.
+enum class Benchmark {All, Triad, Nstream};
 
 // Selected run options.
 Benchmark selection = Benchmark::All;
@@ -164,6 +162,27 @@ std::vector<std::vector<double>> run_triad(Stream<T> *stream)
   timings[0].push_back(runtime);
 
   return timings;
+}
+
+// Run the Nstream kernel
+template <typename T>
+std::vector<std::vector<double>> run_nstream(Stream<T> *stream)
+{
+  std::vector<std::vector<double>> timings(1);
+
+  // Declare timers
+  std::chrono::high_resolution_clock::time_point t1, t2;
+
+  // Run nstream in loop
+  for (int k = 0; k < num_times; k++) {
+    t1 = std::chrono::high_resolution_clock::now();
+    stream->nstream();
+    t2 = std::chrono::high_resolution_clock::now();
+    timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+  }
+
+  return timings;
+
 }
 
 
@@ -275,6 +294,10 @@ void run()
       break;
     case Benchmark::Triad:
       timings = run_triad<T>(stream);
+      break;
+    case Benchmark::Nstream:
+      timings = run_nstream<T>(stream);
+      break;
   };
 
   // Check solutions
@@ -313,17 +336,26 @@ void run()
   }
 
 
-  if (selection == Benchmark::All)
+  if (selection == Benchmark::All || selection == Benchmark::Nstream)
   {
 
-    std::string labels[5] = {"Copy", "Mul", "Add", "Triad", "Dot"};
-    size_t sizes[5] = {
-      2 * sizeof(T) * ARRAY_SIZE,
-      2 * sizeof(T) * ARRAY_SIZE,
-      3 * sizeof(T) * ARRAY_SIZE,
-      3 * sizeof(T) * ARRAY_SIZE,
-      2 * sizeof(T) * ARRAY_SIZE
-    };
+    std::vector<std::string> labels;
+    std::vector<size_t> sizes;
+
+    if (selection == Benchmark::All)
+    {
+      labels = {"Copy", "Mul", "Add", "Triad", "Dot"};
+      sizes = {
+        2 * sizeof(T) * ARRAY_SIZE,
+        2 * sizeof(T) * ARRAY_SIZE,
+        3 * sizeof(T) * ARRAY_SIZE,
+        3 * sizeof(T) * ARRAY_SIZE,
+        2 * sizeof(T) * ARRAY_SIZE};
+    } else if (selection == Benchmark::Nstream)
+    {
+      labels = {"Nstream"};
+      sizes = {4 * sizeof(T) * ARRAY_SIZE };
+    }
 
     for (int i = 0; i < timings.size(); ++i)
     {
@@ -416,13 +448,19 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   for (unsigned int i = 0; i < ntimes; i++)
   {
     // Do STREAM!
-    if (! (selection == Benchmark::Triad))
+    if (selection == Benchmark::All)
     {
       goldC = goldA;
       goldB = scalar * goldC;
       goldC = goldA + goldB;
+      goldA = goldB + scalar * goldC;
+    } else if (selection == Benchmark::Triad)
+    {
+      goldA = goldB + scalar * goldC;
+    } else if (selection == Benchmark::Nstream)
+    {
+      goldA += goldB + scalar * goldC;
     }
-    goldA = goldB + scalar * goldC;
   }
 
   // Do the reduction
@@ -452,7 +490,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
       << "Validation failed on c[]. Average error " << errC
       << std::endl;
   // Check sum to 8 decimal places
-  if (!(selection == Benchmark::Triad) && errSum > 1.0E-8)
+  if (selection == Benchmark::All && errSum > 1.0E-8)
     std::cerr
       << "Validation failed on sum. Error " << errSum
       << std::endl << std::setprecision(15)
@@ -523,6 +561,10 @@ void parseArguments(int argc, char *argv[])
     {
       selection = Benchmark::Triad;
     }
+    else if (!std::string("--nstream-only").compare(argv[i]))
+    {
+      selection = Benchmark::Nstream;
+    }
     else if (!std::string("--csv").compare(argv[i]))
     {
       output_as_csv = true;
@@ -544,6 +586,7 @@ void parseArguments(int argc, char *argv[])
       std::cout << "  -n  --numtimes   NUM     Run the test NUM times (NUM >= 2)" << std::endl;
       std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
       std::cout << "      --triad-only         Only run triad" << std::endl;
+      std::cout << "      --nstream-only       Only run nstream" << std::endl;
       std::cout << "      --csv                Output as csv table" << std::endl;
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << std::endl;
