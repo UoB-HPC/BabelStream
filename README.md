@@ -91,6 +91,14 @@ Results
 
 Sample results can be found in the `results` subdirectory. If you would like to submit updated results, please submit a Pull Request.
 
+Contributing
+------------
+
+As of v4.0, the `main` branch of this repository will hold the latest released version.
+
+The `develop` branch will contain unreleased features due for the next (major and/or minor) release of BabelStream.
+Pull Requests should be made against the `develop` branch.
+
 Citing
 ------
 
