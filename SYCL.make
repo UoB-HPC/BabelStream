@@ -33,66 +33,49 @@ Set ARCH to change device (defaulting to "").
 
 endef
 
-ifneq ($(COMPILER), DPCPP)
+ifeq ($(COMPILER), HIPSYCL)
+ifneq ($(TARGET), CPU)
 $(info $(arch_help))
 ARCH=
-
+endif
 endif
 
 endif
 
-SYCL_COMPUTECPP_SYCLFLAGS = $(shell $(SYCL_SDK_DIR)/bin/computecpp_info --dump-device-compiler-flags)
-SYCL_COMPUTECPP_SYCLFLAGS_AMD = $(SYCL_COMPUTECPP_SYCLFLAGS)
+SYCL_COMPUTECPP_SYCLFLAGS = $(shell $(SYCL_SDK_DIR)/bin/computecpp_info --dump-device-compiler-flags) -no-serial-memop -sycl-driver
 SYCL_COMPUTECPP_SYCLFLAGS_CPU = $(SYCL_COMPUTECPP_SYCLFLAGS)
+SYCL_COMPUTECPP_SYCLFLAGS_AMD = $(SYCL_COMPUTECPP_SYCLFLAGS)
 SYCL_COMPUTECPP_SYCLFLAGS_NVIDIA = $(SYCL_COMPUTECPP_SYCLFLAGS) -sycl-target ptx64
 SYCL_COMPUTECPP_SYCLCXX = $(SYCL_SDK_DIR)/bin/compute++
-SYCL_COMPUTECPP_FLAGS = -O3 --std=c++17
-SYCL_COMPUTECPP_LINK_FLAGS = -L$(SYCL_SDK_DIR)/lib -lComputeCpp -lOpenCL -Wl,--rpath=$(SYCL_SDK_DIR)/lib/
+SYCL_COMPUTECPP_FLAGS = -O3 -std=c++17
+SYCL_COMPUTECPP_LINK_FLAGS = -Wl,-rpath=$(SYCL_SDK_DIR)/lib/ $(SYCL_SDK_DIR)/lib/libComputeCpp.so -lOpenCL 
 SYCL_COMPUTECPP_INCLUDE = -I$(SYCL_SDK_DIR)/include 
-SYCL_COMPUTECPP_CXX = g++
-SYCL_COMPUTECPP_DEPS = SYCLStream.sycl
 
-SYCL_HIPSYCL_SYCLFLAGS_CPU =    -O3 --std=c++17 --hipsycl-platform=cpu 
-SYCL_HIPSYCL_SYCLFLAGS_AMD =    -O3 --std=c++17 --hipsycl-platform=rocm --hipsycl-gpu-arch=$(ARCH)
-SYCL_HIPSYCL_SYCLFLAGS_NVIDIA = -O3 --std=c++17 --hipsycl-platform=cuda --hipsycl-gpu-arch=$(ARCH)
+SYCL_HIPSYCL_SYCLFLAGS_CPU =    --hipsycl-platform=cpu
+SYCL_HIPSYCL_SYCLFLAGS_AMD =    --hipsycl-platform=rocm --hipsycl-gpu-arch=$(ARCH)
+SYCL_HIPSYCL_SYCLFLAGS_NVIDIA = --hipsycl-platform=cuda --hipsycl-gpu-arch=$(ARCH)
 SYCL_HIPSYCL_SYCLCXX = $(SYCL_SDK_DIR)/bin/syclcc
-SYCL_HIPSYCL_FLAGS = $(SYCL_HIPSYCL_SYCLFLAGS_$(TARGET))
+SYCL_HIPSYCL_FLAGS = -O3 --std=c++17
 SYCL_HIPSYCL_LINK_FLAGS = -L$(SYCL_SDK_DIR)/lib -Wl,-rpath,$(SYCL_SDK_DIR)/lib
 SYCL_HIPSYCL_INCLUDE = 
-SYCL_HIPSYCL_CXX = $(SYCL_HIPSYCL_SYCLCXX)
-SYCL_HIPSYCL_DEPS = 
 
-SYCL_DPCPP_SYCLFLAGS_CPU = -O3 --std=c++17
-SYCL_DPCPP_SYCLFLAGS_NVIDIA = -O3 --std=c++17 -fsycl -fsycl-targets=nvptx64-nvidia-cuda-sycldevice -fsycl-unnamed-lambda
+SYCL_DPCPP_SYCLFLAGS_NVIDIA = -fsycl -fsycl-targets=nvptx64-nvidia-cuda-sycldevice -fsycl-unnamed-lambda
 SYCL_DPCPP_SYCLCXX = dpcpp
-SYCL_DPCPP_FLAGS = $(SYCL_DPCPP_SYCLFLAGS_CPU)
+SYCL_DPCPP_FLAGS = -O3 --std=c++17
 SYCL_DPCPP_LINK_FLAGS =  
 SYCL_DPCPP_INCLUDE = 
-SYCL_DPCPP_CXX = dpcpp
-SYCL_DPCPP_DEPS = 
 
 
 SYCL_SYCLFLAGS = $(SYCL_$(COMPILER)_SYCLFLAGS_$(TARGET))
 SYCL_SYCLCXX = $(SYCL_$(COMPILER)_SYCLCXX)
-
 SYCL_FLAGS = $(SYCL_$(COMPILER)_FLAGS)
 SYCL_LINK_FLAGS = $(SYCL_$(COMPILER)_LINK_FLAGS)
 SYCL_INCLUDE = $(SYCL_$(COMPILER)_INCLUDE)
-SYCL_CXX = $(SYCL_$(COMPILER)_CXX)
-SYCL_DEPS = $(SYCL_$(COMPILER)_DEPS)
 
-sycl-stream: main.o SYCLStream.o $(SYCL_DEPS)
-	$(SYCL_CXX) $(SYCL_FLAGS) -DSYCL main.o SYCLStream.o $(EXTRA_FLAGS) $(SYCL_LINK_FLAGS) -o $@ 
-
-main.o: main.cpp
-	$(SYCL_CXX) $(SYCL_FLAGS) -DSYCL main.cpp -c $(SYCL_INCLUDE) $(EXTRA_FLAGS) -o $@ 
-
-SYCLStream.o: SYCLStream.cpp $(SYCL_DEPS)
-	$(SYCL_CXX) $(SYCL_FLAGS) -DSYCL SYCLStream.cpp -c $(SYCL_INCLUDE) $(EXTRA_FLAGS) -o $@ 
-
-SYCLStream.sycl: SYCLStream.cpp
-	$(SYCL_SYCLCXX) -DSYCL SYCLStream.cpp $(SYCL_SYCLFLAGS) -c $(SYCL_INCLUDE) -o $@ 
+# only ComputeCpp generates .sycl files which is a bit odd to deal with so we opted to compile everything together
+sycl-stream: main.cpp SYCLStream.cpp
+	$(SYCL_SYCLCXX) $(SYCL_SYCLFLAGS) $(SYCL_FLAGS) $(SYCL_INCLUDE) -DSYCL $(EXTRA_FLAGS) $(SYCL_LINK_FLAGS) $^ -o $@
 
 .PHONY: clean
 clean:
-	rm -f sycl-stream SYCLStream.sycl main.o SYCLStream.o
+	rm -f sycl-stream
