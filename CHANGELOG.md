@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - Ensure all OpenCL kernels are present in destructor.
 - Unified run function in driver code to reduce code duplication, output should be uneffected.
 - Normalise sum result by expected value to help false negative errors.
+- Update SYCL version to SYCL 2020.
 
 ### Removed
 - Pre-building of kernels in SYCL version to ensure compatibility with SYCL 1.2.1.

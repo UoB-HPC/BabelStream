@@ -7,6 +7,9 @@ Available compilers are:
 
   For HIPSYCL and COMPUTECPP, SYCL_SDK_DIR must be specified, the directory should contain [/lib, /bin, ...]
   For DPCPP, the compiler must be on path
+
+  You may need to use the following if running old glibc:
+  EXTRA_FLAGS="--gcc-toolchain=$(realpath "$(dirname "$(which gcc)")"/..)"
 endef
 $(info $(compiler_help))
 COMPILER=HIPSYCL
