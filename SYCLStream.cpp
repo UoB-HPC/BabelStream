@@ -131,12 +131,13 @@ template <class T>
 void SYCLStream<T>::nstream()
 {
   const T scalar = startScalar;
-  queue->submit([&](handler &cgh)
+
+  queue->submit([&](sycl::handler &cgh)
   {
-    auto ka = d_a->template get_access<access::mode::read_write>(cgh);
-    auto kb = d_b->template get_access<access::mode::read>(cgh);
-    auto kc = d_c->template get_access<access::mode::read>(cgh);
-    cgh.parallel_for<nstream_kernel>(range<1>{array_size}, [=](id<1> idx)
+    sycl::accessor ka {d_a, cgh};
+    sycl::accessor kb {d_b, cgh, sycl::read_only};
+    sycl::accessor kc {d_c, cgh, sycl::read_only};
+    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       ka[idx] += kb[idx] + scalar * kc[idx];
     });
