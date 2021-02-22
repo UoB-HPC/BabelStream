@@ -95,6 +95,20 @@ void STD20Stream<T>::triad()
 }
 
 template <class T>
+void STD20Stream<T>::nstream()
+{
+  const T scalar = startScalar;
+
+  std::for_each_n(
+    std::execution::par_unseq,
+    std::views::iota(0).begin(), array_size,
+    [&] (int i) {
+      a[i] += b[i] + scalar * c[i];
+    }
+  );
+}
+
+template <class T>
 T STD20Stream<T>::dot()
 {
   // sum += a[i] * b[i];

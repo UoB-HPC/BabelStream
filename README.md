@@ -38,6 +38,15 @@ But this information is not typically available in real HPC codes today, where t
 
 BabelStream therefore provides a measure of what memory bandwidth performance can be attained (by a particular programming model) if you follow today's best parallel programming best practice.
 
+BabelStream also includes the nstream kernel from the Parallel Research Kernels (PRK) project, available on [GitHub](https://github.com/ParRes/Kernels).
+Details about PRK can be found in the following references:
+
+> Van der Wijngaart, Rob F., and Timothy G. Mattson. The parallel research kernels. IEEE High Performance Extreme Computing Conference (HPEC). IEEE, 2014.
+
+> R. F. Van der Wijngaart, A. Kayi, J. R. Hammond, G. Jost, T. St. John, S. Sridharan, T. G. Mattson, J. Abercrombie, and J. Nelson. Comparing runtime systems with exascale ambitions using the Parallel Research Kernels. ISC 2016, [DOI: 10.1007/978-3-319-41321-1_17](https://doi.org/10.1007/978-3-319-41321-1_17).
+
+> Jeff R. Hammond and Timothy G. Mattson. Evaluating data parallelism in C++ using the Parallel Research Kernels. IWOCL 2019, [DOI: 10.1145/3318170.3318192](https://doi.org/10.1145/3318170.3318192).
+
 
 Website
 -------

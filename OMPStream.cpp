@@ -192,6 +192,31 @@ void OMPStream<T>::triad()
 }
 
 template <class T>
+void OMPStream<T>::nstream()
+{
+  const T scalar = startScalar;
+
+#ifdef OMP_TARGET_GPU
+  int array_size = this->array_size;
+  T *a = this->a;
+  T *b = this->b;
+  T *c = this->c;
+  #pragma omp target teams distribute parallel for simd
+#else
+  #pragma omp parallel for
+#endif
+  for (int i = 0; i < array_size; i++)
+  {
+    a[i] += b[i] + scalar * c[i];
+  }
+  #if defined(OMP_TARGET_GPU) && defined(_CRAYC)
+  // If using the Cray compiler, the kernels do not block, so this update forces
+  // a small copy to ensure blocking so that timing is correct
+  #pragma omp target update from(a[0:0])
+  #endif
+}
+
+template <class T>
 T OMPStream<T>::dot()
 {
   T sum = 0.0;

@@ -120,6 +120,21 @@ void KokkosStream<T>::triad()
 }
 
 template <class T>
+void KokkosStream<T>::nstream()
+{
+  Kokkos::View<T*> a(*d_a);
+  Kokkos::View<T*> b(*d_b);
+  Kokkos::View<T*> c(*d_c);
+
+  const T scalar = startScalar;
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
+  {
+    a[index] += b[index] + scalar*c[index];
+  });
+  Kokkos::fence();
+}
+
+template <class T>
 T KokkosStream<T>::dot()
 {
   Kokkos::View<T*> a(*d_a);

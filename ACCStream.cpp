@@ -121,6 +121,22 @@ void ACCStream<T>::triad()
 }
 
 template <class T>
+void ACCStream<T>::nstream()
+{
+  const T scalar = startScalar;
+
+  int array_size = this->array_size;
+  T * restrict a = this->a;
+  T * restrict b = this->b;
+  T * restrict c = this->c;
+  #pragma acc parallel loop present(a[0:array_size],  b[0:array_size], c[0:array_size]) wait
+  for (int i = 0; i < array_size; i++)
+  {
+    a[i] += b[i] + scalar * c[i];
+  }
+}
+
+template <class T>
 T ACCStream<T>::dot()
 {
   T sum = 0.0;

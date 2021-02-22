@@ -61,6 +61,14 @@ std::string kernels{R"CLC(
     const size_t i = get_global_id(0);
     a[i] = b[i] + scalar * c[i];
   }
+  kernel void nstream(
+    global TYPE * restrict a,
+    global const TYPE * restrict b,
+    global const TYPE * restrict c)
+  {
+    const size_t i = get_global_id(0);
+    a[i] += b[i] + scalar * c[i];
+  }
 
   kernel void stream_dot(
     global const TYPE * restrict a,
@@ -157,6 +165,7 @@ OCLStream<T>::OCLStream(const int ARRAY_SIZE, const int device_index)
   mul_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "mul");
   add_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "add");
   triad_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "triad");
+  nstream_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "nstream");
   dot_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_int>(program, "stream_dot");
 
   array_size = ARRAY_SIZE;
@@ -186,6 +195,7 @@ OCLStream<T>::~OCLStream()
   delete mul_kernel;
   delete add_kernel;
   delete triad_kernel;
+  delete nstream_kernel;
   delete dot_kernel;
 
   devices.clear();
@@ -225,6 +235,16 @@ template <class T>
 void OCLStream<T>::triad()
 {
   (*triad_kernel)(
+    cl::EnqueueArgs(queue, cl::NDRange(array_size)),
+    d_a, d_b, d_c
+  );
+  queue.finish();
+}
+
+template <class T>
+void OCLStream<T>::nstream()
+{
+  (*nstream_kernel)(
     cl::EnqueueArgs(queue, cl::NDRange(array_size)),
     d_a, d_b, d_c
   );

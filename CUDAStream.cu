@@ -212,6 +212,23 @@ void CUDAStream<T>::triad()
   check_error();
 }
 
+template <typename T>
+__global__ void nstream_kernel(T * a, const T * b, const T * c)
+{
+  const T scalar = startScalar;
+  const int i = blockDim.x * blockIdx.x + threadIdx.x;
+  a[i] += b[i] + scalar * c[i];
+}
+
+template <class T>
+void CUDAStream<T>::nstream()
+{
+  nstream_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c);
+  check_error();
+  cudaDeviceSynchronize();
+  check_error();
+}
+
 template <class T>
 __global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
 {

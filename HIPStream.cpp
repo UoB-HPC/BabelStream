@@ -182,6 +182,23 @@ void HIPStream<T>::triad()
   check_error();
 }
 
+template <typename T>
+__global__ void nstream_kernel(T * a, const T * b, const T * c)
+{
+  const T scalar = startScalar;
+  const int i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+  a[i] += b[i] + scalar * c[i];
+}
+
+template <class T>
+void HIPStream<T>::nstream()
+{
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(nstream_kernel<T>), dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0, d_a, d_b, d_c);
+  check_error();
+  hipDeviceSynchronize();
+  check_error();
+}
+
 template <class T>
 __global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
 {
