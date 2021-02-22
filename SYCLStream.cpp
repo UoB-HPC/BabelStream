@@ -149,6 +149,23 @@ void SYCLStream<T>::triad()
 }
 
 template <class T>
+void SYCLStream<T>::nstream()
+{
+  const T scalar = startScalar;
+  queue->submit([&](handler &cgh)
+  {
+    auto ka = d_a->template get_access<access::mode::read_write>(cgh);
+    auto kb = d_b->template get_access<access::mode::read>(cgh);
+    auto kc = d_c->template get_access<access::mode::read>(cgh);
+    cgh.parallel_for<nstream_kernel>(range<1>{array_size}, [=](id<1> idx)
+    {
+      ka[idx] += kb[idx] + scalar * kc[idx];
+    });
+  });
+  queue->wait();
+}
+
+template <class T>
 T SYCLStream<T>::dot()
 {
   queue->submit([&](handler &cgh)

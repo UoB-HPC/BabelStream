@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Kokkos 3 build system (No code changes made).
 - SYCL build rules for ComputeCpp, DPCPP and HipSYCL.
 - Support for CUDA Managed Memory and Page Fault memory.
+- Added nstream kernel from PRK with associate command line option.
 
 ### Changed
 - Default branch renamed from `master` to `main`.
@@ -25,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - Reorder OpenCL objects in class so destructors are called in safe order.
 - Ensure all OpenCL kernels are present in destructor.
 - Unified run function in driver code to reduce code duplication, output should be uneffected.
+- Normalise sum result by expected value to help false negative errors.
 
 ### Removed
 - Pre-building of kernels in SYCL version to ensure compatibility with SYCL 1.2.1.

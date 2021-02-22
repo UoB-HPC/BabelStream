@@ -22,6 +22,7 @@ namespace sycl_kernels
   template <class T> class mul;
   template <class T> class add;
   template <class T> class triad;
+  template <class T> class nstream;
   template <class T> class dot;
 }
 
@@ -45,6 +46,7 @@ class SYCLStream : public Stream<T>
     typedef sycl_kernels::mul<T> mul_kernel;
     typedef sycl_kernels::add<T> add_kernel;
     typedef sycl_kernels::triad<T> triad_kernel;
+    typedef sycl_kernels::nstream<T> nstream_kernel;
     typedef sycl_kernels::dot<T> dot_kernel;
 
     // NDRange configuration for the dot kernel
@@ -60,6 +62,7 @@ class SYCLStream : public Stream<T>
     virtual void add() override;
     virtual void mul() override;
     virtual void triad() override;
+    virtual void nstream() override;
     virtual T    dot() override;
 
     virtual void init_arrays(T initA, T initB, T initC) override;
