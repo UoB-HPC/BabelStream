@@ -1,0 +1,40 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache compiler
+        id: prepare-compilers
+        uses: actions/cache@v2
+        with:
+          path: compilers
+          key: ${{ runner.os }}-${{ hashFiles('ci-prepare-bionic.sh') }}
+
+      - name: Prepare compilers
+        if: steps.prepare-compilers.outputs.cache-hit != 'true'
+        run: source ./ci-prepare-bionic.sh ./compilers SETUP true || true
+
+      - name: Setup test environment
+        run: source ./ci-prepare-bionic.sh ./compilers VARS false || true
+      - name: Test compile gcc
+        run: ./ci-test-compile.sh ./build gcc all
+      - name: Test compile clang
+        run: ./ci-test-compile.sh ./build clang all
+      - name: Test compile nvhpc
+        run: ./ci-test-compile.sh ./build nvhpc all
+      - name: Test compile aocc
+        run: ./ci-test-compile.sh ./build aocc all
+      - name: Test compile aomp
+        run: ./ci-test-compile.sh ./build aomp all
+      - name: Test compile hip
+        run: ./ci-test-compile.sh ./build hip all
+      - name: Test compile dpcpp
+        run: ./ci-test-compile.sh ./build dpcpp all
+      - name: Test compile hipsycl
+        run: ./ci-test-compile.sh ./build hipsycl all

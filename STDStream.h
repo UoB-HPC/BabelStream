@@ -24,7 +24,7 @@ class STDStream : public Stream<T>
     T *c;
 
   public:
-    STDStream(const int, int);
+    STDStream(const int, int) noexcept;
     ~STDStream();
 
     virtual void copy() override;
