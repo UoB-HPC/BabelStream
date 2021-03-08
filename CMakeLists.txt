@@ -72,7 +72,7 @@ if (NOT DEFINED DEBUG_FLAGS)
 endif ()
 if (NOT DEFINED RELEASE_FLAGS)
     # XXX switch on compiler type for the best default here, right now it's just GCC-compatible flags
-    set(RELEASE_FLAGS -O3)
+    set(RELEASE_FLAGS -O3 -march=native)
 endif ()
 
 message(STATUS "Common ${CMAKE_BUILD_TYPE} flags are `${${BUILD_TYPE}_FLAGS}`, set ${BUILD_TYPE}_FLAGS to override")
