@@ -31,7 +31,7 @@ class SYCLStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    size_t array_size;
 
     // SYCL objects
     cl::sycl::queue *queue;
