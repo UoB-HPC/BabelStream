@@ -64,18 +64,9 @@ if ((NOT BUILD_TYPE STREQUAL RELEASE) AND (NOT BUILD_TYPE STREQUAL DEBUG))
     message(FATAL_ERROR "Only Release or Debug is supported, got `${CMAKE_BUILD_TYPE}`")
 endif ()
 
-
-# setup common build flag defaults if there are no overrides
-if (NOT DEFINED DEBUG_FLAGS)
-    # XXX switch on compiler type for the best default here, right now it's just GCC-compatible flags
-    set(DEBUG_FLAGS -O2 -fno-omit-frame-pointer)
-endif ()
-if (NOT DEFINED RELEASE_FLAGS)
-    # XXX switch on compiler type for the best default here, right now it's just GCC-compatible flags
-    set(RELEASE_FLAGS -O3 -march=native)
-endif ()
-
-message(STATUS "Common ${CMAKE_BUILD_TYPE} flags are `${${BUILD_TYPE}_FLAGS}`, set ${BUILD_TYPE}_FLAGS to override")
+# setup some defaults flags for everything
+set(DEFAULT_DEBUG_FLAGS -O2 -fno-omit-frame-pointer)
+set(DEFAULT_RELEASE_FLAGS -O3 -march=native)
 
 macro(hint_flag FLAG DESCRIPTION)
     if (NOT DEFINED ${FLAG})
@@ -146,13 +137,28 @@ setup()
 
 # CMake insists that -O2 (or equivalent) is the universally accepted optimisation level
 # we remove that here and use our own <BUILD_TYPE>_FLAGS
-string(REGEX REPLACE "([\\/\\-]O.)" ""
-        CMAKE_CXX_FLAGS_${BUILD_TYPE} "${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
+wipe_gcc_style_optimisation_flags(CMAKE_CXX_FLAGS_${BUILD_TYPE})
+
+message(STATUS "Default ${CMAKE_BUILD_TYPE} flags are `${DEFAULT_${BUILD_TYPE}_FLAGS}`, set ${BUILD_TYPE}_FLAGS to override (CXX_EXTRA_* flags are not affected)")
+
+# setup common build flag defaults if there are no overrides
+if (NOT DEFINED ${BUILD_TYPE}_FLAGS)
+    set(ACTUAL_${BUILD_TYPE}_FLAGS ${DEFAULT_${BUILD_TYPE}_FLAGS})
+    elseif()
+    set(ACTUAL_${BUILD_TYPE}_FLAGS ${${BUILD_TYPE}_FLAGS})
+endif ()
+
 
 message(STATUS "CXX vendor  : ${CMAKE_CXX_COMPILER_ID} (${CMAKE_CXX_COMPILER})")
+message(STATUS "Platform    : ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "Sources     : ${IMPL_SOURCES}")
 message(STATUS "Libraries   : ${LINK_LIBRARIES}")
-message(STATUS "CXX Flags   : ${CMAKE_CXX_FLAGS_${BUILD_TYPE}} ${${BUILD_TYPE}_FLAGS} ${CXX_EXTRA_FLAGS} ")
+message(STATUS "CXX Flags   : ${CMAKE_CXX_FLAGS_${BUILD_TYPE}} ${ACTUAL_${BUILD_TYPE}_FLAGS} ${CXX_EXTRA_FLAGS}
+    CXX flags derived from (CMake + (Override ? Override : Default) + Extras), where:
+        CMake                    = `${CMAKE_CXX_FLAGS_${BUILD_TYPE}}`
+        Default                  = `${DEFAULT_${BUILD_TYPE}_FLAGS}`
+        Override (RELEASE_FLAGS) = `${${BUILD_TYPE}_FLAGS}`
+        Extras (CXX_EXTRA_FLAGS) = `${CXX_EXTRA_FLAGS}`")
 message(STATUS "Link Flags  : ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS}")
 message(STATUS "Linker Flags: ${CMAKE_EXE_LINKER_FLAGS} ${CXX_EXTRA_LINKER_FLAGS} ")
 message(STATUS "Defs        : ${IMPL_DEFINITIONS}")
@@ -168,8 +174,8 @@ if (CXX_EXTRA_LIBRARIES)
     target_link_libraries(${EXE_NAME} PUBLIC ${CXX_EXTRA_LIBRARIES})
 endif ()
 
-target_compile_options(${EXE_NAME} PUBLIC "$<$<CONFIG:Release>:${RELEASE_FLAGS};${CXX_EXTRA_FLAGS}>")
-target_compile_options(${EXE_NAME} PUBLIC "$<$<CONFIG:Debug>:${DEBUG_FLAGS};${CXX_EXTRA_FLAGS}>")
+target_compile_options(${EXE_NAME} PUBLIC "$<$<CONFIG:Release>:${ACTUAL_RELEASE_FLAGS};${CXX_EXTRA_FLAGS}>")
+target_compile_options(${EXE_NAME} PUBLIC "$<$<CONFIG:Debug>:${ACTUAL_DEBUG_FLAGS};${CXX_EXTRA_FLAGS}>")
 
 target_link_options(${EXE_NAME} PUBLIC LINKER:${CXX_EXTRA_LINKER_FLAGS})
 target_link_options(${EXE_NAME} PUBLIC ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS})

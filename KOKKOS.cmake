@@ -12,6 +12,9 @@ register_flag_required(KOKKOS_IN_TREE
 
          See https://github.com/kokkos/kokkos/blob/master/BUILD.md for all available options")
 
+# compiler vendor and arch specific flags
+set(KOKKOS_FLAGS_CPU_INTEL -qopt-streaming-stores=always)
+
 macro(setup)
 
     cmake_policy(SET CMP0074 NEW) #see https://github.com/kokkos/kokkos/blob/master/BUILD.md
@@ -24,6 +27,12 @@ macro(setup)
     else ()
         message(FATAL_ERROR "`${KOKKOS_IN_TREE}` does not exist")
     endif ()
+
+    register_append_compiler_and_arch_specific_cxx_flags(
+            KOKKOS_FLAGS_CPU
+            ${CMAKE_CXX_COMPILER_ID}
+            ${CMAKE_SYSTEM_PROCESSOR}
+    )
 
 endmacro()
 

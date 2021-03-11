@@ -32,20 +32,50 @@
 #    NVHPC = NVIDIA HPC SDK Compiler (nvidia.com)
 
 
+# CMAKE_SYSTEM_PROCESSOR is set via `uname -p`, we have:
+# Power9 = ppc64le
+# x64    = x86_64
+# arm64  = aarch64
+#
+
+
 #predefined offload flags based on compiler id
-set(OMP_FLAGS_INTEL_CPU -qopt-streaming-stores=always)
-set(OMP_FLAGS_OFFLOAD_INTEL -qnextgen -fiopenmp -fopenmp-targets=spir64)
-set(OMP_FLAGS_OFFLOAD_GNU_NVIDIA -foffload=nvptx-none)
-set(OMP_FLAGS_OFFLOAD_GNU_AMD -foffload=amdgcn-amdhsa)
+
+
+set(OMP_FLAGS_OFFLOAD_INTEL
+        -qnextgen -fiopenmp -fopenmp-targets=spir64)
+set(OMP_FLAGS_OFFLOAD_GNU_NVIDIA
+        -foffload=nvptx-none)
+set(OMP_FLAGS_OFFLOAD_GNU_AMD
+        -foffload=amdgcn-amdhsa)
 set(OMP_FLAGS_OFFLOAD_CLANG_NVIDIA
         -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda -Xopenmp-target=nvptx64-nvidia-cuda)
 set(OMP_FLAGS_OFFLOAD_CLANG_AMD
         -fopenmp=libomp -fopenmp-targets=amdgcn-amd-amdhsa -Xopenmp-target=amdgcn-amd-amdhsa)
-set(OMP_FLAGS_OFFLOAD_CLANG_ARCH_FLAG -march=)
+set(OMP_FLAGS_OFFLOAD_CLANG_ARCH_FLAG
+        -march=) # prefix only, arch appended by the vendor:arch tuple
+
+
+set(OMP_FLAGS_CPU_INTEL
+        -qopt-streaming-stores=always)
+set(OMP_FLAGS_CPU_GNU_PPC64LE
+        -mcpu=native)
+set(OMP_FLAGS_CPU_XL
+        -O5 -qarch=auto -qtune=auto)
+
+# NEC
+set(OMP_FLAGS_CPU_NEC -O4 -finline)
 
 register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that supports OpenMP as per CMake detection (and offloading if enabled with `OFFLOAD`)"
         "c++")
+
+register_flag_optional(ARCH
+        "This overrides CMake's CMAKE_SYSTEM_PROCESSOR detection which uses (uname -p), this is mainly for use with
+         specialised accelerators only and not to be confused with offload which is is mutually exclusive with this.
+         Supported values are:
+          - NEC"
+        "")
 
 register_flag_optional(OFFLOAD
         "Whether to use OpenMP offload, the format is <VENDOR:ARCH?>|ON|OFF.
@@ -75,9 +105,24 @@ macro(setup)
     register_link_library(OpenMP::OpenMP_CXX)
 
     string(TOUPPER ${CMAKE_CXX_COMPILER_ID} COMPILER)
+    if(NOT ARCH)
+        string(TOUPPER ${CMAKE_SYSTEM_PROCESSOR} ARCH)
+    else()
+        message(STATUS "Using custom arch: ${ARCH}")
+    endif()
+
+
 
     if (("${OFFLOAD}" STREQUAL OFF) OR (NOT DEFINED OFFLOAD))
         # no offload
+
+        # resolve the CPU specific flags
+        # starting with ${COMPILER_VENDOR}_${PLATFORM_ARCH}, then try ${COMPILER_VENDOR}, and then give up
+        register_append_compiler_and_arch_specific_cxx_flags(
+                OMP_FLAGS_CPU
+                ${COMPILER}
+                ${ARCH}
+        )
 
     elseif ("${OFFLOAD}" STREQUAL ON)
         #  offload but with custom flags

@@ -30,6 +30,8 @@ register_flag_optional(CUDA_EXTRA_FLAGS
         "[TARGET==NVIDIA only] Additional CUDA flags passed to nvcc, this is appended after `CUDA_ARCH`"
         "")
 
+# compiler vendor and arch specific flags
+set(RAJA_FLAGS_CPU_INTEL -qopt-streaming-stores=always)
 
 macro(setup)
 
@@ -56,9 +58,15 @@ macro(setup)
         set(ENABLE_CUDA ${ENABLE_CUDA} CACHE BOOL "" FORCE)
 
         if (ENABLE_CUDA)
+
+            # XXX CMake 3.18 supports CMAKE_CUDA_ARCHITECTURES/CUDA_ARCHITECTURES but we support older CMakes
+            if(POLICY CMP0104)
+                cmake_policy(SET CMP0104 OLD)
+            endif()
+
             # RAJA needs all the cuda stuff setup before including!
             set(CMAKE_CUDA_COMPILER ${CUDA_TOOLKIT_ROOT_DIR}/bin/nvcc)
-            set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-extended-lambda -arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
+            set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler -extended-lambda -arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
             list(APPEND CMAKE_CUDA_FLAGS)
 
             message(STATUS "NVCC flags: ${CMAKE_CUDA_FLAGS}")
@@ -80,5 +88,11 @@ macro(setup)
         set_source_files_properties(main.cpp PROPERTIES LANGUAGE CUDA)
     endif ()
 
+
+    register_append_compiler_and_arch_specific_cxx_flags(
+            RAJA_FLAGS_CPU
+            ${CMAKE_CXX_COMPILER_ID}
+            ${CMAKE_SYSTEM_PROCESSOR}
+    )
 
 endmacro()

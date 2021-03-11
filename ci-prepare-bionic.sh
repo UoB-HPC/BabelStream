@@ -76,6 +76,17 @@ get_and_install_deb() {
 
 }
 
+get() {
+  local name="$1"
+  local pkg_url="$2"
+  if [ "$SETUP" = true ]; then
+    if [ ! -f "$name" ] || [ "$FORCE_DOWNLOAD" = true ]; then
+      echo "$name not found, downloading..."
+      wget -q --show-progress --progress=bar:force:noscroll "$pkg_url" -O "$name"
+    fi
+  fi
+}
+
 get_and_untar() {
   local name="$1"
   local pkg_url="$2"
@@ -306,9 +317,37 @@ else
   echo "Running locally, defaulting to standard export"
 fi
 
+setup_cmake() {
+
+  echo "Preparing CMake"
+
+  local cmake_release="https://github.com/Kitware/CMake/releases/download"
+
+  get "cmake-3.13.sh" "$cmake_release/v3.13.4/cmake-3.13.4-Linux-x86_64.sh"
+  chmod +x "./cmake-3.13.sh" && sh "./cmake-3.13.sh" --skip-license --include-subdir
+  export_var CMAKE_3_13_BIN "$PWD/cmake-3.13.4-Linux-x86_64/bin/cmake"
+  verify_bin_exists "$CMAKE_3_13_BIN"
+  "$CMAKE_3_13_BIN" --version
+
+  get "cmake-3.15.sh" "$cmake_release/v3.15.7/cmake-3.15.7-Linux-x86_64.sh"
+  chmod +x "./cmake-3.15.sh" && "./cmake-3.15.sh" --skip-license --include-subdir
+  export_var CMAKE_3_15_BIN "$PWD/cmake-3.15.7-Linux-x86_64/bin/cmake"
+  verify_bin_exists "$CMAKE_3_15_BIN"
+  "$CMAKE_3_15_BIN" --version
+
+  get "cmake-3.18.sh" "$cmake_release/v3.18.6/cmake-3.18.6-Linux-x86_64.sh"
+  chmod +x "./cmake-3.18.sh" && "./cmake-3.18.sh" --skip-license --include-subdir
+  export_var CMAKE_3_18_BIN "$PWD/cmake-3.18.6-Linux-x86_64/bin/cmake"
+  verify_bin_exists "$CMAKE_3_18_BIN"
+  "$CMAKE_3_18_BIN" --version
+
+  check_size
+
+}
 
 if [ "$PARALLEL" = true ]; then
   (setup_clang_gcc && setup_rocm && setup_hipsycl) &   # these need apt so run sequentially
+  setup_cmake &
   setup_oclcpu &
   setup_aocc &
   setup_nvhpc &
@@ -318,6 +357,7 @@ if [ "$PARALLEL" = true ]; then
   setup_raja &
   wait
 else
+  setup_cmake
   setup_aocc
   setup_oclcpu
   setup_nvhpc

@@ -8,6 +8,7 @@ export CCACHE_DISABLE=1
 BUILD_DIR=${1:-build}
 COMPILER=${2:-all}
 MODEL=${3:-all}
+CMAKE_BIN=${4}
 
 LOG_DIR="$BUILD_DIR"
 
@@ -45,13 +46,13 @@ run_build() {
   set +e
 
   # shellcheck disable=SC2086
-  cmake -B"$build" -H. \
+  "$CMAKE_BIN" -B"$build" -H. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     -DMODEL="$model" $flags &>>"$log"
   local cmake_code=$?
 
-  cmake --build "$build" --target babelstream -j "$(nproc)" &>>"$log"
+  "$CMAKE_BIN" --build "$build" --target babelstream -j "$(nproc)" &>>"$log"
   local cmake_code=$?
   set -e
 
@@ -59,17 +60,19 @@ run_build() {
   if [[ -f "$bin" ]]; then
     echo "$(tput setaf 2)[PASS!]($model->$build)$(tput sgr0): -DMODEL=$model $flags"
     # shellcheck disable=SC2002
+    cat "$log" | sed '/^--/d' | grep -i "/bin/nvcc" | sed 's/^/    /'
     cat "$log" | sed '/^--/d' | grep -i "$grep_kw" | sed 's/^/    /'
+    cat "$log" | sed '/^--/d' | grep -i "warning" | sed "s/.*/    $(tput setaf 3)&$(tput sgr0)/"
   else
     echo "$(tput setaf 1)[FAIL!]($model->$build)$(tput sgr0): -DMODEL=$model $flags"
-    echo "      CMake exited with code $cmake_code, see full build log at $log, reproduced below:"
+    echo "      $(tput setaf 1)CMake exited with code $cmake_code, see full build log at $log, reproduced below:$(tput sgr0)"
     cat "$log"
     exit 1
   fi
   echo "    $(tput setaf 4)$(file "$bin")$(tput sgr0)"
 }
 
-##
+###
 #KOKKOS_SRC="/home/tom/Downloads/kokkos-3.3.00"
 #RAJA_SRC="/home/tom/Downloads/RAJA-v0.13.0"
 #
@@ -81,10 +84,6 @@ run_build() {
 #NVHPC_NVCC="$NVSDK/cuda/11.2/bin/nvcc"
 #NVHPC_CUDA_DIR="$NVSDK/cuda/11.2"
 #"$NVSDK/compilers/bin/makelocalrc" "$NVSDK/compilers/bin/" -x
-#
-##NVHPC_NVCXX="/opt/nvidia/hpc_sdk/Linux_x86_64/21.1/compilers/bin/nvc++"
-##NVHPC_NVCC="/opt/nvidia/hpc_sdk/Linux_x86_64/21.1/cuda/11.2/bin/nvcc"
-##NVHPC_CUDA_DIR="/opt/nvidia/hpc_sdk/Linux_x86_64/21.1/cuda/11.2"
 #
 #AOCC_CXX="/opt/AMD/aocc-compiler-2.3.0/bin/clang++"
 #AOMP_CXX="/usr/lib/aomp/bin/clang++"
@@ -98,13 +97,15 @@ run_build() {
 #HIPSYCL_DIR="/opt/hipsycl/cff515c/"
 #
 #ICPX_CXX="/opt/intel/oneapi/compiler/2021.1.2/linux/bin/icpx"
+#ICPC_CXX="/opt/intel/oneapi/compiler/2021.1.2/linux/bin/intel64/icpc"
 #
-#GCC_STD_PAR_LIB=""
-#CLANG_STD_PAR_LIB=""
+#GCC_STD_PAR_LIB="tbb"
+#CLANG_STD_PAR_LIB="tbb"
 #GCC_OMP_OFFLOAD_AMD=false
 #GCC_OMP_OFFLOAD_NVIDIA=true
 #CLANG_OMP_OFFLOAD_AMD=false
 #CLANG_OMP_OFFLOAD_NVIDIA=false
+###
 
 AMD_ARCH="gfx_903"
 NV_ARCH="sm_70"
@@ -196,8 +197,24 @@ build_hip() {
 }
 
 build_icpx() {
-  source /opt/intel/oneapi/setvars.sh -force
+  # clang derived
+  set +u
+  source /opt/intel/oneapi/setvars.sh -force || true
+  set -u
   run_build intel_build "${ICPX_CXX:?}" OMP "-DCMAKE_CXX_COMPILER=${ICPX_CXX:?} -DOFFLOAD=INTEL"
+}
+
+build_icpc() {
+  # icc/icpc
+  set +u
+  source /opt/intel/oneapi/setvars.sh -force || true
+  set -u
+  local name="intel_build"
+  local cxx="-DCMAKE_CXX_COMPILER=${ICPC_CXX:?}"
+  run_build $name "${ICPC_CXX:?}" OMP "$cxx"
+  run_build $name "${ICPC_CXX:?}" OCL "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
+  run_build $name "${ICPC_CXX:?}" RAJA "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?}"
+  run_build $name "${ICPC_CXX:?}" KOKKOS "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
 }
 
 build_computecpp() {
@@ -223,9 +240,8 @@ build_hipsycl() {
   -DSYCL_COMPILER_DIR=${HIPSYCL_DIR:?}"
 }
 
-# TODO tested locally but can't install compilers for these two remotely without registration/license:
-# build_icpx
-# build_computecpp
+echo "Test compiling with ${COMPILER} CXX for ${MODEL} model"
+"$CMAKE_BIN" --version
 
 case "$COMPILER" in
 gcc) build_gcc ;;
@@ -236,6 +252,12 @@ aomp) build_aomp ;;
 hip) build_hip ;;
 dpcpp) build_dpcpp ;;
 hipsycl) build_hipsycl ;;
+
+# XXX below are local only; licence or very large download required, candidate for local runner
+computecpp) build_computecpp ;;
+icpx) build_icpx ;;
+icpc) build_icpc ;;
+
 all)
   build_gcc
   build_clang
@@ -245,6 +267,11 @@ all)
   build_hip
   build_dpcpp
   build_hipsycl
+
+  build_computecpp
+  build_icpx
+  build_icpc
+
   ;;
 *)
   echo "Unknown $COMPILER, use ALL to compile with all supported compilers"

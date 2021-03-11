@@ -59,15 +59,18 @@ Drivers, compiler and software applicable to whichever implementation you would 
 
 ### CMake
 
-The project supports building with CMake >= 3.13.0.
+The project supports building with CMake >= 3.13.0, it can be installed without root via the [official script](https://cmake.org/download/).
 As with any CMake project, first configure the project:
 
 ```shell
 > cd babelstream
-> cmake -Bbuild -H. -DMODEL=<model> <model_specific_flags...> # configure the build, build type defaults to Release 
+> cmake -Bbuild -H. -DMODEL=<model> <model specific flags prefixed with -D...> # configure the build, build type defaults to Release 
 > cmake --build build # compile it 
 > ./build/babelstream # executable available at ./build/
 ```
+
+By default, we have defined a set of optimal flags for known HPC compilers and assigned those to `RELEASE_FLAG`.
+You can override this if required.
 
 To find out what flag each model supports or requires, simply configure while only specifying the model.
 For example:

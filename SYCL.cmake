@@ -46,7 +46,6 @@ macro(setup)
 
         list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
         set(ComputeCpp_DIR ${SYCL_COMPILER_DIR})
-        set(COMPUTECPP_USER_FLAGS -O3 -no-serial-memop)
 
         # don't point to the CL dir as the imports already have the CL prefix
         set(OpenCL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/CL")
@@ -54,6 +53,9 @@ macro(setup)
         register_definitions(CL_TARGET_OPENCL_VERSION=220 _GLIBCXX_USE_CXX11_ABI=0)
         # ComputeCpp needs OpenCL
         find_package(ComputeCpp REQUIRED)
+
+        # this must come after FindComputeCpp (!)
+        set(COMPUTECPP_USER_FLAGS -O3 -no-serial-memop)
 
     elseif (${SYCL_COMPILER} STREQUAL "DPCPP")
         set(CMAKE_CXX_COMPILER ${SYCL_COMPILER_DIR}/bin/clang++)

@@ -19,15 +19,19 @@
 #endfunction()
 #
 
+macro(wipe_gcc_style_optimisation_flags VAR)
+    string(REGEX REPLACE "([\\/\\-]O.)" "" ${VAR} ${${VAR}})
+endmacro()
+
 macro(register_link_library)
     list(APPEND LINK_LIBRARIES ${ARGN})
 endmacro()
 
 macro(register_append_cxx_flags CONFIG)
     if ("${CONFIG}" STREQUAL "RELEASE" OR "${CONFIG}" STREQUAL "ANY")
-        list(APPEND RELEASE_FLAGS ${ARGN})
+        list(APPEND DEFAULT_RELEASE_FLAGS ${ARGN})
     elseif ("${CONFIG}" STREQUAL "DEBUG" OR "${CONFIG}" STREQUAL "ANY")
-        list(APPEND DEBUG_FLAGS ${ARGN})
+        list(APPEND DEFAULT_DEBUG_FLAGS ${ARGN})
     else ()
         message(FATAL_ERROR "register_flags supports only RELEASE, DEBUG, or ANY for all configs, got `${CONFIG}`")
     endif ()
@@ -35,6 +39,19 @@ endmacro()
 
 macro(register_append_link_flags)
     list(APPEND LINK_FLAGS ${ARGN})
+endmacro()
+
+macro(register_append_compiler_and_arch_specific_cxx_flags PREFIX CXX ARCH)
+    string(TOUPPER ${CXX} _CXX)
+    string(TOUPPER ${ARCH} _ARCH)
+    set(_CXX_ARCH_SPECIFIC_FLAGS "${${PREFIX}_${_CXX}_${_ARCH}}")
+    if (_CXX_ARCH_SPECIFIC_FLAGS)
+        register_append_cxx_flags(ANY ${_CXX_ARCH_SPECIFIC_FLAGS})
+    endif ()
+    set(_CXX_ARCH_SPECIFIC_FLAGS "${${PREFIX}_${_CXX}}")
+    if (_CXX_ARCH_SPECIFIC_FLAGS)
+        register_append_cxx_flags(ANY ${_CXX_ARCH_SPECIFIC_FLAGS})
+    endif ()
 endmacro()
 
 macro(register_definitions)
@@ -100,25 +117,12 @@ function(registered_flags_action ACTION OUT)
 endfunction()
 
 
-
-
 macro(register_model NAME PREPROCESSOR_NAME)
     string(TOUPPER ${NAME} MODEL_UPPER)
     list(APPEND REGISTERED_MODELS "${NAME}")
 
     list(APPEND IMPL_${MODEL_UPPER}_SOURCES "${ARGN}")
     list(APPEND IMPL_${MODEL_UPPER}_DEFINITIONS "${PREPROCESSOR_NAME}")
-
-#    if ("${MODEL_UPPER}" STREQUAL ${MODEL})
-#
-#        set(MODEL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.cmake)
-#
-#        if (NOT EXISTS ${MODEL_FILE})
-#            message(FATAL_ERROR "${MODEL_FILE} not found, perhaps it needs to be implemented?")
-#        endif ()
-#        include(${MODEL_FILE})
-#
-#    endif ()
 endmacro()
 
 
