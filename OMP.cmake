@@ -99,8 +99,6 @@ register_flag_optional(OFFLOAD_APPEND_LINK_FLAG
 
 
 macro(setup)
-    set(CMAKE_CXX_STANDARD 17)
-
     find_package(OpenMP REQUIRED)
     register_link_library(OpenMP::OpenMP_CXX)
 

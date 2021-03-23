@@ -136,5 +136,11 @@ macro(load_model MODEL)
         include(${MODEL_FILE})
         list(APPEND IMPL_SOURCES ${IMPL_${MODEL_UPPER}_SOURCES})
         list(APPEND IMPL_DEFINITIONS ${IMPL_${MODEL_UPPER}_DEFINITIONS})
+
+        string(TOLOWER ${MODEL} MODEL_LOWER)
+        set(EXE_NAME ${MODEL_LOWER}-stream)
+
+    else ()
+        message(FATAL_ERROR "Unsupported model: ${MODEL}")
     endif ()
 endmacro()

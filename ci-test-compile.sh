@@ -50,13 +50,16 @@ run_build() {
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     -DMODEL="$model" $flags &>>"$log"
+  local model_lower=$(echo "$model" | awk '{print tolower($0)}')
+
   local cmake_code=$?
 
-  "$CMAKE_BIN" --build "$build" --target babelstream -j "$(nproc)" &>>"$log"
+  "$CMAKE_BIN" --build "$build" -j "$(nproc)" &>>"$log"
   local cmake_code=$?
   set -e
 
-  local bin="./$build/babelstream"
+  local bin="./$build/$model_lower-stream"
+  echo "Checking for final executable: $bin"
   if [[ -f "$bin" ]]; then
     echo "$(tput setaf 2)[PASS!]($model->$build)$(tput sgr0): -DMODEL=$model $flags"
     # shellcheck disable=SC2002
@@ -119,7 +122,7 @@ build_gcc() {
   if [ "$MODEL" = "all" ] || [ "$MODEL" = "OMP" ]; then
     # sanity check that it at least runs
     echo "Sanity checking GCC OMP build..."
-    "./$BUILD_DIR/OMP_$name/babelstream" -s 1048576 -n 10
+    "./$BUILD_DIR/OMP_$name/omp-stream" -s 1048576 -n 10
   fi
 
   # some distributions like Ubuntu bionic implements std par with TBB, so conditionally link it here
