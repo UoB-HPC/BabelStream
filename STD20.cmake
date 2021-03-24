@@ -10,6 +10,7 @@ macro(setup)
     # C++ 2a is too new, disable CMake's std flags completely:
     set(CMAKE_CXX_EXTENSIONS OFF)
     set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+    unset(CMAKE_CXX_STANDARD) # drop any existing standard we have set by default
     # and append our own:
     register_append_cxx_flags(ANY -std=c++2a)
 endmacro()
