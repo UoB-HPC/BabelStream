@@ -68,6 +68,14 @@ Pass in extra flags via the `EXTRA_FLAGS` option.
 
 The binaries are named in the form `<model>-stream`.
 
+This project also contains implementations in alternative languages with different build systems:
+* Rust - Install the [Rust toolchain](https://www.rust-lang.org/tools/install) and proceed to compile a binary via:
+   ```shell
+    > cd rust-stream/
+    > cargo build --release
+    > ./target/release/rust-stream
+   ```
+
 Building Kokkos
 ---------------
 

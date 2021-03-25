@@ -1,0 +1,13 @@
+[package]
+name = "rust-stream"
+version = "3.4.0"
+authors = ["Wei-Chen Lin <wl14928@bristol.ac.uk>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num-traits = "0.2.14"
+structopt = "0.3.13"
+tabular = "0.1.4"
+rayon = "1.5"
