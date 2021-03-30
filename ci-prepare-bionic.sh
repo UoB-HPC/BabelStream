@@ -241,7 +241,7 @@ setup_rocm() {
   sudo apt-get update -qq
   sudo apt-get install -y -qq rocm-dev
   # AMD needs this rocm_path thing exported...
-  export_var ROCM_PATH "/opt/rocm-4.0.0"
+  export_var ROCM_PATH "/opt/rocm-4.1.0"
   export_var HIP_CXX "$ROCM_PATH/bin/hipcc"
   verify_bin_exists "$HIP_CXX"
   "$HIP_CXX" --version
