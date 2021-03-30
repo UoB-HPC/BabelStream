@@ -73,7 +73,7 @@ function(registered_flags_action ACTION OUT)
         if (${ACTION} STREQUAL "print")
             set(LINE "Supported flags:\n\n")
         elseif (${ACTION} STREQUAL "check")
-            set(LINE "Picked up model specific flags for this build:\n\n")
+            set(LINE "Model-specific flags for this build:\n\n")
         endif ()
 
 

@@ -81,15 +81,16 @@ endmacro()
 
 # hint common extra flag options for all models if they are not set
 hint_flag(CXX_EXTRA_FLAGS "
-        Appends to common compile flags, this will be appended at link phase as well.
+        Appends to common compile flags. These will be appended at link phase as well.
         To use separate flags at link phase, set `CXX_EXTRA_LINK_FLAGS`")
 hint_flag(CXX_EXTRA_LINK_FLAGS "
-        Appends to link flags (i.e appended only at link phase) which appears *before* the objects.
-        Do not use this for linking libraries as the link line is order dependent")
+        Appends to link flags which appear *before* the objects.
+        Do not use this for linking libraries, as the link line is order-dependent")
 hint_flag(CXX_EXTRA_LIBRARIES "
-        Append to link flags which appears *after* the objects, use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`)")
+        Append to link flags which appear *after* the objects.
+        Use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`)")
 hint_flag(CXX_EXTRA_LINKER_FLAGS "
-        Append to linker flags (i.e GCC's -Wl or equivalent)")
+        Append to linker flags (i.e GCC's `-Wl` or equivalent)")
 
 # copy CXX_EXTRA_FLAGS <- CXX_EXTRA_LINK_FLAGS
 if ((DEFINED CXX_EXTRA_FLAGS) AND (NOT DEFINED CXX_EXTRA_LINK_FLAGS))
@@ -187,6 +188,3 @@ target_link_options(${EXE_NAME} PUBLIC ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS})
 if (COMMAND setup_target)
     setup_target(${EXE_NAME})
 endif ()
-
-
-
