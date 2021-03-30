@@ -69,8 +69,8 @@ As with any CMake project, first configure the project:
 > ./build/babelstream # executable available at ./build/
 ```
 
-By default, we have defined a set of optimal flags for known HPC compilers and assigned those to `RELEASE_FLAG`.
-You can override this if required.
+By default, we have defined a set of optimal flags for known HPC compilers.
+There are assigned those to `RELEASE_FLAGS`, and you can override them if required.
 
 To find out what flag each model supports or requires, simply configure while only specifying the model.
 For example:
@@ -80,15 +80,16 @@ For example:
 ...
 - Common Release flags are `-O3`, set RELEASE_FLAGS to override
 -- CXX_EXTRA_FLAGS: 
-        Appends to common compile flags, this will be appended at link phase at well.
+        Appends to common compile flags. These will be used at link phase at well.
         To use separate flags at link time, set `CXX_EXTRA_LINKER_FLAGS`
 -- CXX_EXTRA_LINK_FLAGS: 
-        Appends to link flags (i.e appended only at link phase) which appears *before* the objects.
-        Do not use this for linking libraries as the link line is order dependent
+        Appends to link flags which appear *before* the objects.
+        Do not use this for linking libraries, as the link line is order-dependent
 -- CXX_EXTRA_LIBRARIES: 
-        Append to link flags which appears *after* the objects, use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`) 
+        Append to link flags which appears *after* the objects.
+        Use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`) 
 -- CXX_EXTRA_LINKER_FLAGS: 
-        Append to linker flags (i.e GCC's -Wl or equivalent)
+        Append to linker flags (i.e GCC's `-Wl` or equivalent)
 -- Available models:  OMP;OCL;STD;STD20;HIP;CUDA;KOKKOS;SYCL;ACC;RAJA
 -- Selected model  :  OCL
 -- Supported flags:
@@ -97,9 +98,9 @@ For example:
    OpenCL_LIBRARY (optional, default=): Path to OpenCL library, usually called libOpenCL.so
 ...
 ```
-Alternatively, refer to the [CI script](./ci-test-compile.sh) which test-compiles most of the models and see which flags they use.
+Alternatively, refer to the [CI script](./ci-test-compile.sh), which test-compiles most of the models, and see which flags are used there.
 
-*It is recommended that you delete the `build` directory when you any of the build flags.* 
+*It is recommended that you delete the `build` directory when you change any of the build flags.* 
 
 ### GNU Make
 
