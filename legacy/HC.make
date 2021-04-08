@@ -13,7 +13,7 @@ CXXFLAGS+=-DNTILES=$(TBSIZE)
 endif
 
 
-hc-stream: main.cpp HCStream.cpp
+hc-stream: ../main.cpp HCStream.cpp
 	$(HCC) $(CXXFLAGS) -DHC  $^  $(LDFLAGS) $(EXTRA_FLAGS) -o $@
 
 .PHONY: clean

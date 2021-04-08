@@ -19,9 +19,17 @@
 template <class T>
 class ACCStream : public Stream<T>
 {
+
+	struct A{
+		T *a;
+		T *b;
+		T *c;
+	};
+
   protected:
     // Size of arrays
     int array_size;
+    A aa;
     // Device side pointers
     T *a;
     T *b;
