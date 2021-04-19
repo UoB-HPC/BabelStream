@@ -5,6 +5,7 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
+#include <cstdlib>  // For aligned_alloc
 #include "OMPStream.h"
 
 #ifndef ALIGNMENT
