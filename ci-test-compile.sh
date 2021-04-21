@@ -146,11 +146,15 @@ build_gcc() {
   run_build "cuda_$name" "${GCC_CXX:?}" KOKKOS "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
   run_build $name "${GCC_CXX:?}" OCL "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
   run_build $name "${GCC_CXX:?}" RAJA "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?}"
-  run_build "cuda_$name" "${GCC_CXX:?}" RAJA "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?} \
-  -DENABLE_CUDA=ON \
-  -DTARGET=NVIDIA \
-  -DCUDA_TOOLKIT_ROOT_DIR=${NVHPC_CUDA_DIR:?} \
-  -DCUDA_ARCH=$NV_ARCH"
+
+#  FIXME fails due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100102
+#  FIXME we also got https://github.com/NVIDIA/nccl/issues/494
+
+#  run_build "cuda_$name" "${GCC_CXX:?}" RAJA "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?} \
+#  -DENABLE_CUDA=ON \
+#  -DTARGET=NVIDIA \
+#  -DCUDA_TOOLKIT_ROOT_DIR=${NVHPC_CUDA_DIR:?} \
+#  -DCUDA_ARCH=$NV_ARCH"
 
 }
 

@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - Unified run function in driver code to reduce code duplication, output should be uneffected.
 - Normalise sum result by expected value to help false negative errors.
 - HC version deprecated and moved to a legacy directory.
+- Update RAJA to v0.13.0 (w/ code changes as this is a source incompatible update).
 
 ### Removed
 - Pre-building of kernels in SYCL version to ensure compatibility with SYCL 1.2.1.
