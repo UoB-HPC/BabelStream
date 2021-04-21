@@ -16,9 +16,14 @@ ACCStream<T>::ACCStream(const int ARRAY_SIZE, int device)
   array_size = ARRAY_SIZE;
 
   // Set up data region on device
-  a = new T[array_size];
-  b = new T[array_size];
-  c = new T[array_size];
+  this->a = new T[array_size];
+  this->b = new T[array_size];
+  this->c = new T[array_size];
+
+  T * restrict a = this->a;
+  T * restrict b = this->b;
+  T * restrict c = this->c;
+
   #pragma acc enter data create(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
 }
@@ -28,6 +33,11 @@ ACCStream<T>::~ACCStream()
 {
   // End data region on device
   int array_size = this->array_size;
+
+  T * restrict a = this->a;
+  T * restrict b = this->b;
+  T * restrict c = this->c;
+
   #pragma acc exit data delete(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
 

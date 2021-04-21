@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - SYCL build rules for ComputeCpp, DPCPP and HipSYCL.
 - Support for CUDA Managed Memory and Page Fault memory.
 - Added nstream kernel from PRK with associate command line option.
+- CMake build system added for all models.
 
 ### Changed
 - Default branch renamed from `master` to `main`.
@@ -27,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - Ensure all OpenCL kernels are present in destructor.
 - Unified run function in driver code to reduce code duplication, output should be uneffected.
 - Normalise sum result by expected value to help false negative errors.
+- HC version deprecated and moved to a legacy directory.
 
 ### Removed
 - Pre-building of kernels in SYCL version to ensure compatibility with SYCL 1.2.1.

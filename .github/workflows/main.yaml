@@ -1,0 +1,98 @@
+name: CI
+on: [push, pull_request]
+
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache compiler
+        id: prepare-compilers
+        uses: actions/cache@v2
+        with:
+          path: compilers
+          key: ${{ runner.os }}-${{ hashFiles('ci-prepare-bionic.sh') }}
+
+      - name: Prepare compilers
+        if: steps.prepare-compilers.outputs.cache-hit != 'true'
+        run: source ./ci-prepare-bionic.sh ./compilers SETUP true || true
+
+      - name: Setup test environment
+        run: source ./ci-prepare-bionic.sh ./compilers VARS false || true
+
+      - name: Test compile gcc     @ CMake 3.13
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build gcc all ${{ env.CMAKE_3_13_BIN }}
+      - name: Test compile clang   @ CMake 3.13
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build clang all ${{ env.CMAKE_3_13_BIN }}
+      - name: Test compile nvhpc   @ CMake 3.13
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build nvhpc all ${{ env.CMAKE_3_13_BIN }}
+      - name: Test compile aocc    @ CMake 3.13
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build aocc all ${{ env.CMAKE_3_13_BIN }}
+      - name: Test compile aomp    @ CMake 3.13
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build aomp all ${{ env.CMAKE_3_13_BIN }}
+      - name: Test compile hip     @ CMake 3.13
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build hip all ${{ env.CMAKE_3_13_BIN }}
+      - name: Test compile dpcpp   @ CMake 3.13
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build dpcpp all ${{ env.CMAKE_3_13_BIN }}
+      - name: Test compile hipsycl @ CMake 3.13
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build hipsycl all ${{ env.CMAKE_3_13_BIN }}
+
+      - name: Test compile gcc     @ CMake 3.15
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build gcc all ${{ env.CMAKE_3_15_BIN }}
+      - name: Test compile clang   @ CMake 3.15
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build clang all ${{ env.CMAKE_3_15_BIN }}
+      - name: Test compile nvhpc   @ CMake 3.15
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build nvhpc all ${{ env.CMAKE_3_15_BIN }}
+      - name: Test compile aocc    @ CMake 3.15
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build aocc all ${{ env.CMAKE_3_15_BIN }}
+      - name: Test compile aomp    @ CMake 3.15
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build aomp all ${{ env.CMAKE_3_15_BIN }}
+      - name: Test compile hip     @ CMake 3.15
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build hip all ${{ env.CMAKE_3_15_BIN }}
+      - name: Test compile dpcpp   @ CMake 3.15
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build dpcpp all ${{ env.CMAKE_3_15_BIN }}
+      - name: Test compile hipsycl @ CMake 3.15
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build hipsycl all ${{ env.CMAKE_3_15_BIN }}
+
+      - name: Test compile gcc     @ CMake 3.18
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build gcc all ${{ env.CMAKE_3_18_BIN }}
+      - name: Test compile clang   @ CMake 3.18
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build clang all ${{ env.CMAKE_3_18_BIN }}
+      - name: Test compile nvhpc   @ CMake 3.18
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build nvhpc all ${{ env.CMAKE_3_18_BIN }}
+      - name: Test compile aocc    @ CMake 3.18
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build aocc all ${{ env.CMAKE_3_18_BIN }}
+      - name: Test compile aomp    @ CMake 3.18
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build aomp all ${{ env.CMAKE_3_18_BIN }}
+      - name: Test compile hip     @ CMake 3.18
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build hip all ${{ env.CMAKE_3_18_BIN }}
+      - name: Test compile dpcpp   @ CMake 3.18
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build dpcpp all ${{ env.CMAKE_3_18_BIN }}
+      - name: Test compile hipsycl @ CMake 3.18
+        if: ${{ ! cancelled() }}
+        run: ./ci-test-compile.sh ./build hipsycl all ${{ env.CMAKE_3_18_BIN }}

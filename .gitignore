@@ -21,3 +21,10 @@ KokkosCore_config.*
 .DS_Store
 
 Makefile
+
+build/
+cmake-build-*/
+CMakeFiles/
+.idea/
+.vscode/
+.directory

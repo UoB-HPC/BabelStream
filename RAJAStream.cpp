@@ -5,10 +5,10 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
+#include <stdexcept>
 #include "RAJAStream.hpp"
 
 using RAJA::forall;
-using RAJA::RangeSegment;
 
 #ifndef ALIGNMENT
 #define ALIGNMENT (2*1024*1024) // 2MB
@@ -16,10 +16,8 @@ using RAJA::RangeSegment;
 
 template <class T>
 RAJAStream<T>::RAJAStream(const int ARRAY_SIZE, const int device_index)
-    : array_size(ARRAY_SIZE)
+    : array_size(ARRAY_SIZE), range(0, ARRAY_SIZE)
 {
-  RangeSegment seg(0, ARRAY_SIZE);
-  index_set.push_back(seg);
 
 #ifdef RAJA_TARGET_CPU
   d_a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
@@ -53,7 +51,7 @@ void RAJAStream<T>::init_arrays(T initA, T initB, T initC)
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
+  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     a[index] = initA;
     b[index] = initB;
@@ -75,7 +73,7 @@ void RAJAStream<T>::copy()
 {
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
+  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index];
   });
@@ -87,7 +85,7 @@ void RAJAStream<T>::mul()
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
   const T scalar = startScalar;
-  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
+  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     b[index] = scalar*c[index];
   });
@@ -99,7 +97,7 @@ void RAJAStream<T>::add()
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
+  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index] + b[index];
   });
@@ -112,10 +110,18 @@ void RAJAStream<T>::triad()
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
   const T scalar = startScalar;
-  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
+  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     a[index] = b[index] + scalar*c[index];
   });
+}
+
+template <class T>
+void RAJAStream<T>::nstream()
+{
+  // TODO implement me!
+  std::cerr << "Not implemented yet!" << std::endl;
+  throw std::runtime_error("Not implemented yet!");
 }
 
 template <class T>
@@ -126,7 +132,7 @@ T RAJAStream<T>::dot()
 
   RAJA::ReduceSum<reduce_policy, T> sum(0.0);
 
-  forall<policy>(index_set, [=] RAJA_DEVICE (RAJA::Index_type index)
+  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     sum += a[index] * b[index];
   });

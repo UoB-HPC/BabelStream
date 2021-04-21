@@ -57,6 +57,53 @@ Usage
 
 Drivers, compiler and software applicable to whichever implementation you would like to build against is required.
 
+### CMake
+
+The project supports building with CMake >= 3.13.0, it can be installed without root via the [official script](https://cmake.org/download/).
+As with any CMake project, first configure the project:
+
+```shell
+> cd babelstream
+> cmake -Bbuild -H. -DMODEL=<model> <model specific flags prefixed with -D...> # configure the build, build type defaults to Release 
+> cmake --build build # compile it 
+> ./build/babelstream # executable available at ./build/
+```
+
+By default, we have defined a set of optimal flags for known HPC compilers.
+There are assigned those to `RELEASE_FLAGS`, and you can override them if required.
+
+To find out what flag each model supports or requires, simply configure while only specifying the model.
+For example:
+```shell
+> cd babelstream
+> cmake -Bbuild -H. -DMODEL=OCL 
+...
+- Common Release flags are `-O3`, set RELEASE_FLAGS to override
+-- CXX_EXTRA_FLAGS: 
+        Appends to common compile flags. These will be used at link phase at well.
+        To use separate flags at link time, set `CXX_EXTRA_LINKER_FLAGS`
+-- CXX_EXTRA_LINK_FLAGS: 
+        Appends to link flags which appear *before* the objects.
+        Do not use this for linking libraries, as the link line is order-dependent
+-- CXX_EXTRA_LIBRARIES: 
+        Append to link flags which appears *after* the objects.
+        Use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`) 
+-- CXX_EXTRA_LINKER_FLAGS: 
+        Append to linker flags (i.e GCC's `-Wl` or equivalent)
+-- Available models:  OMP;OCL;STD;STD20;HIP;CUDA;KOKKOS;SYCL;ACC;RAJA
+-- Selected model  :  OCL
+-- Supported flags:
+
+   CMAKE_CXX_COMPILER (optional, default=c++): Any CXX compiler that is supported by CMake detection
+   OpenCL_LIBRARY (optional, default=): Path to OpenCL library, usually called libOpenCL.so
+...
+```
+Alternatively, refer to the [CI script](./ci-test-compile.sh), which test-compiles most of the models, and see which flags are used there.
+
+*It is recommended that you delete the `build` directory when you change any of the build flags.* 
+
+### GNU Make
+
 We have supplied a series of Makefiles, one for each programming model, to assist with building.
 The Makefiles contain common build options, and should be simple to customise for your needs too.
 
@@ -75,9 +122,8 @@ This project also contains implementations in alternative languages with differe
     > cargo build --release
     > ./target/release/rust-stream
    ```
-
-Building Kokkos
----------------
+  
+#### Building Kokkos for Make
 
 Kokkos version >= 3 requires setting the `KOKKOS_PATH` flag to the *source* directory of a distribution. 
 For example:
@@ -91,8 +137,7 @@ make -f Kokkos.make KOKKOS_PATH=~/kokkos-3.1.01
 ```
 See make output for more information on supported flags.
 
-Building RAJA
--------------
+#### Building RAJA for Make
 
 We use the following command to build RAJA using the Intel Compiler.
 ```
