@@ -188,3 +188,5 @@ target_link_options(${EXE_NAME} PUBLIC ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS})
 if (COMMAND setup_target)
     setup_target(${EXE_NAME})
 endif ()
+
+install (TARGETS ${EXE_NAME} DESTINATION bin)

@@ -44,21 +44,26 @@ run_build() {
 
   rm -rf "$build"
   set +e
+  local install_dir="$build/install"
 
   # shellcheck disable=SC2086
   "$CMAKE_BIN" -B"$build" -H. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DCMAKE_INSTALL_PREFIX="$install_dir" \
     -DMODEL="$model" $flags &>>"$log"
   local model_lower=$(echo "$model" | awk '{print tolower($0)}')
 
   local cmake_code=$?
 
   "$CMAKE_BIN" --build "$build" -j "$(nproc)" &>>"$log"
+  "$CMAKE_BIN" --build "$build" --target install  -j "$(nproc)" &>>"$log"
   local cmake_code=$?
   set -e
 
   local bin="./$build/$model_lower-stream"
+  local installed_bin="./$install_dir/bin/$model_lower-stream"
+
   echo "Checking for final executable: $bin"
   if [[ -f "$bin" ]]; then
     echo "$(tput setaf 2)[PASS!]($model->$build)$(tput sgr0): -DMODEL=$model $flags"
@@ -66,6 +71,11 @@ run_build() {
     cat "$log" | sed '/^--/d' | grep -i "/bin/nvcc" | sed 's/^/    /'
     cat "$log" | sed '/^--/d' | grep -i "$grep_kw" | sed 's/^/    /'
     cat "$log" | sed '/^--/d' | grep -i "warning" | sed "s/.*/    $(tput setaf 3)&$(tput sgr0)/"
+    if [[ ! -f "$installed_bin" ]]; then
+      echo "$(tput setaf 1)[ERR!] looking for $installed_bin from --target install but it's not there!$(tput sgr0)"
+      cat "$log"
+      exit 1
+    fi
   else
     echo "$(tput setaf 1)[FAIL!]($model->$build)$(tput sgr0): -DMODEL=$model $flags"
     echo "      $(tput setaf 1)CMake exited with code $cmake_code, see full build log at $log, reproduced below:$(tput sgr0)"
