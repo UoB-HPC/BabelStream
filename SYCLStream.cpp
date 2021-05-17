@@ -34,6 +34,15 @@ SYCLStream<T>::SYCLStream(const int ARRAY_SIZE, const int device_index)
   std::cout << "Using SYCL device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
 
+  // Check device can support FP64 if needed
+  if (sizeof(T) == sizeof(double))
+  {
+    if (!dev.has(sycl::aspect::fp64))
+    {
+      throw std::runtime_error("Device does not support double precision, please use --float");
+    }
+  }
+
   queue = std::make_unique<sycl::queue>(dev, sycl::async_handler{[&](sycl::exception_list l)
   {
     bool error = false;
