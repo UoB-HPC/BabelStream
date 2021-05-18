@@ -28,14 +28,6 @@ SYCLStream<T>::SYCLStream(const int ARRAY_SIZE, const int device_index)
     throw std::runtime_error("Invalid device index");
   device dev = devices[device_index];
 
-  // Check device can support FP64 if needed
-  if (sizeof(T) == sizeof(double))
-  {
-    if (dev.get_info<info::device::double_fp_config>().size() == 0) {
-      throw std::runtime_error("Device does not support double precision, please use --float");
-    }
-  }
-
   // Determine sensible dot kernel NDRange configuration
   if (dev.is_cpu())
   {
