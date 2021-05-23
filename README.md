@@ -63,7 +63,7 @@ The project supports building with CMake >= 3.13.0, it can be installed without 
 As with any CMake project, first configure the project:
 
 ```shell
-> cd babelstream
+> cd babelstream/cpp
 > cmake -Bbuild -H. -DMODEL=<model> <model specific flags prefixed with -D...> # configure the build, build type defaults to Release 
 > cmake --build build # compile it 
 > ./build/babelstream # executable available at ./build/
@@ -75,7 +75,7 @@ There are assigned those to `RELEASE_FLAGS`, and you can override them if requir
 To find out what flag each model supports or requires, simply configure while only specifying the model.
 For example:
 ```shell
-> cd babelstream
+> cd babelstream/cpp
 > cmake -Bbuild -H. -DMODEL=OCL 
 ...
 - Common Release flags are `-O3`, set RELEASE_FLAGS to override

@@ -1,26 +1,4 @@
 
-cuda-stream
-ocl-stream
-omp-stream
-acc-stream
-raja-stream
-kokkos-stream
-std-stream
-sycl-stream
-hip-stream
-
-*.o
-*.bc
-*.sycl
-*.tar
-*.gz
-*.a
-
-KokkosCore_config.*
-
-.DS_Store
-
-Makefile
 
 build/
 cmake-build-*/
