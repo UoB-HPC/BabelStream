@@ -63,11 +63,13 @@ The project supports building with CMake >= 3.13.0, it can be installed without 
 As with any CMake project, first configure the project:
 
 ```shell
-> cd babelstream/cpp
+> cd babelstream/src
 > cmake -Bbuild -H. -DMODEL=<model> <model specific flags prefixed with -D...> # configure the build, build type defaults to Release 
 > cmake --build build # compile it 
-> ./build/babelstream # executable available at ./build/
+> ./build/<model>-stream # executable available at ./build/
 ```
+
+Source for each model's implementations are located in `./src/<model>`.
 
 By default, we have defined a set of optimal flags for known HPC compilers.
 There are assigned those to `RELEASE_FLAGS`, and you can override them if required.
@@ -75,8 +77,8 @@ There are assigned those to `RELEASE_FLAGS`, and you can override them if requir
 To find out what flag each model supports or requires, simply configure while only specifying the model.
 For example:
 ```shell
-> cd babelstream/cpp
-> cmake -Bbuild -H. -DMODEL=OCL 
+> cd babelstream/src
+> cmake -Bbuild -H. -DMODEL=ocl 
 ...
 - Common Release flags are `-O3`, set RELEASE_FLAGS to override
 -- CXX_EXTRA_FLAGS: 
@@ -90,8 +92,8 @@ For example:
         Use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`) 
 -- CXX_EXTRA_LINKER_FLAGS: 
         Append to linker flags (i.e GCC's `-Wl` or equivalent)
--- Available models:  OMP;OCL;STD;STD20;HIP;CUDA;KOKKOS;SYCL;ACC;RAJA
--- Selected model  :  OCL
+-- Available models:  omp;ocl;std;std20;hip;cuda;kokkos;sycl;acc;raja
+-- Selected model  :  ocl
 -- Supported flags:
 
    CMAKE_CXX_COMPILER (optional, default=c++): Any CXX compiler that is supported by CMake detection
@@ -107,7 +109,7 @@ Alternatively, refer to the [CI script](./ci-test-compile.sh), which test-compil
 We have supplied a series of Makefiles, one for each programming model, to assist with building.
 The Makefiles contain common build options, and should be simple to customise for your needs too.
 
-General usage is `make -f <Model>.make`
+General usage is `make -C src/<model>`
 Common compiler flags and names can be set by passing a `COMPILER` option to Make, e.g. `make COMPILER=GNU`.
 Some models allow specifying a CPU or GPU style target, and this can be set by passing a `TARGET` option to Make, e.g. `make TARGET=GPU`.
 
@@ -125,7 +127,7 @@ cd
 wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
 tar -xvf 3.1.01.tar.gz # should end up with ~/kokkos-3.1.01
 cd BabelStream
-make -f Kokkos.make KOKKOS_PATH=~/kokkos-3.1.01 
+make -C src/kokkos KOKKOS_PATH=~/kokkos-3.1.01 
 ```
 See make output for more information on supported flags.
 

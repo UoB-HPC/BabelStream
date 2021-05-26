@@ -8,46 +8,7 @@ project(BabelStream VERSION 3.5 LANGUAGES CXX)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
-#set(MODEL SYCL)
-#set(SYCL_COMPILER COMPUTECPP)
-#set(SYCL_COMPILER_DIR /home/tom/Desktop/computecpp_archive/ComputeCpp-CE-2.3.0-x86_64-linux-gnu)
-#set(MODEL RAJA)
-#set(RAJA_IN_TREE /home/tom/Downloads/RAJA-v0.13.0/)
-#set(ENABLE_CUDA ON)
-#set(TARGET NVIDIA)
-#set(CUDA_TOOLKIT_ROOT_DIR /opt/cuda-11.2)
-#set(CUDA_ARCH sm_70)
-#set(BLT_DIR /home/tom/Downloads/blt-0.3.6/)
-
-#set(MODEL STD)
-#set(ARCH  cc70)
-#set(CXX_EXTRA_FLAGS -v)
-
-#set(MODEL CUDA)
-#set(ARCH  sm_70)
-#set(CMAKE_CUDA_COMPILER /opt/cuda-11.2/bin/nvcc)
-
-#set(MODEL OCL)
-#set(OpenCL_LIBRARY /opt/rocm-4.0.0/opencl/lib/libOpenCL.so)
-#set(OpenCL_INCLUDE_DIR /opt/rocm-4.0.0/opencl/lib)
-#set(RELEASE_FLAGS -Ofast)
-#set(CXX_EXTRA_FLAGS -O2)
-
-#set(CMAKE_CXX_COMPILER /usr/lib/aomp/bin/clang++)
-#set(MODEL OMP)
-##set(OFFLOAD "AMD:gfx803")
-#set(OFFLOAD "NVIDIA:sm_35")
-#set(CXX_EXTRA_FLAGS --cuda-path=/opt/cuda-10.2/)
-
-#set(OFFLOAD "AMD:_70")
-#set(CXX_EXTRA_FLAGS --cuda-path=/opt/cuda-10.2/ --gcc-toolchain=/home/tom/spack/opt/spack/linux-fedora33-zen2/gcc-10.2.1/gcc-8.3.0-latmjo2hl2yv53255xkwko7k3y7bx2vv)
-#set(CXX_EXTRA_LINKER_FLAGS  )
-#set(MODEL HIP)
-
-#set(MODEL KOKKOS)
-#set(KOKKOS_IN_TREE /home/tom/Downloads/kokkos-3.3.00/)
-
+ 
 # the final executable name
 set(EXE_NAME babelstream)
 
@@ -101,17 +62,17 @@ endif ()
 include(register_models.cmake)
 
 # register out models <model_name> <preprocessor_def_name> <source files...>
-register_model(OMP OMP OMPStream.cpp)
-register_model(OCL OCL OCLStream.cpp)
-register_model(STD STD STDStream.cpp)
-register_model(STD20 STD20 STD20Stream.cpp)
-register_model(HIP HIP HIPStream.cpp)
-register_model(CUDA CUDA CUDAStream.cu)
-register_model(KOKKOS KOKKOS KokkosStream.cpp)
-register_model(SYCL SYCL SYCLStream.cpp)
-register_model(ACC ACC ACCStream.cpp)
+register_model(omp OMP OMPStream.cpp)
+register_model(ocl OCL OCLStream.cpp)
+register_model(std STD STDStream.cpp)
+register_model(std20 STD20 STD20Stream.cpp)
+register_model(hip HIP HIPStream.cpp)
+register_model(cuda CUDA CUDAStream.cu)
+register_model(kokkos KOKKOS KokkosStream.cpp)
+register_model(sycl SYCL SYCLStream.cpp)
+register_model(acc ACC ACCStream.cpp)
 # defining RAJA collides with the RAJA namespace so USE_RAJA
-register_model(RAJA USE_RAJA RAJAStream.cpp)
+register_model(raja USE_RAJA RAJAStream.cpp)
 
 
 set(USAGE ON CACHE BOOL "Whether to print all custom flags for the selected model")
@@ -169,6 +130,7 @@ message(STATUS "Executable  : ${EXE_NAME}")
 
 # below we have all the usual CMake target setup steps
 
+include_directories(.)
 add_executable(${EXE_NAME} ${IMPL_SOURCES} main.cpp)
 target_link_libraries(${EXE_NAME} PUBLIC ${LINK_LIBRARIES})
 target_compile_definitions(${EXE_NAME} PUBLIC ${IMPL_DEFINITIONS})
@@ -184,7 +146,7 @@ target_link_options(${EXE_NAME} PUBLIC LINKER:${CXX_EXTRA_LINKER_FLAGS})
 target_link_options(${EXE_NAME} PUBLIC ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS})
 
 # some models require the target to be already specified so they can finish their setup here
-# this only happens if the MODEL.cmake definition contains the `setup_target` macro
+# this only happens if the model.cmake definition contains the `setup_target` macro
 if (COMMAND setup_target)
     setup_target(${EXE_NAME})
 endif ()

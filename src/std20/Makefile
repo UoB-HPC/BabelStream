@@ -17,8 +17,8 @@ FLAGS_GNU = -O3 -std=c++2a -march=native
 CXXFLAGS = $(FLAGS_$(COMPILER))
 
 
-std20-stream: main.cpp STD20Stream.cpp
-	$(CXX) -DSTD20 $(CXXFLAGS) $^ $(EXTRA_FLAGS) -o $@
+std20-stream: ../main.cpp STD20Stream.cpp
+	$(CXX) -DSTD20 $(CXXFLAGS) $^ $(EXTRA_FLAGS) -o $@ -I. -I..
 
 .PHONY: clean
 clean:

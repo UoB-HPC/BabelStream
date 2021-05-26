@@ -49,8 +49,8 @@ endif
 CXXFLAGS = --expt-extended-lambda -O3 -std=c++11 -x cu -Xcompiler -fopenmp -arch $(ARCH)
 endif
 
-raja-stream: main.cpp RAJAStream.cpp
-	$(CXX) $(CXXFLAGS) -DUSE_RAJA -I$(RAJA_PATH)/include $^ $(EXTRA_FLAGS) -L$(RAJA_PATH)/lib -lRAJA -o $@
+raja-stream: ../main.cpp RAJAStream.cpp
+	$(CXX) $(CXXFLAGS) -DUSE_RAJA -I$(RAJA_PATH)/include $^ $(EXTRA_FLAGS) -L$(RAJA_PATH)/lib -lRAJA -o $@ -I. -I..
 
 .PHONY: clean
 clean:

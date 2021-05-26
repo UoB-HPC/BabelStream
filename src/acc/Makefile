@@ -50,8 +50,8 @@ endif
 FLAGS_GNU = -O3 -std=c++11 -Drestrict=__restrict -fopenacc
 CXXFLAGS = $(FLAGS_$(COMPILER))
 
-acc-stream: main.cpp ACCStream.cpp
-	$(COMPILER_$(COMPILER)) $(CXXFLAGS) -DACC $^ $(EXTRA_FLAGS) -o $@
+acc-stream: ../main.cpp ACCStream.cpp
+	$(COMPILER_$(COMPILER)) $(CXXFLAGS) -DACC $^ $(EXTRA_FLAGS) -o $@ -I. -I..
 
 .PHONY: clean
 clean:

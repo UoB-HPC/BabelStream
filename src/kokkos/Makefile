@@ -71,7 +71,7 @@ CXX = $(NVCC_WRAPPER)
 endif
 endif
 
-OBJ = main.o KokkosStream.o
+OBJ = KokkosStream.o
 CXXFLAGS = -O3 
 LINKFLAGS = # empty for now
 
@@ -85,14 +85,15 @@ endif
 endif
 
 include $(KOKKOS_PATH)/Makefile.kokkos
+HEADERS = $(wildcard $(MAKEFILE_PATH)*.hpp)
 
-kokkos-stream: $(OBJ) $(KOKKOS_LINK_DEPENDS)
-	$(CXX) $(KOKKOS_LDFLAGS) $(LINKFLAGS) $(EXTRA_PATH) $(OBJ) $(KOKKOS_LIBS) $(LIB) -DKOKKOS -o $@
+kokkos-stream: ../main.cpp $(OBJ) $(KOKKOS_LINK_DEPENDS)
+	$(CXX) $(KOKKOS_LDFLAGS) $(LINKFLAGS) $(EXTRA_PATH) $(OBJ) $(KOKKOS_LIBS) $(LIB) -DKOKKOS -o $@ -I. -I..
 
-%.o: %.cpp $(KOKKOS_CPP_DEPENDS)
-	$(CXX) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(CXXFLAGS) $(EXTRA_INC) -DKOKKOS -c $<
+%.o: %.cpp $(KOKKOS_CPP_DEPENDS) $(HEADERS)
+	$(CXX) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(CXXFLAGS) $(EXTRA_INC) -c $< -o $(notdir $@)
 
 .PHONY: clean
 clean:
-	rm -f kokkos-stream main.o KokkosStream.o Kokkos_*.o
+	rm -f kokkos-stream main.o KokkosStream.o Kokkos_*.o KokkosCore_*
 

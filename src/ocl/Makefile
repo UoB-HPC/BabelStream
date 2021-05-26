@@ -30,8 +30,8 @@ else
   LIBS = -lOpenCL
 endif
 
-ocl-stream: main.cpp OCLStream.cpp
-	$(CXX) $(CXXFLAGS) -DOCL $^ $(EXTRA_FLAGS) $(LIBS) -o $@
+ocl-stream: ../main.cpp OCLStream.cpp
+	$(CXX) $(CXXFLAGS) -DOCL $^ $(EXTRA_FLAGS) $(LIBS) -o $@ -I. -I..
 
 .PHONY: clean
 clean:

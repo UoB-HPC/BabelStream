@@ -91,8 +91,8 @@ endif
 
 OMP = $(OMP_$(COMPILER)_$(TARGET))
 
-omp-stream: main.cpp OMPStream.cpp
-	$(CXX) $(CXXFLAGS) -DOMP $^ $(OMP) $(EXTRA_FLAGS) -o $@
+omp-stream: ../main.cpp OMPStream.cpp
+	$(CXX) $(CXXFLAGS) -DOMP  $^ $(OMP) $(EXTRA_FLAGS) -o $@ -I. -I..
 
 .PHONY: clean
 clean:

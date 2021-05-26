@@ -73,8 +73,8 @@ SYCL_LINK_FLAGS = $(SYCL_$(COMPILER)_LINK_FLAGS)
 SYCL_INCLUDE = $(SYCL_$(COMPILER)_INCLUDE)
 
 # only ComputeCpp generates .sycl files which is a bit odd to deal with so we opted to compile everything together
-sycl-stream: main.cpp SYCLStream.cpp
-	$(SYCL_SYCLCXX) $(SYCL_SYCLFLAGS) $(SYCL_FLAGS) $(SYCL_INCLUDE) -DSYCL $(EXTRA_FLAGS) $(SYCL_LINK_FLAGS) $^ -o $@
+sycl-stream: ../main.cpp SYCLStream.cpp
+	$(SYCL_SYCLCXX) $(SYCL_SYCLFLAGS) $(SYCL_FLAGS) $(SYCL_INCLUDE) -DSYCL $(EXTRA_FLAGS) $(SYCL_LINK_FLAGS) $^ -o $@ -I. -I..
 
 .PHONY: clean
 clean:

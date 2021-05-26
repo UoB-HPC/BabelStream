@@ -31,8 +31,8 @@ MEM_PAGEFAULT= -DPAGEFAULT
 MEM_MODE = $(MEM_$(MEM))
 
 
-cuda-stream: main.cpp CUDAStream.cu
-	$(CUDA_CXX) -std=c++11 $(CXXFLAGS) -arch=$(NVARCH) $(MEM_MODE) -DCUDA $^ $(EXTRA_FLAGS) -o $@
+cuda-stream: ../main.cpp CUDAStream.cu
+	$(CUDA_CXX) -std=c++11 $(CXXFLAGS) -arch=$(NVARCH) $(MEM_MODE) -DCUDA $^ $(EXTRA_FLAGS) -o $@ -I. -I..
 
 .PHONY: clean
 clean:

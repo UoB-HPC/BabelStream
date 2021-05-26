@@ -6,8 +6,8 @@
 CXXFLAGS=-O3 -std=c++17 -stdpar -DSTD
 STD_CXX=nvc++
 
-std-stream: main.cpp STDStream.cpp
-	$(STD_CXX) $(CXXFLAGS) $^ $(EXTRA_FLAGS) -o $@
+std-stream: ../main.cpp STDStream.cpp
+	$(STD_CXX) $(CXXFLAGS) $^ $(EXTRA_FLAGS) -o $@ -I. -I..
 
 .PHONY: clean
 clean:

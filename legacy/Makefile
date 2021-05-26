@@ -14,7 +14,8 @@ endif
 
 
 hc-stream: ../main.cpp HCStream.cpp
-	$(HCC) $(CXXFLAGS) -DHC  $^  $(LDFLAGS) $(EXTRA_FLAGS) -o $@
+	$(HCC) $(CXXFLAGS) -DHC  $^  $(LDFLAGS) $(EXTRA_FLAGS) -o $@ -I. -I..
+
 
 .PHONY: clean
 clean:
