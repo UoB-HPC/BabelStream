@@ -112,6 +112,7 @@ register_model(SYCL SYCL SYCLStream.cpp)
 register_model(ACC ACC ACCStream.cpp)
 # defining RAJA collides with the RAJA namespace so USE_RAJA
 register_model(RAJA USE_RAJA RAJAStream.cpp)
+register_model(TBB TBB TBBStream.cpp)
 
 
 set(USAGE ON CACHE BOOL "Whether to print all custom flags for the selected model")

@@ -112,6 +112,8 @@ run_build() {
 #ICPX_CXX="/opt/intel/oneapi/compiler/2021.1.2/linux/bin/icpx"
 #ICPC_CXX="/opt/intel/oneapi/compiler/2021.1.2/linux/bin/intel64/icpc"
 #
+#TBB_LIB="/home/tom/Downloads/oneapi-tbb-2021.1.1/"
+#
 #GCC_STD_PAR_LIB="tbb"
 #CLANG_STD_PAR_LIB="tbb"
 #GCC_OMP_OFFLOAD_AMD=false
@@ -138,7 +140,7 @@ build_gcc() {
   # some distributions like Ubuntu bionic implements std par with TBB, so conditionally link it here
   run_build $name "${GCC_CXX:?}" STD "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
   run_build $name "${GCC_CXX:?}" STD20 "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
-
+  run_build $name "${GCC_CXX:?}" TBB "$cxx -DTBB_DIR=$TBB_LIB"
   if [ "${GCC_OMP_OFFLOAD_AMD:-false}" != "false" ]; then
     run_build "amd_$name" "${GCC_CXX:?}" ACC "$cxx -DCXX_EXTRA_FLAGS=-foffload=amdgcn-amdhsa"
     run_build "amd_$name" "${GCC_CXX:?}" OMP "$cxx -DOFFLOAD=AMD:$AMD_ARCH"
@@ -188,6 +190,7 @@ build_clang() {
   run_build $name "${CLANG_CXX:?}" OCL "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
   run_build $name "${CLANG_CXX:?}" STD "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
   # run_build $name "${LANG_CXX:?}" STD20 "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" # not yet supported
+  run_build $name "${CLANG_CXX:?}" TBB "$cxx -DTBB_DIR=$TBB_LIB"
   run_build $name "${CLANG_CXX:?}" RAJA "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?}"
   # no clang /w RAJA+cuda because it needs nvcc which needs gcc
 }
