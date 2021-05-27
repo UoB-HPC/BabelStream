@@ -8,7 +8,7 @@
 
 #include <iostream>
 #include <vector>
-#include "oneapi/tbb.h"
+#include "tbb/tbb.h"
 #include "Stream.h"
 
 #define IMPLEMENTATION_STRING "TBB"

@@ -5,7 +5,6 @@
 // source code
 
 #include "TBBStream.hpp"
-#include "tbb/tbb.h"
 
 template <class T>
 TBBStream<T>::TBBStream(const int ARRAY_SIZE, int device)
