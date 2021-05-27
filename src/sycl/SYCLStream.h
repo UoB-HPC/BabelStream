@@ -11,6 +11,15 @@
 
 #include "Stream.h"
 
+#include "CL/opencl.h"
+
+// XXX Intel's SYCL impl. needs CL_MEM_CHANNEL_INTEL which is provided in dpcpp's include dir
+// however, depending the system configuration, the system CL header sometimes takes precedence
+// we only really need this macro to refer to the extension so this is probably OK
+#ifndef CL_MEM_CHANNEL_INTEL
+#define CL_MEM_CHANNEL_INTEL            0x4213
+#endif
+
 #include "CL/sycl.hpp"
 
 #define IMPLEMENTATION_STRING "SYCL"
