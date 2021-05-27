@@ -48,7 +48,7 @@ macro(setup)
         set(ComputeCpp_DIR ${SYCL_COMPILER_DIR})
 
         # don't point to the CL dir as the imports already have the CL prefix
-        set(OpenCL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/CL")
+        set(OpenCL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}")
 
         register_definitions(CL_TARGET_OPENCL_VERSION=220 _GLIBCXX_USE_CXX11_ABI=0)
         # ComputeCpp needs OpenCL
