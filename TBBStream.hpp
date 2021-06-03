@@ -13,31 +13,37 @@
 
 #define IMPLEMENTATION_STRING "TBB"
 
-enum class Partitioner : int { Auto = 0, Affinity, Static, Simple};
+#if defined(PARTITIONER_AUTO)
+using tbb_partitioner = tbb::auto_partitioner;
+#define PARTITIONER_NAME  "auto_partitioner"
+#elif defined(PARTITIONER_AFFINITY)
+using tbb_partitioner = tbb::affinity_partitioner;
+#define PARTITIONER_NAME  "affinity_partitioner"
+#elif defined(PARTITIONER_STATIC)
+using tbb_partitioner = tbb::static_partitioner;
+#define PARTITIONER_NAME  "static_partitioner"
+#elif defined(PARTITIONER_SIMPLE)
+using tbb_partitioner = tbb::simple_partitioner;
+#define PARTITIONER_NAME  "simple_partitioner"
+#else
+// default to auto
+using tbb_partitioner = tbb::auto_partitioner;
+#define PARTITIONER_NAME  "auto_partitioner"
+#endif
+
 
 template <class T>
 class TBBStream : public Stream<T>
 {
   protected:
   
-
-    Partitioner partitioner;
+    tbb_partitioner partitioner;
     tbb::blocked_range<size_t> range;
     // Device side pointers
     std::vector<T> a;
     std::vector<T> b;
     std::vector<T> c;
-    
-
-    template < typename U, typename F>
-    U with_partitioner(const F &f);
  
-    template <typename F>
-    void parallel_for(const F &f);
-
-    template <typename F, typename Op>
-    T parallel_reduce(T init, const Op &op, const F &f);
-
   public:
     TBBStream(const int, int);
     ~TBBStream() = default;
