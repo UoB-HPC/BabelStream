@@ -25,6 +25,8 @@
 #include "STDStream.h"
 #elif defined(STD20)
 #include "STD20Stream.hpp"
+#elif defined(TBB)
+#include "TBBStream.hpp"
 #elif defined(HIP)
 #include "HIPStream.h"
 #elif defined(HC)
@@ -265,6 +267,10 @@ void run()
 #elif defined(STD20)
   // Use the C++20 implementation
   stream = new STD20Stream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(TBB)
+  // Use the C++20 implementation
+  stream = new TBBStream<T>(ARRAY_SIZE, deviceIndex);
 
 #elif defined(ACC)
   // Use the OpenACC implementation

@@ -8,6 +8,7 @@ kokkos-stream
 std-stream
 sycl-stream
 hip-stream
+tbb-stream
 
 *.o
 *.bc

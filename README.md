@@ -19,6 +19,7 @@ Currently implemented are:
   - Kokkos
   - RAJA
   - SYCL
+  - TBB
 
 This code was previously called GPU-STREAM.
 
@@ -90,7 +91,7 @@ For example:
         Use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`) 
 -- CXX_EXTRA_LINKER_FLAGS: 
         Append to linker flags (i.e GCC's `-Wl` or equivalent)
--- Available models:  OMP;OCL;STD;STD20;HIP;CUDA;KOKKOS;SYCL;ACC;RAJA
+-- Available models:  OMP;OCL;STD;STD20;HIP;CUDA;KOKKOS;SYCL;ACC;RAJA;TBB
 -- Selected model  :  OCL
 -- Supported flags:
 

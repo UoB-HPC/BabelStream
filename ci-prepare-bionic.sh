@@ -208,6 +208,20 @@ setup_raja() {
   check_size
 }
 
+setup_tbb() {
+  echo "Preparing TBB"
+  local tbb_ver="2021.2.0"
+  local tarball="oneapi-tbb-$tbb_ver-lin.tgz"
+
+  local url="https://github.com/oneapi-src/oneTBB/releases/download/v$tbb_ver/oneapi-tbb-$tbb_ver-lin.tgz"
+  # local url="http://localhost:8000/oneapi-tbb-$tbb_ver-lin.tgz"
+
+  get_and_untar "$tarball" "$url"
+  export_var TBB_LIB "$PWD/oneapi-tbb-$tbb_ver"
+  verify_dir_exists "$TBB_LIB"
+  check_size
+}
+
 setup_clang_gcc() {
 
   echo "deb http://archive.ubuntu.com/ubuntu focal main universe" | sudo tee -a /etc/apt/sources.list
@@ -354,6 +368,7 @@ if [ "$PARALLEL" = true ]; then
   setup_dpcpp &
   setup_kokkos &
   setup_raja &
+  setup_tbb &
   wait
 else
   setup_cmake
@@ -364,6 +379,7 @@ else
   setup_dpcpp
   setup_kokkos
   setup_raja
+  setup_tbb
   # these need apt
   setup_clang_gcc
   setup_rocm
