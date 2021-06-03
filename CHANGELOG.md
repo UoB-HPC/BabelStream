@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Added nstream kernel from PRK with associate command line option.
 - CMake build system added for all models.
 - SYCL device check for FP64 support.
+- New implementation using TBB.
 
 ### Changed
 - Default branch renamed from `master` to `main`.
