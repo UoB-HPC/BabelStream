@@ -21,7 +21,7 @@ class SYCLStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    size_t array_size;
 
     // SYCL objects
     // Queue is a pointer because we allow device selection
@@ -35,7 +35,7 @@ class SYCLStream : public Stream<T>
 
   public:
 
-    SYCLStream(const int, const int);
+    SYCLStream(const size_t, const int);
     ~SYCLStream() = default;
 
     virtual void copy() override;
