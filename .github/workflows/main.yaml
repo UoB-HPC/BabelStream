@@ -5,6 +5,9 @@ on: [push, pull_request]
 jobs:
   test-julia:
     runs-on: ubuntu-18.04
+    defaults:
+      run:
+        working-directory: ./JuliaStream.jl
     steps:
       - uses: actions/checkout@v2
       - name: Setup project
