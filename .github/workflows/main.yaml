@@ -3,6 +3,23 @@ on: [push, pull_request]
 
 
 jobs:
+  test-julia:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup project
+        run: julia             --project -e 'import Pkg; Pkg.instantiate()'
+      - name: Test run PlainStream.jl
+        run: julia             --project src/PlainStream.jl       --arraysize 100
+      - name: Test run ThreadedStream.jl
+        run: julia --threads 2 --project src/ThreadedStream.jl    --arraysize 100
+      - name: Test run DistributedStream.jl
+        run: julia         -p2 --project src/DistributedStream.jl --arraysize 100
+      - name: Test run CUDAStream.jl
+        run: julia             --project src/CUDAStream.jl        --list
+      - name: Test run AMDGPUStream.jl
+        run: julia             --project src/AMDGPUStream.jl      --list
+
   test:
     runs-on: ubuntu-18.04
     steps:
