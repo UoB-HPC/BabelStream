@@ -2,6 +2,8 @@ using Distributed
 
 include("Stream.jl")
 
+addprocs()
+
 @everywhere include("StreamData.jl")
 @everywhere using SharedArrays
 @everywhere const SharedArrayData = StreamData{T,SharedArray{T}} where {T}

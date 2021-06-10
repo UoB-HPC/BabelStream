@@ -13,14 +13,19 @@ jobs:
       - name: Setup project
         run: julia             --project -e 'import Pkg; Pkg.instantiate()'
       - name: Test run PlainStream.jl
+        if: ${{ ! cancelled() }}
         run: julia             --project src/PlainStream.jl       --arraysize 100
       - name: Test run ThreadedStream.jl
+        if: ${{ ! cancelled() }}
         run: julia --threads 2 --project src/ThreadedStream.jl    --arraysize 100
       - name: Test run DistributedStream.jl
+        if: ${{ ! cancelled() }}
         run: julia         -p2 --project src/DistributedStream.jl --arraysize 100
       - name: Test run CUDAStream.jl
+        if: ${{ ! cancelled() }}
         run: julia             --project src/CUDAStream.jl        --list
       - name: Test run AMDGPUStream.jl
+        if: ${{ ! cancelled() }}
         run: julia             --project src/AMDGPUStream.jl      --list
 
   test:

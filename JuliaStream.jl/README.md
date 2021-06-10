@@ -26,5 +26,5 @@ With Julia on path, run the benchmark with:
 **Important:**
  * Julia is 1-indexed, so N > 1 in `--device N`
  * Thread count for `ThreadedStream` must be set via the `JULIA_NUM_THREADS` environment variable (e.g `export JULIA_NUM_THREADS=$(nproc)`) otherwise it defaults to 1
- * You must *prepend* the number of processes needed for `DistributedStream`, e.g `julia -p$(nproc) --project src/DistributedStream.jl`
+ * `DistributedStream` uses `addprocs()` call directly which defaults to `$(nproc)`, **do not use the `-p <N>` flag** as per the [documentation](https://docs.julialang.org/en/v1/manual/distributed-computing).
  * Certain implementations such as CUDA and AMDGPU will do hardware detection at runtime and may download and/or compile further software packages for the platform.
