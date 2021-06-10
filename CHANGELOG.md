@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 - Support for CUDA Managed Memory and Page Fault memory.
 - Added nstream kernel from PRK with associate command line option.
 - CMake build system added for all models.
+- SYCL device check for FP64 support.
+- New implementation using TBB.
 
 ### Changed
 - Default branch renamed from `master` to `main`.
@@ -29,6 +31,7 @@ All notable changes to this project will be documented in this file.
 - Unified run function in driver code to reduce code duplication, output should be uneffected.
 - Normalise sum result by expected value to help false negative errors.
 - HC version deprecated and moved to a legacy directory.
+- Update RAJA to v0.13.0 (w/ code changes as this is a source incompatible update).
 
 ### Removed
 - Pre-building of kernels in SYCL version to ensure compatibility with SYCL 1.2.1.

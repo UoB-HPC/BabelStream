@@ -44,21 +44,26 @@ run_build() {
 
   rm -rf "$build"
   set +e
+  local install_dir="$build/install"
 
   # shellcheck disable=SC2086
   "$CMAKE_BIN" -B"$build" -H. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DCMAKE_INSTALL_PREFIX="$install_dir" \
     -DMODEL="$model" $flags &>>"$log"
   local model_lower=$(echo "$model" | awk '{print tolower($0)}')
 
   local cmake_code=$?
 
   "$CMAKE_BIN" --build "$build" -j "$(nproc)" &>>"$log"
+  "$CMAKE_BIN" --build "$build" --target install  -j "$(nproc)" &>>"$log"
   local cmake_code=$?
   set -e
 
   local bin="./$build/$model_lower-stream"
+  local installed_bin="./$install_dir/bin/$model_lower-stream"
+
   echo "Checking for final executable: $bin"
   if [[ -f "$bin" ]]; then
     echo "$(tput setaf 2)[PASS!]($model->$build)$(tput sgr0): -DMODEL=$model $flags"
@@ -66,6 +71,11 @@ run_build() {
     cat "$log" | sed '/^--/d' | grep -i "/bin/nvcc" | sed 's/^/    /'
     cat "$log" | sed '/^--/d' | grep -i "$grep_kw" | sed 's/^/    /'
     cat "$log" | sed '/^--/d' | grep -i "warning" | sed "s/.*/    $(tput setaf 3)&$(tput sgr0)/"
+    if [[ ! -f "$installed_bin" ]]; then
+      echo "$(tput setaf 1)[ERR!] looking for $installed_bin from --target install but it's not there!$(tput sgr0)"
+      cat "$log"
+      exit 1
+    fi
   else
     echo "$(tput setaf 1)[FAIL!]($model->$build)$(tput sgr0): -DMODEL=$model $flags"
     echo "      $(tput setaf 1)CMake exited with code $cmake_code, see full build log at $log, reproduced below:$(tput sgr0)"
@@ -76,38 +86,40 @@ run_build() {
 }
 
 ###
-#KOKKOS_SRC="/home/tom/Downloads/kokkos-3.3.00"
-#RAJA_SRC="/home/tom/Downloads/RAJA-v0.13.0"
-#
-#GCC_CXX="/usr/bin/g++"
-#CLANG_CXX="/usr/bin/clang++"
-#
-#NVSDK="/home/tom/Downloads/nvhpc_2021_212_Linux_x86_64_cuda_11.2/install_components/Linux_x86_64/21.2/"
-#NVHPC_NVCXX="$NVSDK/compilers/bin/nvc++"
-#NVHPC_NVCC="$NVSDK/cuda/11.2/bin/nvcc"
-#NVHPC_CUDA_DIR="$NVSDK/cuda/11.2"
-#"$NVSDK/compilers/bin/makelocalrc" "$NVSDK/compilers/bin/" -x
-#
-#AOCC_CXX="/opt/AMD/aocc-compiler-2.3.0/bin/clang++"
-#AOMP_CXX="/usr/lib/aomp/bin/clang++"
-#OCL_LIB="/home/tom/Downloads/oclcpuexp-2020.11.11.0.04_rel/x64/libOpenCL.so"
-#
-## AMD needs this rocm_path thing exported...
-#export ROCM_PATH="/opt/rocm-4.0.0"
-#HIP_CXX="/opt/rocm-4.0.0/bin/hipcc"
-#COMPUTECPP_DIR="/home/tom/Desktop/computecpp_archive/ComputeCpp-CE-2.3.0-x86_64-linux-gnu"
-#DPCPP_DIR="/home/tom/Downloads/dpcpp_compiler"
-#HIPSYCL_DIR="/opt/hipsycl/cff515c/"
-#
-#ICPX_CXX="/opt/intel/oneapi/compiler/2021.1.2/linux/bin/icpx"
-#ICPC_CXX="/opt/intel/oneapi/compiler/2021.1.2/linux/bin/intel64/icpc"
-#
-#GCC_STD_PAR_LIB="tbb"
-#CLANG_STD_PAR_LIB="tbb"
-#GCC_OMP_OFFLOAD_AMD=false
-#GCC_OMP_OFFLOAD_NVIDIA=true
-#CLANG_OMP_OFFLOAD_AMD=false
-#CLANG_OMP_OFFLOAD_NVIDIA=false
+# KOKKOS_SRC="/home/tom/Downloads/kokkos-3.3.00"
+# RAJA_SRC="/home/tom/Downloads/RAJA-v0.13.0"
+
+# GCC_CXX="/usr/bin/g++"
+# CLANG_CXX="/usr/bin/clang++"
+
+# NVSDK="/home/tom/Downloads/nvhpc_2021_212_Linux_x86_64_cuda_11.2/install_components/Linux_x86_64/21.2/"
+# NVHPC_NVCXX="$NVSDK/compilers/bin/nvc++"
+# NVHPC_NVCC="$NVSDK/cuda/11.2/bin/nvcc"
+# NVHPC_CUDA_DIR="$NVSDK/cuda/11.2"
+# "$NVSDK/compilers/bin/makelocalrc" "$NVSDK/compilers/bin/" -x
+
+# AOCC_CXX="/opt/AMD/aocc-compiler-2.3.0/bin/clang++"
+# AOMP_CXX="/usr/lib/aomp/bin/clang++"
+# OCL_LIB="/home/tom/Downloads/oclcpuexp-2020.11.11.0.04_rel/x64/libOpenCL.so"
+
+# # AMD needs this rocm_path thing exported...
+# export ROCM_PATH="/opt/rocm-4.0.0"
+# HIP_CXX="/opt/rocm-4.0.0/bin/hipcc"
+# COMPUTECPP_DIR="/home/tom/Desktop/computecpp_archive/ComputeCpp-CE-2.3.0-x86_64-linux-gnu"
+# DPCPP_DIR="/home/tom/Downloads/dpcpp_compiler"
+# HIPSYCL_DIR="/opt/hipsycl/cff515c/"
+
+# ICPX_CXX="/opt/intel/oneapi/compiler/2021.1.2/linux/bin/icpx"
+# ICPC_CXX="/opt/intel/oneapi/compiler/2021.1.2/linux/bin/intel64/icpc"
+
+# TBB_LIB="/home/tom/Downloads/oneapi-tbb-2021.1.1/"
+
+# GCC_STD_PAR_LIB="tbb"
+# CLANG_STD_PAR_LIB="tbb"
+# GCC_OMP_OFFLOAD_AMD=false
+# GCC_OMP_OFFLOAD_NVIDIA=true
+# CLANG_OMP_OFFLOAD_AMD=false
+# CLANG_OMP_OFFLOAD_NVIDIA=false
 ###
 
 AMD_ARCH="gfx_903"
@@ -129,6 +141,9 @@ build_gcc() {
   run_build $name "${GCC_CXX:?}" STD "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
   run_build $name "${GCC_CXX:?}" STD20 "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
 
+  run_build $name "${GCC_CXX:?}" TBB "$cxx -DONE_TBB_DIR=$TBB_LIB"
+  run_build $name "${GCC_CXX:?}" TBB "$cxx" # build TBB again with the system TBB
+
   if [ "${GCC_OMP_OFFLOAD_AMD:-false}" != "false" ]; then
     run_build "amd_$name" "${GCC_CXX:?}" ACC "$cxx -DCXX_EXTRA_FLAGS=-foffload=amdgcn-amdhsa"
     run_build "amd_$name" "${GCC_CXX:?}" OMP "$cxx -DOFFLOAD=AMD:$AMD_ARCH"
@@ -146,11 +161,15 @@ build_gcc() {
   run_build "cuda_$name" "${GCC_CXX:?}" KOKKOS "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
   run_build $name "${GCC_CXX:?}" OCL "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
   run_build $name "${GCC_CXX:?}" RAJA "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?}"
-  run_build "cuda_$name" "${GCC_CXX:?}" RAJA "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?} \
-  -DENABLE_CUDA=ON \
-  -DTARGET=NVIDIA \
-  -DCUDA_TOOLKIT_ROOT_DIR=${NVHPC_CUDA_DIR:?} \
-  -DCUDA_ARCH=$NV_ARCH"
+
+#  FIXME fails due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100102
+#  FIXME we also got https://github.com/NVIDIA/nccl/issues/494
+
+#  run_build "cuda_$name" "${GCC_CXX:?}" RAJA "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?} \
+#  -DENABLE_CUDA=ON \
+#  -DTARGET=NVIDIA \
+#  -DCUDA_TOOLKIT_ROOT_DIR=${NVHPC_CUDA_DIR:?} \
+#  -DCUDA_ARCH=$NV_ARCH"
 
 }
 
@@ -174,6 +193,10 @@ build_clang() {
   run_build $name "${CLANG_CXX:?}" OCL "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
   run_build $name "${CLANG_CXX:?}" STD "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
   # run_build $name "${LANG_CXX:?}" STD20 "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" # not yet supported
+  
+  run_build $name "${CLANG_CXX:?}" TBB "$cxx -DONE_TBB_DIR=$TBB_LIB"
+  run_build $name "${CLANG_CXX:?}" TBB "$cxx" # build TBB again with the system TBB
+
   run_build $name "${CLANG_CXX:?}" RAJA "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?}"
   # no clang /w RAJA+cuda because it needs nvcc which needs gcc
 }
