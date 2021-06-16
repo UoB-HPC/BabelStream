@@ -278,7 +278,6 @@ static DOUBLE_START_SCALAR: f64 = START_SCALAR as f64;
 static DOUBLE_INIT: (f64, f64, f64) = (START_A as f64, START_B as f64, START_C as f64);
 
 pub fn run(args: &Vec<String>) -> bool {
-  println!("`{:?}`", args);
 
   let options: Options = Options::from_iter(args);
 
