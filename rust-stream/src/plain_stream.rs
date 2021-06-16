@@ -47,7 +47,7 @@ impl<T: ArrayType, A: AllocatorType> RustStream<T> for StreamData<T, SerialDevic
 
   fn nstream(&mut self) {
     for i in 0..self.size {
-      self.a[i] += self.b[i] * self.scalar * self.c[i];
+      self.a[i] += self.b[i] + self.scalar * self.c[i];
     }
   }
 

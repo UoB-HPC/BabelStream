@@ -3,6 +3,21 @@ on: [push, pull_request]
 
 
 jobs:
+  test-rust:
+    runs-on: ubuntu-18.04
+    defaults:
+      run:
+        working-directory: ./rust-stream
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup project
+        run: rustup install nightly
+      - name: Compile project
+        run: cargo +nightly build --release
+      - name: Test project
+        run: cargo +nightly test --release
+      - name: Test run project
+        run: ./target/release/rust-stream --arraysize 2048
   test:
     runs-on: ubuntu-18.04
     steps:

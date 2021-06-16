@@ -18,6 +18,9 @@ libc = "0.2.97"
 core_affinity = "0.5.10"
 colour = "0.6.0"
 
+[dev-dependencies]
+rstest = "0.10.0"
+
 [build-dependencies]
 rustversion = "1.0"
 
