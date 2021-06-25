@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - CMake build system added for all models.
 - SYCL device check for FP64 support.
 - New implementation using TBB.
+- Compiler options for Fujitsu added to OpenMP.
 
 ### Changed
 - Default branch renamed from `master` to `main`.
