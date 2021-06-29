@@ -30,6 +30,9 @@
 #    ARMClang = ARM Compiler based on Clang (arm.com)
 # These are only added in CMake 3.20:
 #    NVHPC = NVIDIA HPC SDK Compiler (nvidia.com)
+# These are only added in CMake 3.21
+#    Fujitsu = Fujitsu HPC compiler (Trad mode)
+#    FujitsuClang = Fujitsu HPC compiler (Clang mode)
 
 
 # CMAKE_SYSTEM_PROCESSOR is set via `uname -p`, we have:
@@ -39,8 +42,9 @@
 #
 
 
-#predefined offload flags based on compiler id
-
+# predefined offload flags based on compiler id and vendor,
+# the format is (COMPILER and VENDOR must be UPPERCASE):
+# Compiler: OMP_FLAGS_OFFLOAD_<COMPILER?>_<VNEDOR?>
 
 set(OMP_FLAGS_OFFLOAD_INTEL
         -qnextgen -fiopenmp -fopenmp-targets=spir64)
@@ -56,15 +60,25 @@ set(OMP_FLAGS_OFFLOAD_CLANG_ARCH_FLAG
         -march=) # prefix only, arch appended by the vendor:arch tuple
 
 
+# for standard (non-offload) omp, the format is (COMPILER and ARCH must be UPPERCASE):
+# Compiler:      OMP_FLAGS_CPU_<COMPILER?>_<ARCH?>
+# Linker:   OMP_LINK_FLAGS_CPU_<COMPILER?>_<ARCH?>
+
+set(OMP_FLAGS_CPU_FUJITSU
+        -Kfast -std=c++11 -KA64FX -KSVE -KARMV8_3_A -Kzfill=100 -Kprefetch_sequential=soft -Kprefetch_line=8 -Kprefetch_line_L2=16)
+set(OMP_LINK_FLAGS_CPU_FUJITSU
+        -Kopenmp)
+
 set(OMP_FLAGS_CPU_INTEL
         -qopt-streaming-stores=always)
+
 set(OMP_FLAGS_CPU_GNU_PPC64LE
         -mcpu=native)
+
 set(OMP_FLAGS_CPU_XL
         -O5 -qarch=auto -qtune=auto)
 
-# NEC
-set(OMP_FLAGS_CPU_NEC -O4 -finline)
+set(OMP_FLAGS_CPU_NEC -O4 -finline) # CMake doesn't detect this so it's meant to be chosen by register_flag_optional(ARCH)
 
 register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that supports OpenMP as per CMake detection (and offloading if enabled with `OFFLOAD`)"
@@ -118,6 +132,12 @@ macro(setup)
         # starting with ${COMPILER_VENDOR}_${PLATFORM_ARCH}, then try ${COMPILER_VENDOR}, and then give up
         register_append_compiler_and_arch_specific_cxx_flags(
                 OMP_FLAGS_CPU
+                ${COMPILER}
+                ${ARCH}
+        )
+
+        register_append_compiler_and_arch_specific_link_flags(
+                OMP_LINK_FLAGS_CPU
                 ${COMPILER}
                 ${ARCH}
         )
