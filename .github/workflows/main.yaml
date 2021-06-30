@@ -18,9 +18,12 @@ jobs:
       - name: Test run ThreadedStream.jl
         if: ${{ ! cancelled() }}
         run: julia --threads 2 --project src/ThreadedStream.jl    --arraysize 2048
-      - name: Test run DistributedStream.jl
+      - name: Test run DistributedStream.jl (no flag)
         if: ${{ ! cancelled() }}
         run: julia             --project src/DistributedStream.jl --arraysize 2048
+      - name: Test run DistributedStream.jl (-p 2)
+        if: ${{ ! cancelled() }}
+        run: julia -p 2        --project src/DistributedStream.jl --arraysize 2048
       - name: Test run CUDAStream.jl
         if: ${{ ! cancelled() }}
         run: julia             --project src/CUDAStream.jl        --list
