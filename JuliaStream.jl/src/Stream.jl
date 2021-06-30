@@ -99,7 +99,6 @@ end
 
 @with_kw mutable struct Config
   list::Bool = false
-  impl::String = "threaded"
   device::Int = 1
   numtimes::Int = 100
   arraysize::Int = 33554432
@@ -201,7 +200,7 @@ function main()
   if !config.csv
     println("""BabelStream
                Version: $Version
-               Implementation: Julia; $(config.impl)""")
+               Implementation: Julia; $(PROGRAM_FILE)""")
     println("Running kernels $(config.numtimes) times")
     if benchmark == Triad
       println("Number of elements: $(config.arraysize)")

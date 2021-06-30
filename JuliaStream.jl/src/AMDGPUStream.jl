@@ -56,11 +56,6 @@ function make_stream(
   return data
 end
 
-function hard_wait(kernel)
-  # soft wait causes HSA_REFCOUNT overflow issues
-  AMDGPU.wait(kernel, soft = false)
-end
-
 function init_arrays!(data::ROCData{T}, init::Tuple{T,T,T}) where {T}
   AMDGPU.fill!(data.a, init[1])
   AMDGPU.fill!(data.b, init[2])
@@ -73,7 +68,10 @@ function copy!(data::ROCData{T}) where {T}
     @inbounds c[i] = a[i]
     return
   end
-  hard_wait(@roc groupsize = TBSize gridsize = gridsize(data) kernel(data.a, data.c))
+  AMDGPU.wait(
+    soft = false, # soft wait causes HSA_REFCOUNT overflow issues
+    @roc groupsize = TBSize gridsize = gridsize(data) kernel(data.a, data.c)
+  )
 end
 
 function mul!(data::ROCData{T}) where {T}
@@ -82,7 +80,8 @@ function mul!(data::ROCData{T}) where {T}
     @inbounds b[i] = scalar * c[i]
     return
   end
-  hard_wait(
+  AMDGPU.wait(
+    soft = false, # soft wait causes HSA_REFCOUNT overflow issues
     @roc groupsize = TBSize gridsize = gridsize(data) kernel(data.b, data.c, data.scalar)
   )
 end
@@ -93,7 +92,8 @@ function add!(data::ROCData{T}) where {T}
     @inbounds c[i] = a[i] + b[i]
     return
   end
-  hard_wait(
+  AMDGPU.wait(
+    soft = false, # soft wait causes HSA_REFCOUNT overflow issues
     @roc groupsize = TBSize gridsize = gridsize(data) kernel(data.a, data.b, data.c)
   )
 end
@@ -104,7 +104,8 @@ function triad!(data::ROCData{T}) where {T}
     @inbounds a[i] = b[i] + (scalar * c[i])
     return
   end
-  hard_wait(
+  AMDGPU.wait(
+    soft = false, # soft wait causes HSA_REFCOUNT overflow issues
     @roc groupsize = TBSize gridsize = gridsize(data) kernel(
       data.a,
       data.b,
@@ -120,7 +121,8 @@ function nstream!(data::ROCData{T}) where {T}
     @inbounds a[i] += b[i] + scalar * c[i]
     return
   end
-  hard_wait(
+  AMDGPU.wait(
+    soft = false, # soft wait causes HSA_REFCOUNT overflow issues
     @roc groupsize = TBSize gridsize = gridsize(data) kernel(
       data.a,
       data.b,
@@ -160,7 +162,8 @@ function dot(data::ROCData{T}) where {T}
     return
   end
   partial_sum = ROCArray{T}(undef, DotBlocks)
-  hard_wait(
+  AMDGPU.wait(
+    soft = false, # soft wait causes HSA_REFCOUNT overflow issues
     @roc groupsize = TBSize gridsize = TBSize * DotBlocks kernel(
       data.a,
       data.b,
