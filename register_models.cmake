@@ -20,7 +20,9 @@
 #
 
 macro(wipe_gcc_style_optimisation_flags VAR)
-    string(REGEX REPLACE "([\\/\\-]O.)" "" ${VAR} ${${VAR}})
+    if(${VAR})
+        string(REGEX REPLACE "([\\/\\-]O.)" "" ${VAR} ${${VAR}})
+    endif()
 endmacro()
 
 macro(register_link_library)
@@ -41,7 +43,7 @@ macro(register_append_link_flags)
     list(APPEND LINK_FLAGS ${ARGN})
 endmacro()
 
-macro(register_append_compiler_and_arch_specific_cxx_flags PREFIX CXX ARCH)
+function(bind_cxx_and_arch OUT PREFIX CXX ARCH)
     string(TOUPPER ${CXX} _CXX)
     string(TOUPPER ${ARCH} _ARCH)
     set(_CXX_ARCH_SPECIFIC_FLAGS "${${PREFIX}_${_CXX}_${_ARCH}}")
@@ -52,6 +54,17 @@ macro(register_append_compiler_and_arch_specific_cxx_flags PREFIX CXX ARCH)
     if (_CXX_ARCH_SPECIFIC_FLAGS)
         register_append_cxx_flags(ANY ${_CXX_ARCH_SPECIFIC_FLAGS})
     endif ()
+    set(${OUT} "${_CXX_ARCH_SPECIFIC_FLAGS}" PARENT_SCOPE)
+endfunction()
+
+macro(register_append_compiler_and_arch_specific_cxx_flags PREFIX CXX ARCH)
+    bind_cxx_and_arch(OUT ${PREFIX} ${CXX} ${ARCH})
+    register_append_cxx_flags(ANY ${OUT})
+endmacro()
+
+macro(register_append_compiler_and_arch_specific_link_flags PREFIX CXX ARCH)
+    bind_cxx_and_arch(OUT ${PREFIX} ${CXX} ${ARCH})
+    register_append_link_flags(${OUT})
 endmacro()
 
 macro(register_definitions)

@@ -124,7 +124,7 @@ run_build() {
 
 AMD_ARCH="gfx_903"
 NV_ARCH="sm_70"
-NV_ARCH_CCXY="cuda11.2,cc80"
+NV_ARCH_CCXY="cuda11.3,cc80"
 
 build_gcc() {
   local name="gcc_build"
