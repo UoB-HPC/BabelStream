@@ -13,7 +13,7 @@ This is an implementation of BabelStream in Julia which contains the following v
 
 Prerequisites
 
- * Julia 1.6+
+ * Julia >= 1.6+
 
 With Julia on path, run the benchmark with:
 
@@ -24,7 +24,7 @@ With Julia on path, run the benchmark with:
 ```
 
 **Important:**
- * Julia is 1-indexed, so N > 1 in `--device N`
- * Thread count for `ThreadedStream` must be set via the `JULIA_NUM_THREADS` environment variable (e.g `export JULIA_NUM_THREADS=$(nproc)`) otherwise it defaults to 1
- * `DistributedStream` uses `addprocs()` call directly which defaults to `$(nproc)`, **do not use the `-p <N>` flag** as per the [documentation](https://docs.julialang.org/en/v1/manual/distributed-computing).
+ * Julia is 1-indexed, so N >= 1 in `--device N`.
+ * Thread count for `ThreadedStream` must be set via the `JULIA_NUM_THREADS` environment variable (e.g `export JULIA_NUM_THREADS=$(nproc)`) otherwise it defaults to 1.
+ * Worker count for `DistributedStream` is set with `-p <N>` as per the [documentation](https://docs.julialang.org/en/v1/manual/distributed-computing).
  * Certain implementations such as CUDA and AMDGPU will do hardware detection at runtime and may download and/or compile further software packages for the platform.

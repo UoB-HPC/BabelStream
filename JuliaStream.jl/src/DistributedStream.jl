@@ -1,10 +1,9 @@
 using Distributed
 
-include("Stream.jl")
-
-addprocs()
-
+@everywhere using Pkg
+@everywhere Pkg.activate("."; io=devnull) # don't spam `Activating environment at...`
 @everywhere include("StreamData.jl")
+@everywhere include("Stream.jl")
 @everywhere using SharedArrays
 @everywhere const SharedArrayData = StreamData{T,SharedArray{T}} where {T}
 
