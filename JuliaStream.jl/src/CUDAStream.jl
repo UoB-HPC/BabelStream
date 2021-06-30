@@ -10,10 +10,6 @@ function devices()
          map(d -> "$(CUDA.name(d)) ($(repr(d)))", CUDA.devices())
 end
 
-function blocks(data::CuData{T})::Int where {T}
-  return data.size ÷ TBSize
-end
-
 function make_stream(
   arraysize::Int,
   scalar::T,
@@ -42,7 +38,7 @@ function make_stream(
   )
   if !silent
     println("Using CUDA device: $(CUDA.name(selected)) ($(repr(selected)))")
-    println("Kernel parameters: <<<$(blocks(data)),$(TBSize)>>>")
+    println("Kernel parameters: <<<$(data.size ÷ TBSize),$(TBSize)>>>")
   end
   return data
 end
@@ -59,7 +55,7 @@ function copy!(data::CuData{T}) where {T}
     @inbounds c[i] = a[i]
     return
   end
-  @cuda blocks = blocks(data) threads = TBSize kernel(data.a, data.c)
+  @cuda blocks = data.size ÷ TBSize threads = TBSize kernel(data.a, data.c)
   CUDA.synchronize()
 end
 
@@ -69,7 +65,7 @@ function mul!(data::CuData{T}) where {T}
     @inbounds b[i] = scalar * c[i]
     return
   end
-  @cuda blocks = blocks(data) threads = TBSize kernel(data.b, data.c, data.scalar)
+  @cuda blocks = data.size ÷ TBSize threads = TBSize kernel(data.b, data.c, data.scalar)
   CUDA.synchronize()
 end
 
@@ -79,7 +75,7 @@ function add!(data::CuData{T}) where {T}
     @inbounds c[i] = a[i] + b[i]
     return
   end
-  @cuda blocks = blocks(data) threads = TBSize kernel(data.a, data.b, data.c)
+  @cuda blocks = data.size ÷ TBSize threads = TBSize kernel(data.a, data.b, data.c)
   CUDA.synchronize()
 end
 
@@ -89,7 +85,12 @@ function triad!(data::CuData{T}) where {T}
     @inbounds a[i] = b[i] + (scalar * c[i])
     return
   end
-  @cuda blocks = blocks(data) threads = TBSize kernel(data.a, data.b, data.c, data.scalar)
+  @cuda blocks = data.size ÷ TBSize threads = TBSize kernel(
+    data.a,
+    data.b,
+    data.c,
+    data.scalar,
+  )
   CUDA.synchronize()
 end
 
@@ -99,7 +100,12 @@ function nstream!(data::CuData{T}) where {T}
     @inbounds a[i] += b[i] + scalar * c[i]
     return
   end
-  @cuda blocks = blocks(data) threads = TBSize kernel(data.a, data.b, data.c, data.scalar)
+  @cuda blocks = data.size ÷ TBSize threads = TBSize kernel(
+    data.a,
+    data.b,
+    data.c,
+    data.scalar,
+  )
   CUDA.synchronize()
 end
 
