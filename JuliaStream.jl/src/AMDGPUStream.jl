@@ -64,7 +64,7 @@ end
 
 function copy!(data::ROCData{T}) where {T}
   function kernel(a, c)
-    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x
+    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds c[i] = a[i]
     return
   end
@@ -76,7 +76,7 @@ end
 
 function mul!(data::ROCData{T}) where {T}
   function kernel(b, c, scalar)
-    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x
+    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds b[i] = scalar * c[i]
     return
   end
@@ -88,7 +88,7 @@ end
 
 function add!(data::ROCData{T}) where {T}
   function kernel(a, b, c)
-    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x
+    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds c[i] = a[i] + b[i]
     return
   end
@@ -100,7 +100,7 @@ end
 
 function triad!(data::ROCData{T}) where {T}
   function kernel(a, b, c, scalar)
-    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x
+    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds a[i] = b[i] + (scalar * c[i])
     return
   end
@@ -117,7 +117,7 @@ end
 
 function nstream!(data::ROCData{T}) where {T}
   function kernel(a, b, c, scalar)
-    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x
+    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds a[i] += b[i] + scalar * c[i]
     return
   end
@@ -139,7 +139,7 @@ function dot(data::ROCData{T}) where {T}
     @inbounds tb_sum[local_i] = 0.0
 
     # do dot first
-    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x
+    i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     while i <= size
       @inbounds tb_sum[local_i] += a[i] * b[i]
       i += TBSize * DotBlocks # XXX don't use (workgroupDim().x * gridDimWG().x) here

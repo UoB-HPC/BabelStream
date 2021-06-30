@@ -51,7 +51,7 @@ end
 
 function copy!(data::CuData{T}) where {T}
   function kernel(a, c)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     @inbounds c[i] = a[i]
     return
   end
@@ -61,7 +61,7 @@ end
 
 function mul!(data::CuData{T}) where {T}
   function kernel(b, c, scalar)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     @inbounds b[i] = scalar * c[i]
     return
   end
@@ -71,7 +71,7 @@ end
 
 function add!(data::CuData{T}) where {T}
   function kernel(a, b, c)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     @inbounds c[i] = a[i] + b[i]
     return
   end
@@ -81,7 +81,7 @@ end
 
 function triad!(data::CuData{T}) where {T}
   function kernel(a, b, c, scalar)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     @inbounds a[i] = b[i] + (scalar * c[i])
     return
   end
@@ -96,7 +96,7 @@ end
 
 function nstream!(data::CuData{T}) where {T}
   function kernel(a, b, c, scalar)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     @inbounds a[i] += b[i] + scalar * c[i]
     return
   end
@@ -117,7 +117,7 @@ function dot(data::CuData{T}) where {T}
     @inbounds tb_sum[local_i] = 0.0
 
     # do dot first
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     while i <= size
       @inbounds tb_sum[local_i] += a[i] * b[i]
       i += blockDim().x * gridDim().x
