@@ -3,6 +3,18 @@ on: [push, pull_request]
 
 
 jobs:
+  test-java:
+    runs-on: ubuntu-18.04
+    defaults:
+      run:
+        working-directory: ./java-stream
+    steps:
+      - uses: actions/checkout@v2
+      - name: Test build project
+        run: ./mvnw clean package
+      - name: Test run 
+        if: ${{ ! cancelled() }}
+        run: java -jar target/java-stream.jar --arraysize 2048
   test:
     runs-on: ubuntu-18.04
     steps:
