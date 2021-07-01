@@ -1,8 +1,13 @@
 package javastream;
 
+import static javastream.FractionalMaths.divide;
+import static javastream.FractionalMaths.from;
+import static javastream.FractionalMaths.minus;
+import static javastream.FractionalMaths.plus;
+import static javastream.FractionalMaths.times;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-
 import java.time.Duration;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
@@ -14,19 +19,12 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import javastream.JavaStream.Data;
 import javastream.JavaStream.Timings;
 import javastream.aparapi.AparapiStreams;
 import javastream.jdk.JdkStreams;
 import javastream.jdk.PlainStream;
 import javastream.tornadovm.TornadoVMStreams;
-
-import static javastream.FractionalMaths.divide;
-import static javastream.FractionalMaths.from;
-import static javastream.FractionalMaths.minus;
-import static javastream.FractionalMaths.plus;
-import static javastream.FractionalMaths.times;
 
 public class Main {
 

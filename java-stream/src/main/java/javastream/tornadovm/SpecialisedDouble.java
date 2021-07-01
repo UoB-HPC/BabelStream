@@ -1,7 +1,6 @@
 package javastream.tornadovm;
 
 import java.util.Arrays;
-
 import javastream.Main.Config;
 import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.annotations.Reduce;
