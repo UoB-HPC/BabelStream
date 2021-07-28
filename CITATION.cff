@@ -1,0 +1,32 @@
+cff-version: 1.1.0
+message: If you use this software, please cite it as below.
+authors:
+  - family-names: Deakin
+    given-names: Tom
+    affiliation: University of Bristol
+    website: https://hpc.tomdeakin.com
+  - family-names: McIntosh-Smith
+    given-names: Simon
+    affiliation: University of Bristol
+    website: https://uob-hpc.github.io
+
+title: BabelStream
+version: 3.4
+date-released: 2019-04-10
+
+references:
+  - type: article
+    authors: Deakin T, Price J, Martineau M, McIntosh-Smith S. 
+    title: GPU-STREAM v2.0: Benchmarking the achievable memory bandwidth of many-core processors across diverse parallel programming models
+    year: 2016
+    publisher: Performance Portable Programming Models for Accelerators Workshop held in conjuction with International Supercomputing Conference (Pˆ3MA)
+    doi: 10.1007/978- 3-319-46079-6_34
+  - type: article
+    authors: Deakin T, Price J, Martineau M, McIntosh-Smith S.
+    title: Evaluating attainable memory bandwidth of parallel programming models via BabelStream
+    journal: International Journal of Computational Science and Engineering - special issue
+    year: 2018
+    volume: 17
+    number: 3
+    doi: 10.1504/IJCSE.2018.095847
+
