@@ -9,11 +9,9 @@ authors:
     given-names: Simon
     affiliation: University of Bristol
     website: https://uob-hpc.github.io
-
 title: BabelStream
 version: 3.4
 date-released: 2019-04-10
-
 references:
   - type: article
     authors: Deakin T, Price J, Martineau M, McIntosh-Smith S. 
