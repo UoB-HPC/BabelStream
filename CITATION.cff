@@ -12,4 +12,10 @@ authors:
 title: BabelStream
 version: 3.4
 date-released: 2019-04-10
-
+references:
+  - type: article
+    authors: Deakin T, Price J, Martineau M, McIntosh-Smith S. 
+    title: GPU-STREAM v2.0: Benchmarking the achievable memory bandwidth of many-core processors across diverse parallel programming models
+    year: 2016
+    publisher: Performance Portable Programming Models for Accelerators Workshop held in conjuction with International Supercomputing Conference (Pˆ3MA)
+    doi: 10.1007/978- 3-319-46079-6_34
