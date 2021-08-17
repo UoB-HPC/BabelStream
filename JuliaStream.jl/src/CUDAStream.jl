@@ -5,51 +5,53 @@ const CuData = StreamData{T,CuArray{T}} where {T}
 const TBSize = 1024::Int
 const DotBlocks = 256::Int
 
-function devices()
-  return !CUDA.functional(false) ? [] :
-         map(d -> "$(CUDA.name(d)) ($(repr(d)))", CUDA.devices())
+function devices()::Vector{DeviceWithRepr}
+  return !CUDA.functional(false) ? String[] :
+         map(d -> (d, "$(CUDA.name(d)) ($(repr(d)))", "CUDA.jl"), CUDA.devices())
 end
 
 function make_stream(
   arraysize::Int,
   scalar::T,
-  device::Int,
+  device::DeviceWithRepr,
   silent::Bool,
-)::CuData{T} where {T}
+)::Tuple{CuData{T},Nothing} where {T}
 
   if arraysize % TBSize != 0
     error("arraysize ($(arraysize)) must be divisible by $(TBSize)!")
   end
 
   # so CUDA's device is 0 indexed, so -1 from Julia
-  CUDA.device!(device - 1)
+  CUDA.device!(device[1])
   selected = CUDA.device()
   # show_reason is set to true here so it dumps CUDA info 
   # for us regardless of whether it's functional
   if !CUDA.functional(true)
     error("Non-functional CUDA configuration")
   end
-  data = CuData{T}(
-    CuArray{T}(undef, arraysize),
-    CuArray{T}(undef, arraysize),
-    CuArray{T}(undef, arraysize),
-    scalar,
-    arraysize,
-  )
   if !silent
     println("Using CUDA device: $(CUDA.name(selected)) ($(repr(selected)))")
-    println("Kernel parameters: <<<$(data.size ÷ TBSize),$(TBSize)>>>")
+    println("Kernel parameters: <<<$(arraysize ÷ TBSize),$(TBSize)>>>")
   end
-  return data
+  return (
+    CuData{T}(
+      CuArray{T}(undef, arraysize),
+      CuArray{T}(undef, arraysize),
+      CuArray{T}(undef, arraysize),
+      scalar,
+      arraysize,
+    ),
+    nothing,
+  )
 end
 
-function init_arrays!(data::CuData{T}, init::Tuple{T,T,T}) where {T}
+function init_arrays!(data::CuData{T}, _, init::Tuple{T,T,T}) where {T}
   CUDA.fill!(data.a, init[1])
   CUDA.fill!(data.b, init[2])
   CUDA.fill!(data.c, init[3])
 end
 
-function copy!(data::CuData{T}) where {T}
+function copy!(data::CuData{T}, _) where {T}
   function kernel(a, c)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     @inbounds c[i] = a[i]
@@ -59,7 +61,7 @@ function copy!(data::CuData{T}) where {T}
   CUDA.synchronize()
 end
 
-function mul!(data::CuData{T}) where {T}
+function mul!(data::CuData{T}, _) where {T}
   function kernel(b, c, scalar)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     @inbounds b[i] = scalar * c[i]
@@ -69,7 +71,7 @@ function mul!(data::CuData{T}) where {T}
   CUDA.synchronize()
 end
 
-function add!(data::CuData{T}) where {T}
+function add!(data::CuData{T}, _) where {T}
   function kernel(a, b, c)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     @inbounds c[i] = a[i] + b[i]
@@ -79,7 +81,7 @@ function add!(data::CuData{T}) where {T}
   CUDA.synchronize()
 end
 
-function triad!(data::CuData{T}) where {T}
+function triad!(data::CuData{T}, _) where {T}
   function kernel(a, b, c, scalar)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     @inbounds a[i] = b[i] + (scalar * c[i])
@@ -94,7 +96,7 @@ function triad!(data::CuData{T}) where {T}
   CUDA.synchronize()
 end
 
-function nstream!(data::CuData{T}) where {T}
+function nstream!(data::CuData{T}, _) where {T}
   function kernel(a, b, c, scalar)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
     @inbounds a[i] += b[i] + scalar * c[i]
@@ -109,7 +111,7 @@ function nstream!(data::CuData{T}) where {T}
   CUDA.synchronize()
 end
 
-function dot(data::CuData{T}) where {T}
+function dot(data::CuData{T}, _) where {T}
   # direct port of the reduction in CUDAStream.cu 
   function kernel(a, b, size, partial)
     tb_sum = @cuStaticSharedMem(T, TBSize)
@@ -145,7 +147,7 @@ function dot(data::CuData{T}) where {T}
   return sum(partial_sum)
 end
 
-function read_data(data::CuData{T})::VectorData{T} where {T}
+function read_data(data::CuData{T}, _)::VectorData{T} where {T}
   return VectorData{T}(data.a, data.b, data.c, data.scalar, data.size)
 end
 

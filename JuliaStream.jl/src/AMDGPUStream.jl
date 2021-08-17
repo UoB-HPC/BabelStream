@@ -6,32 +6,23 @@ const ROCData = StreamData{T,ROCArray{T}} where {T}
 const TBSize = 1024::Int
 const DotBlocks = 256::Int
 
-# AMDGPU.agents()'s internal iteration order isn't stable
-function gpu_agents_in_repr_order()
-  # XXX if we select anything other than :gpu, we get 
-  # HSA_STATUS_ERROR_INVALID_AGENT on the first kernel submission
-  sort(AMDGPU.get_agents(:gpu), by = repr)
-end
-
-function devices()
+function devices()::Vector{DeviceWithRepr}
   try
-    map(repr, gpu_agents_in_repr_order())
+    # AMDGPU.agents()'s internal iteration order isn't stable
+    sorted = sort(AMDGPU.get_agents(:gpu), by = repr)
+    map(x -> (x, repr(x), "AMDGPU.jl"), sorted)
   catch
     # probably unsupported
-    []
+    String[]
   end
-end
-
-function gridsize(data::ROCData{T})::Int where {T}
-  return data.size
 end
 
 function make_stream(
   arraysize::Int,
   scalar::T,
-  device::Int,
+  device::DeviceWithRepr,
   silent::Bool,
-)::ROCData{T} where {T}
+)::Tuple{ROCData{T},Nothing} where {T}
 
   if arraysize % TBSize != 0
     error("arraysize ($(arraysize)) must be divisible by $(TBSize)!")
@@ -39,30 +30,31 @@ function make_stream(
 
   # XXX AMDGPU doesn't expose an API for setting the default like CUDA.device!()
   # but AMDGPU.get_default_agent returns DEFAULT_AGENT so we can do it by hand
-  AMDGPU.DEFAULT_AGENT[] = gpu_agents_in_repr_order()[device]
-
-  data = ROCData{T}(
-    ROCArray{T}(undef, arraysize),
-    ROCArray{T}(undef, arraysize),
-    ROCArray{T}(undef, arraysize),
-    scalar,
-    arraysize,
-  )
+  AMDGPU.DEFAULT_AGENT[] = device[1]
   selected = AMDGPU.get_default_agent()
   if !silent
     println("Using GPU HSA device: $(AMDGPU.get_name(selected)) ($(repr(selected)))")
-    println("Kernel parameters   : <<<$(gridsize(data)),$(TBSize)>>>")
+    println("Kernel parameters   : <<<$(arraysize),$(TBSize)>>>")
   end
-  return data
+  return (
+    ROCData{T}(
+      ROCArray{T}(undef, arraysize),
+      ROCArray{T}(undef, arraysize),
+      ROCArray{T}(undef, arraysize),
+      scalar,
+      arraysize,
+    ),
+    nothing,
+  )
 end
 
-function init_arrays!(data::ROCData{T}, init::Tuple{T,T,T}) where {T}
+function init_arrays!(data::ROCData{T}, _, init::Tuple{T,T,T}) where {T}
   AMDGPU.fill!(data.a, init[1])
   AMDGPU.fill!(data.b, init[2])
   AMDGPU.fill!(data.c, init[3])
 end
 
-function copy!(data::ROCData{T}) where {T}
+function copy!(data::ROCData{T}, _) where {T}
   function kernel(a, c)
     i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds c[i] = a[i]
@@ -70,11 +62,11 @@ function copy!(data::ROCData{T}) where {T}
   end
   AMDGPU.wait(
     soft = false, # soft wait causes HSA_REFCOUNT overflow issues
-    @roc groupsize = TBSize gridsize = gridsize(data) kernel(data.a, data.c)
+    @roc groupsize = TBSize gridsize = data.size kernel(data.a, data.c)
   )
 end
 
-function mul!(data::ROCData{T}) where {T}
+function mul!(data::ROCData{T}, _) where {T}
   function kernel(b, c, scalar)
     i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds b[i] = scalar * c[i]
@@ -82,11 +74,11 @@ function mul!(data::ROCData{T}) where {T}
   end
   AMDGPU.wait(
     soft = false, # soft wait causes HSA_REFCOUNT overflow issues
-    @roc groupsize = TBSize gridsize = gridsize(data) kernel(data.b, data.c, data.scalar)
+    @roc groupsize = TBSize gridsize = data.size kernel(data.b, data.c, data.scalar)
   )
 end
 
-function add!(data::ROCData{T}) where {T}
+function add!(data::ROCData{T}, _) where {T}
   function kernel(a, b, c)
     i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds c[i] = a[i] + b[i]
@@ -94,11 +86,11 @@ function add!(data::ROCData{T}) where {T}
   end
   AMDGPU.wait(
     soft = false, # soft wait causes HSA_REFCOUNT overflow issues
-    @roc groupsize = TBSize gridsize = gridsize(data) kernel(data.a, data.b, data.c)
+    @roc groupsize = TBSize gridsize = data.size kernel(data.a, data.b, data.c)
   )
 end
 
-function triad!(data::ROCData{T}) where {T}
+function triad!(data::ROCData{T}, _) where {T}
   function kernel(a, b, c, scalar)
     i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds a[i] = b[i] + (scalar * c[i])
@@ -106,7 +98,7 @@ function triad!(data::ROCData{T}) where {T}
   end
   AMDGPU.wait(
     soft = false, # soft wait causes HSA_REFCOUNT overflow issues
-    @roc groupsize = TBSize gridsize = gridsize(data) kernel(
+    @roc groupsize = TBSize gridsize = data.size kernel(
       data.a,
       data.b,
       data.c,
@@ -115,7 +107,7 @@ function triad!(data::ROCData{T}) where {T}
   )
 end
 
-function nstream!(data::ROCData{T}) where {T}
+function nstream!(data::ROCData{T}, _) where {T}
   function kernel(a, b, c, scalar)
     i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds a[i] += b[i] + scalar * c[i]
@@ -123,7 +115,7 @@ function nstream!(data::ROCData{T}) where {T}
   end
   AMDGPU.wait(
     soft = false, # soft wait causes HSA_REFCOUNT overflow issues
-    @roc groupsize = TBSize gridsize = gridsize(data) kernel(
+    @roc groupsize = TBSize gridsize = data.size kernel(
       data.a,
       data.b,
       data.c,
@@ -132,7 +124,7 @@ function nstream!(data::ROCData{T}) where {T}
   )
 end
 
-function dot(data::ROCData{T}) where {T}
+function dot(data::ROCData{T}, _) where {T}
   function kernel(a, b, size, partial)
     tb_sum = ROCDeviceArray((TBSize,), alloc_local(:reduce, T, TBSize))
     local_i = workitemIdx().x
@@ -174,7 +166,7 @@ function dot(data::ROCData{T}) where {T}
   return sum(partial_sum)
 end
 
-function read_data(data::ROCData{T})::VectorData{T} where {T}
+function read_data(data::ROCData{T}, _)::VectorData{T} where {T}
   return VectorData{T}(data.a, data.b, data.c, data.scalar, data.size)
 end
 

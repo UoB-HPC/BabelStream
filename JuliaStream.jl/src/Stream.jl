@@ -7,6 +7,8 @@ include("StreamData.jl")
 
 const VectorData = StreamData{T,Vector{T}} where {T}
 
+const DeviceWithRepr = Tuple{Any,String,Any}
+
 struct Timings
   copy::Vector{Float64}
   mul::Vector{Float64}
@@ -18,29 +20,33 @@ end
 
 @enum Benchmark All Triad Nstream
 
-function run_all!(data::StreamData{T,C}, times::Int)::Tuple{Timings,T} where {T,C}
+function run_all!(data::StreamData{T,C}, context, times::Int)::Tuple{Timings,T} where {T,C}
   timings = Timings(times)
   lastSum::T = 0
   for i = 1:times
-    @inbounds timings.copy[i] = @elapsed copy!(data)
-    @inbounds timings.mul[i] = @elapsed mul!(data)
-    @inbounds timings.add[i] = @elapsed add!(data)
-    @inbounds timings.triad[i] = @elapsed triad!(data)
-    @inbounds timings.dot[i] = @elapsed lastSum = dot(data)
+    @inbounds timings.copy[i] = @elapsed copy!(data, context)
+    @inbounds timings.mul[i] = @elapsed mul!(data, context)
+    @inbounds timings.add[i] = @elapsed add!(data, context)
+    @inbounds timings.triad[i] = @elapsed triad!(data, context)
+    @inbounds timings.dot[i] = @elapsed lastSum = dot(data, context)
   end
   return (timings, lastSum)
 end
 
-function run_triad!(data::StreamData{T,C}, times::Int)::Float64 where {T,C}
+function run_triad!(data::StreamData{T,C}, context, times::Int)::Float64 where {T,C}
   return @elapsed for _ = 1:times
-    triad!(data)
+    triad!(data, context)
   end
 end
 
-function run_nstream!(data::StreamData{T,C}, times::Int)::Vector{Float64} where {T,C}
+function run_nstream!(
+  data::StreamData{T,C},
+  context,
+  times::Int,
+)::Vector{Float64} where {T,C}
   timings::Vector{Float64} = zeros(times)
   for i = 1:times
-    @inbounds timings[i] = @elapsed nstream!(data)
+    @inbounds timings[i] = @elapsed nstream!(data, context)
   end
   return timings
 end
@@ -160,25 +166,23 @@ function main()
   parse_options(config)
 
   if config.list
-    ds = devices()
-    for (i, device) in enumerate(ds)
-      println("[$i] $(device)")
+    for (i, (_,repr, impl)) in enumerate(devices())
+      println("[$i] ($impl) $repr")
     end
     exit(0)
   end
 
   ds = devices()
+  # TODO implement substring device match
   if config.device < 1 || config.device > length(ds)
     error(
       "Device $(config.device) out of range (1..$(length(ds))), NOTE: Julia is 1-indexed",
     )
+  else
+    device = ds[config.device]
   end
 
-  if config.float
-    type = Float32
-  else
-    type = Float64
-  end
+  type = config.float ? Float32 : Float64
 
   if config.nstream_only && !config.triad_only
     benchmark = Nstream
@@ -256,12 +260,12 @@ function main()
   init::Tuple{type,type,type} = DefaultInit
   scalar::type = DefaultScalar
 
-  data = make_stream(config.arraysize, scalar, config.device, config.csv)
+  (data, context) = make_stream(config.arraysize, scalar, device, config.csv)
 
-  init_arrays!(data, init)
+  init_arrays!(data, context, init)
   if benchmark == All
-    (timings, sum) = run_all!(data, config.numtimes)
-    valid = check_solutions(read_data(data), config.numtimes, init, benchmark, sum)
+    (timings, sum) = run_all!(data, context, config.numtimes)
+    valid = check_solutions(read_data(data, context), config.numtimes, init, benchmark, sum)
     tabulate(
       mk_row(timings.copy, "Copy", 2 * array_bytes),
       mk_row(timings.mul, "Mul", 2 * array_bytes),
@@ -270,12 +274,14 @@ function main()
       mk_row(timings.dot, "Dot", 2 * array_bytes),
     )
   elseif benchmark == Nstream
-    timings = run_nstream!(data, config.numtimes)
-    valid = check_solutions(read_data(data), config.numtimes, init, benchmark, nothing)
+    timings = run_nstream!(data, context, config.numtimes)
+    valid =
+      check_solutions(read_data(data, context), config.numtimes, init, benchmark, nothing)
     tabulate(mk_row(timings, "Nstream", 4 * array_bytes))
   elseif benchmark == Triad
-    elapsed = run_triad!(data, config.numtimes)
-    valid = check_solutions(read_data(data), config.numtimes, init, benchmark, nothing)
+    elapsed = run_triad!(data, context, config.numtimes)
+    valid =
+      check_solutions(read_data(data, context), config.numtimes, init, benchmark, nothing)
     total_bytes = 3 * array_bytes * config.numtimes
     bandwidth = mega_scale * (total_bytes / elapsed)
     println("Runtime (seconds): $(round(elapsed; digits=5))")
