@@ -21,7 +21,6 @@ function make_stream(
     error("arraysize ($(arraysize)) must be divisible by $(TBSize)!")
   end
 
-  # so CUDA's device is 0 indexed, so -1 from Julia
   CUDA.device!(device[1])
   selected = CUDA.device()
   # show_reason is set to true here so it dumps CUDA info 
@@ -46,14 +45,14 @@ function make_stream(
 end
 
 function init_arrays!(data::CuData{T}, _, init::Tuple{T,T,T}) where {T}
-  CUDA.fill!(data.a, init[1])
-  CUDA.fill!(data.b, init[2])
-  CUDA.fill!(data.c, init[3])
+  fill!(data.a, init[1])
+  fill!(data.b, init[2])
+  fill!(data.c, init[3])
 end
 
 function copy!(data::CuData{T}, _) where {T}
   function kernel(a, c)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     @inbounds c[i] = a[i]
     return
   end
@@ -63,7 +62,7 @@ end
 
 function mul!(data::CuData{T}, _) where {T}
   function kernel(b, c, scalar)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     @inbounds b[i] = scalar * c[i]
     return
   end
@@ -73,7 +72,7 @@ end
 
 function add!(data::CuData{T}, _) where {T}
   function kernel(a, b, c)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     @inbounds c[i] = a[i] + b[i]
     return
   end
@@ -83,7 +82,7 @@ end
 
 function triad!(data::CuData{T}, _) where {T}
   function kernel(a, b, c, scalar)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     @inbounds a[i] = b[i] + (scalar * c[i])
     return
   end
@@ -98,7 +97,7 @@ end
 
 function nstream!(data::CuData{T}, _) where {T}
   function kernel(a, b, c, scalar)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     @inbounds a[i] += b[i] + scalar * c[i]
     return
   end
@@ -119,7 +118,7 @@ function dot(data::CuData{T}, _) where {T}
     @inbounds tb_sum[local_i] = 0.0
 
     # do dot first
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x # only blockIdx starts at 1
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     while i <= size
       @inbounds tb_sum[local_i] += a[i] * b[i]
       i += blockDim().x * gridDim().x
@@ -143,7 +142,6 @@ function dot(data::CuData{T}, _) where {T}
   end
   partial_sum = CuArray{T}(undef, DotBlocks)
   @cuda blocks = DotBlocks threads = TBSize kernel(data.a, data.b, data.size, partial_sum)
-  CUDA.synchronize()
   return sum(partial_sum)
 end
 
