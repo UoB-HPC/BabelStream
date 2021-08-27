@@ -136,7 +136,7 @@ function init_arrays!(
 end
 
 function copy!(data::StreamData{T,C}, context::Context) where {T,C}
-  @kernel function kernel(@Const(a), c)
+  @kernel function kernel(@Const(a::AbstractArray{T}), c)
     i = @index(Global)
     @inbounds c[i] = a[i]
   end
@@ -144,7 +144,7 @@ function copy!(data::StreamData{T,C}, context::Context) where {T,C}
 end
 
 function mul!(data::StreamData{T,C}, context::Context) where {T,C}
-  @kernel function kernel(b, @Const(c), scalar)
+  @kernel function kernel(b::AbstractArray{T}, @Const(c::AbstractArray{T}), scalar::T)
     i = @index(Global)
     @inbounds b[i] = scalar * c[i]
   end
@@ -152,7 +152,7 @@ function mul!(data::StreamData{T,C}, context::Context) where {T,C}
 end
 
 function add!(data::StreamData{T,C}, context::Context) where {T,C}
-  @kernel function kernel(@Const(a), @Const(b), c)
+  @kernel function kernel(@Const(a::AbstractArray{T}), @Const(b::AbstractArray{T}), c)
     i = @index(Global)
     @inbounds c[i] = a[i] + b[i]
   end
@@ -160,7 +160,7 @@ function add!(data::StreamData{T,C}, context::Context) where {T,C}
 end
 
 function triad!(data::StreamData{T,C}, context::Context) where {T,C}
-  @kernel function kernel(a, @Const(b), @Const(c), scalar)
+  @kernel function kernel(a::AbstractArray{T}, @Const(b::AbstractArray{T}), @Const(c), scalar::T)
     i = @index(Global)
     @inbounds a[i] = b[i] + (scalar * c[i])
   end
@@ -176,7 +176,7 @@ function triad!(data::StreamData{T,C}, context::Context) where {T,C}
 end
 
 function nstream!(data::StreamData{T,C}, context::Context) where {T,C}
-  @kernel function kernel(a, @Const(b), @Const(c), scalar)
+  @kernel function kernel(a::AbstractArray{T}, @Const(b::AbstractArray{T}), @Const(c), scalar::T)
     i = @index(Global)
     @inbounds a[i] += b[i] + scalar * c[i]
   end
@@ -192,7 +192,7 @@ function nstream!(data::StreamData{T,C}, context::Context) where {T,C}
 end
 
 function dot(data::StreamData{T,C}, context::Context) where {T,C}
-  @kernel function kernel(@Const(a), @Const(b), size, partial)
+  @kernel function kernel(@Const(a::AbstractArray{T}), @Const(b::AbstractArray{T}), size::Int, partial::AbstractArray{T})
     local_i = @index(Local)
     group_i = @index(Group)
     tb_sum = @localmem T TBSize

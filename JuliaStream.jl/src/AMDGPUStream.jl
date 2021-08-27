@@ -55,7 +55,7 @@ function init_arrays!(data::ROCData{T}, _, init::Tuple{T,T,T}) where {T}
 end
 
 function copy!(data::ROCData{T}, _) where {T}
-  function kernel(a, c)
+  function kernel(a::AbstractArray{T}, c::AbstractArray{T})
     i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds c[i] = a[i]
     return
@@ -66,7 +66,7 @@ function copy!(data::ROCData{T}, _) where {T}
 end
 
 function mul!(data::ROCData{T}, _) where {T}
-  function kernel(b, c, scalar)
+  function kernel(b::AbstractArray{T}, c::AbstractArray{T}, scalar::T)
     i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds b[i] = scalar * c[i]
     return
@@ -77,7 +77,7 @@ function mul!(data::ROCData{T}, _) where {T}
 end
 
 function add!(data::ROCData{T}, _) where {T}
-  function kernel(a, b, c)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T})
     i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds c[i] = a[i] + b[i]
     return
@@ -88,7 +88,7 @@ function add!(data::ROCData{T}, _) where {T}
 end
 
 function triad!(data::ROCData{T}, _) where {T}
-  function kernel(a, b, c, scalar)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, scalar::T)
     i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds a[i] = b[i] + (scalar * c[i])
     return
@@ -104,7 +104,7 @@ function triad!(data::ROCData{T}, _) where {T}
 end
 
 function nstream!(data::ROCData{T}, _) where {T}
-  function kernel(a, b, c, scalar)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, scalar::T)
     i = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x  # only workgroupIdx starts at 1
     @inbounds a[i] += b[i] + scalar * c[i]
     return
@@ -120,7 +120,7 @@ function nstream!(data::ROCData{T}, _) where {T}
 end
 
 function dot(data::ROCData{T}, _) where {T}
-  function kernel(a, b, size, partial)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, size::Int, partial::AbstractArray{T})
     tb_sum = ROCDeviceArray((TBSize,), alloc_local(:reduce, T, TBSize))
     local_i = workitemIdx().x
     @inbounds tb_sum[local_i] = 0.0

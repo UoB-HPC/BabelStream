@@ -53,7 +53,7 @@ function init_arrays!(data::oneData{T}, _, init::Tuple{T,T,T}) where {T}
 end
 
 function copy!(data::oneData{T}, groupsize::Int) where {T}
-  function kernel(a, c)
+  function kernel(a::AbstractArray{T}, c::AbstractArray{T})
     i = get_global_id()
     @inbounds c[i] = a[i]
     return
@@ -66,7 +66,7 @@ function copy!(data::oneData{T}, groupsize::Int) where {T}
 end
 
 function mul!(data::oneData{T}, groupsize::Int) where {T}
-  function kernel(b, c, scalar)
+  function kernel(b::AbstractArray{T}, c::AbstractArray{T}, scalar::T)
     i = get_global_id()
     @inbounds b[i] = scalar * c[i]
     return
@@ -80,7 +80,7 @@ function mul!(data::oneData{T}, groupsize::Int) where {T}
 end
 
 function add!(data::oneData{T}, groupsize::Int) where {T}
-  function kernel(a, b, c)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T})
     i = get_global_id()
     @inbounds c[i] = a[i] + b[i]
     return
@@ -94,7 +94,7 @@ function add!(data::oneData{T}, groupsize::Int) where {T}
 end
 
 function triad!(data::oneData{T}, groupsize::Int) where {T}
-  function kernel(a, b, c, scalar)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, scalar::T)
     i = get_global_id()
     @inbounds a[i] = b[i] + (scalar * c[i])
     return
@@ -109,7 +109,7 @@ function triad!(data::oneData{T}, groupsize::Int) where {T}
 end
 
 function nstream!(data::oneData{T}, groupsize::Int) where {T}
-  function kernel(a, b, c, scalar)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, scalar::T)
     i = get_global_id()
     @inbounds a[i] += b[i] + scalar * c[i]
     return
@@ -124,7 +124,7 @@ function nstream!(data::oneData{T}, groupsize::Int) where {T}
 end
 
 function dot(data::oneData{T}, groupsize::Int) where {T}
-  function kernel(a, b, size, partial)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, size::Int, partial::AbstractArray{T})
     wg_sum = @LocalMemory(T, (DotWGSize,))
     li = get_local_id()
     @inbounds wg_sum[li] = 0.0

@@ -51,7 +51,7 @@ function init_arrays!(data::CuData{T}, _, init::Tuple{T,T,T}) where {T}
 end
 
 function copy!(data::CuData{T}, _) where {T}
-  function kernel(a, c)
+  function kernel(a::AbstractArray{T}, c::AbstractArray{T})
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     @inbounds c[i] = a[i]
     return
@@ -61,7 +61,7 @@ function copy!(data::CuData{T}, _) where {T}
 end
 
 function mul!(data::CuData{T}, _) where {T}
-  function kernel(b, c, scalar)
+  function kernel(b::AbstractArray{T}, c::AbstractArray{T}, scalar::T)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     @inbounds b[i] = scalar * c[i]
     return
@@ -71,7 +71,7 @@ function mul!(data::CuData{T}, _) where {T}
 end
 
 function add!(data::CuData{T}, _) where {T}
-  function kernel(a, b, c)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T})
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     @inbounds c[i] = a[i] + b[i]
     return
@@ -81,7 +81,7 @@ function add!(data::CuData{T}, _) where {T}
 end
 
 function triad!(data::CuData{T}, _) where {T}
-  function kernel(a, b, c, scalar)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, scalar::T)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     @inbounds a[i] = b[i] + (scalar * c[i])
     return
@@ -96,7 +96,7 @@ function triad!(data::CuData{T}, _) where {T}
 end
 
 function nstream!(data::CuData{T}, _) where {T}
-  function kernel(a, b, c, scalar)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, scalar::T)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     @inbounds a[i] += b[i] + scalar * c[i]
     return
@@ -112,7 +112,7 @@ end
 
 function dot(data::CuData{T}, _) where {T}
   # direct port of the reduction in CUDAStream.cu 
-  function kernel(a, b, size, partial)
+  function kernel(a::AbstractArray{T}, b::AbstractArray{T}, size::Int, partial::AbstractArray{T})
     tb_sum = @cuStaticSharedMem(T, TBSize)
     local_i = threadIdx().x
     @inbounds tb_sum[local_i] = 0.0
