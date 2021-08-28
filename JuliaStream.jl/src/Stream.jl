@@ -260,8 +260,9 @@ function main()
   init::Tuple{type,type,type} = DefaultInit
   scalar::type = DefaultScalar
 
-  (data, context) = make_stream(config.arraysize, scalar, device, config.csv)
+  GC.enable(false)
 
+  (data, context) = make_stream(config.arraysize, scalar, device, config.csv)
   init_arrays!(data, context, init)
   if benchmark == All
     (timings, sum) = run_all!(data, context, config.numtimes)
@@ -289,6 +290,8 @@ function main()
   else
     error("Bad benchmark $(benchmark)")
   end
+  
+  GC.enable(true)
 
   if !valid
     exit(1)
