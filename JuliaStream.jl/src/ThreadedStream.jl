@@ -90,14 +90,14 @@ function dot(data::VectorData{T}, _) where {T}
   partial = Vector{T}(undef,  Threads.nthreads())
   static_par_ranged(data.size, Threads.nthreads()) do group, startidx, endidx
     acc = zero(T)
-    @fastmath for i = startidx:endidx
+    @simd for i = startidx:endidx
       @inbounds acc += data.a[i] * data.b[i]
     end
     @inbounds partial[group] = acc
   end
   return sum(partial)
   # This doesn't do well on aarch64 because of the excessive Threads.threadid() ccall 
-  # and inhibited vectorisation from the lack of @fastmath 
+  # and inhibited vectorisation from the lack of @simd 
   # partial = zeros(T, Threads.nthreads())
   # Threads.@threads for i = 1:data.size
   #   @inbounds partial[Threads.threadid()] += (data.a[i] * data.b[i])
