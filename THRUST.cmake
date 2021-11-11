@@ -2,12 +2,12 @@
 register_flag_optional(THRUST_IMPL
         "Which Thrust implementation to use, supported options include:
          - CUDA (via https://github.com/NVIDIA/thrust)
-         - ROCM (VIA https://github.com/ROCmSoftwarePlatform/rocThrust)
+         - ROCM (via https://github.com/ROCmSoftwarePlatform/rocThrust)
         "
         "CUDA")
 
 register_flag_optional(SDK_DIR
-        "Path to the selected Thrust implementation (e.g `/opt/nvidia/hpc_sdk/Linux_x86_64/21.9/cuda/include/thrust/` for NVHPC, `/opt/rocm` for ROCm)"
+        "Path to the selected Thrust implementation (e.g `/opt/nvidia/hpc_sdk/Linux_x86_64/21.9/cuda/include` for NVHPC, `/opt/rocm` for ROCm)"
         "")
 
 register_flag_optional(BACKEND
