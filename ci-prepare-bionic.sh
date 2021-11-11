@@ -143,9 +143,12 @@ setup_nvhpc() {
   local bin_dir="$sdk_dir/compilers/bin"
   "$bin_dir/makelocalrc" "$bin_dir" -x
 
+  export_var NVHPC_SDK_DIR "$sdk_dir"
+  export_var NVHPC_CUDA_DIR "$sdk_dir/cuda/11.3"
+
   export_var NVHPC_NVCXX "$bin_dir/nvc++"
   export_var NVHPC_NVCC "$sdk_dir/cuda/11.3/bin/nvcc"
-  export_var NVHPC_CUDA_DIR "$sdk_dir/cuda/11.3"
+
   echo "Installed CUDA versions:"
   ls "$sdk_dir/cuda"
   verify_bin_exists "$NVHPC_NVCXX"
@@ -249,7 +252,7 @@ setup_clang_gcc() {
 
 setup_rocm() {
   wget -q -O - "https://repo.radeon.com/rocm/rocm.gpg.key" | sudo apt-key add -
-  echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ xenial main' | sudo tee /etc/apt/sources.list.d/rocm.list
+  echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/4.5 ubuntu main' | sudo tee /etc/apt/sources.list.d/rocm.list
   sudo apt-get update -qq
   sudo apt-get install -y -qq rocm-dev
   export_var ROCM_PATH "/opt/rocm"

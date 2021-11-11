@@ -92,11 +92,11 @@ run_build() {
 # GCC_CXX="/usr/bin/g++"
 # CLANG_CXX="/usr/bin/clang++"
 
-# NVSDK="/home/tom/Downloads/nvhpc_2021_212_Linux_x86_64_cuda_11.2/install_components/Linux_x86_64/21.2/"
-# NVHPC_NVCXX="$NVSDK/compilers/bin/nvc++"
-# NVHPC_NVCC="$NVSDK/cuda/11.2/bin/nvcc"
-# NVHPC_CUDA_DIR="$NVSDK/cuda/11.2"
-# "$NVSDK/compilers/bin/makelocalrc" "$NVSDK/compilers/bin/" -x
+# NVHPC_SDK_DIR="/home/tom/Downloads/nvhpc_2021_212_Linux_x86_64_cuda_11.2/install_components/Linux_x86_64/21.2/"
+# NVHPC_NVCXX="$NVHPC_SDK_DIR/compilers/bin/nvc++"
+# NVHPC_NVCC="$NVHPC_SDK_DIR/cuda/11.2/bin/nvcc"
+# NVHPC_CUDA_DIR="$NVHPC_SDK_DIR/cuda/11.2"
+# "$NVHPC_SDK_DIR/compilers/bin/makelocalrc" "$NVHPC_SDK_DIR/compilers/bin/" -x
 
 # AOCC_CXX="/opt/AMD/aocc-compiler-2.3.0/bin/clang++"
 # AOMP_CXX="/usr/lib/aomp/bin/clang++"
@@ -171,10 +171,10 @@ build_gcc() {
 #  -DCUDA_TOOLKIT_ROOT_DIR=${NVHPC_CUDA_DIR:?} \
 #  -DCUDA_ARCH=$NV_ARCH"
 
-  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVSDK/cuda/include/thrust -DTHRUST_IMPL=CUDA -DBACKEND=CUDA"
-  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVSDK/cuda/include/thrust -DTHRUST_IMPL=CUDA -DBACKEND=OMP"
-  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVSDK/cuda/include/thrust -DTHRUST_IMPL=CUDA -DBACKEND=TBB"
-  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVSDK/cuda/include/thrust -DTHRUST_IMPL=CUDA -DBACKEND=CPP"
+  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_SDK_DIR/cuda/include/thrust -DTHRUST_IMPL=CUDA -DBACKEND=CUDA"
+  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_SDK_DIR/cuda/include/thrust -DTHRUST_IMPL=CUDA -DBACKEND=OMP"
+  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_SDK_DIR/cuda/include/thrust -DTHRUST_IMPL=CUDA -DBACKEND=TBB"
+  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_SDK_DIR/cuda/include/thrust -DTHRUST_IMPL=CUDA -DBACKEND=CPP"
 
 }
 
