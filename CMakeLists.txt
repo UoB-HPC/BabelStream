@@ -113,6 +113,7 @@ register_model(ACC ACC ACCStream.cpp)
 # defining RAJA collides with the RAJA namespace so USE_RAJA
 register_model(RAJA USE_RAJA RAJAStream.cpp)
 register_model(TBB TBB TBBStream.cpp)
+register_model(THRUST THRUST ThrustStream.cu) # Thrust uses cu, even for rocThrust
 
 
 set(USAGE ON CACHE BOOL "Whether to print all custom flags for the selected model")
