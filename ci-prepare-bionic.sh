@@ -254,7 +254,7 @@ setup_rocm() {
   wget -q -O - "https://repo.radeon.com/rocm/rocm.gpg.key" | sudo apt-key add -
   echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/4.5 ubuntu main' | sudo tee /etc/apt/sources.list.d/rocm.list
   sudo apt-get update -qq
-  sudo apt-get install -y -qq rocm-dev
+  sudo apt-get install -y -qq rocm-dev rocthrust-dev
   export_var ROCM_PATH "/opt/rocm"
   export_var HIP_CXX "$ROCM_PATH/bin/hipcc"
   verify_bin_exists "$HIP_CXX"
