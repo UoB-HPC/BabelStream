@@ -57,7 +57,7 @@ run_build() {
   local cmake_code=$?
 
   "$CMAKE_BIN" --build "$build" -j "$(nproc)" &>>"$log"
-  "$CMAKE_BIN" --build "$build" --target install  -j "$(nproc)" &>>"$log"
+  "$CMAKE_BIN" --build "$build" --target install -j "$(nproc)" &>>"$log"
   local cmake_code=$?
   set -e
 
@@ -171,10 +171,27 @@ build_gcc() {
 #  -DCUDA_TOOLKIT_ROOT_DIR=${NVHPC_CUDA_DIR:?} \
 #  -DCUDA_ARCH=$NV_ARCH"
 
-  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=CUDA"
-  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=OMP"
-  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=TBB"
-  run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=CPP"
+
+  # CMake >= 3.15 only due to Nvidia's Thrust CMake requirements
+  local current=$("$CMAKE_BIN" --version | head -n 1 | cut -d ' ' -f3)
+  local required="3.15.0"
+  if [ "$(printf '%s\n' "$required" "$current" | sort -V | head -n1)" = "$required" ]; then
+    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=CUDA"
+    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=OMP"
+    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=CPP"
+
+    # FIXME CUDA Thrust + TBB throws the following error:
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512fintrin.h(9146): error: identifier "__builtin_ia32_rndscaless_round" is undefined
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512fintrin.h(9155): error: identifier "__builtin_ia32_rndscalesd_round" is undefined
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512fintrin.h(14797): error: identifier "__builtin_ia32_rndscaless_round" is undefined
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512fintrin.h(14806): error: identifier "__builtin_ia32_rndscalesd_round" is undefined
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512dqintrin.h(1365): error: identifier "__builtin_ia32_fpclassss" is undefined
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512dqintrin.h(1372): error: identifier "__builtin_ia32_fpclasssd" is undefined
+
+    #    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=TBB"
+  else
+    echo "CMake version ${current} < ${required}, skipping Thrust models"
+  fi
 
 }
 
@@ -198,7 +215,7 @@ build_clang() {
   run_build $name "${CLANG_CXX:?}" OCL "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
   run_build $name "${CLANG_CXX:?}" STD "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
   # run_build $name "${LANG_CXX:?}" STD20 "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" # not yet supported
-  
+
   run_build $name "${CLANG_CXX:?}" TBB "$cxx -DONE_TBB_DIR=$TBB_LIB"
   run_build $name "${CLANG_CXX:?}" TBB "$cxx" # build TBB again with the system TBB
 

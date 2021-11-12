@@ -75,6 +75,10 @@ macro(setup)
             find_package(rocprim REQUIRED CONFIG)
             find_package(rocthrust REQUIRED CONFIG)
         endif ()
+
+        # for HIP we treat *.cu files as CXX otherwise CMake doesn't compile them
+        set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE CXX)
+
         register_link_library(roc::rocthrust)
     else ()
         message(FATAL_ERROR "Unsupported THRUST_IMPL provided: ${THRUST_IMPL}")
