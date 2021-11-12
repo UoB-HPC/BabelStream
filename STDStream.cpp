@@ -14,62 +14,61 @@
 // auto exe_policy = std::execution::par;
 auto exe_policy = std::execution::par_unseq;
 
-template <class T>
-STDStream<T>::STDStream(const int ARRAY_SIZE, int device)
-  noexcept : array_size{ARRAY_SIZE}, a{new T[array_size]}, b{new T[array_size]}, c{new T[array_size]}
-{
-}
 
 template <class T>
-STDStream<T>::~STDStream()
+STDStream<T>::STDStream(const int ARRAY_SIZE, int device)
+  noexcept : array_size{ARRAY_SIZE}, range(0, array_size), a(array_size), b(array_size), c(array_size) 
 {
-  delete[] a;
-  delete[] b;
-  delete[] c;
 }
 
 template <class T>
 void STDStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  std::fill(exe_policy, a, a+array_size, initA);
-  std::fill(exe_policy, b, b+array_size, initB);
-  std::fill(exe_policy, c, c+array_size, initC);
+  std::fill(exe_policy, a.begin(), a.end(), initA);
+  std::fill(exe_policy, b.begin(), b.end(), initB);
+  std::fill(exe_policy, c.begin(), c.end(), initC);
 }
 
 template <class T>
 void STDStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
-  std::copy(exe_policy, a, a+array_size, h_a.data());
-  std::copy(exe_policy, b, b+array_size, h_b.data());
-  std::copy(exe_policy, c, c+array_size, h_c.data());
+  h_a = a;
+  h_b = b;
+  h_c = c;
 }
 
 template <class T>
 void STDStream<T>::copy()
 {
   // c[i] = a[i]
-  std::copy(exe_policy, a, a+array_size, c) ;
+  std::copy(exe_policy, a.begin(), a.end(), c.begin());
 }
 
 template <class T>
 void STDStream<T>::mul()
 {
   //  b[i] = scalar * c[i];
-  std::transform(exe_policy, c, c+array_size, b, [](T ci){ return startScalar*ci; });
+  std::transform(exe_policy, range.begin(), range.end(), b.begin(), [&, scalar = startScalar](int i) {
+    return scalar * c[i];
+  });
 }
 
 template <class T>
 void STDStream<T>::add()
 {
   //  c[i] = a[i] + b[i];
-  std::transform(exe_policy, a, a+array_size, b, c, std::plus<T>());
+  std::transform(exe_policy, range.begin(), range.end(), c.begin(), [&](int i) {
+    return a[i] + b[i];
+  });
 }
 
 template <class T>
 void STDStream<T>::triad()
 {
   //  a[i] = b[i] + scalar * c[i];
-  std::transform(exe_policy, b, b+array_size, c, a, [](T bi, T ci){ return bi+startScalar*ci; });
+  std::transform(exe_policy, range.begin(), range.end(), a.begin(), [&, scalar = startScalar](int i) {
+    return b[i] + scalar * c[i];
+  });
 }
 
 template <class T>
@@ -79,15 +78,17 @@ void STDStream<T>::nstream()
   //  Need to do in two stages with C++11 STL.
   //  1: a[i] += b[i]
   //  2: a[i] += scalar * c[i];
-  std::transform(exe_policy, a, a+array_size, b, a, [](T ai, T bi){ return ai + bi; });
-  std::transform(exe_policy, a, a+array_size, c, a, [](T ai, T ci){ return ai + startScalar*ci; });
+  std::transform(exe_policy, range.begin(), range.end(), a.begin(), [&, scalar = startScalar](int i) {
+    return a[i] + b[i] + scalar * c[i];
+  });
 }
+   
 
 template <class T>
 T STDStream<T>::dot()
 {
   // sum = 0; sum += a[i]*b[i]; return sum;
-  return std::transform_reduce(exe_policy, a, a+array_size, b, 0.0);
+  return std::transform_reduce(exe_policy, a.begin(), a.end(), b.begin(), 0.0);
 }
 
 void listDevices(void)
