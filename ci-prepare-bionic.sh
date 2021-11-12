@@ -256,6 +256,7 @@ setup_rocm() {
   sudo apt-get update -qq
   sudo apt-get install -y -qq rocm-dev rocthrust-dev
   export_var ROCM_PATH "/opt/rocm"
+  export_var PATH "$ROCM_PATH/bin:$PATH" # ROCm needs this for many of their libraries' CMake build to work
   export_var HIP_CXX "$ROCM_PATH/bin/hipcc"
   verify_bin_exists "$HIP_CXX"
   "$HIP_CXX" --version
