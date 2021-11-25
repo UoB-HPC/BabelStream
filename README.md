@@ -23,6 +23,8 @@ Currently implemented are:
 
 This code was previously called GPU-STREAM.
 
+This project also contains implementations in alternative languages with different build systems:
+* Scala - [scala-stream](./scala-stream)
 
 How is this different to STREAM?
 --------------------------------
