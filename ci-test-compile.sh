@@ -57,7 +57,7 @@ run_build() {
   local cmake_code=$?
 
   "$CMAKE_BIN" --build "$build" -j "$(nproc)" &>>"$log"
-  "$CMAKE_BIN" --build "$build" --target install  -j "$(nproc)" &>>"$log"
+  "$CMAKE_BIN" --build "$build" --target install -j "$(nproc)" &>>"$log"
   local cmake_code=$?
   set -e
 
@@ -92,11 +92,11 @@ run_build() {
 # GCC_CXX="/usr/bin/g++"
 # CLANG_CXX="/usr/bin/clang++"
 
-# NVSDK="/home/tom/Downloads/nvhpc_2021_212_Linux_x86_64_cuda_11.2/install_components/Linux_x86_64/21.2/"
-# NVHPC_NVCXX="$NVSDK/compilers/bin/nvc++"
-# NVHPC_NVCC="$NVSDK/cuda/11.2/bin/nvcc"
-# NVHPC_CUDA_DIR="$NVSDK/cuda/11.2"
-# "$NVSDK/compilers/bin/makelocalrc" "$NVSDK/compilers/bin/" -x
+# NVHPC_SDK_DIR="/home/tom/Downloads/nvhpc_2021_212_Linux_x86_64_cuda_11.2/install_components/Linux_x86_64/21.2/"
+# NVHPC_NVCXX="$NVHPC_SDK_DIR/compilers/bin/nvc++"
+# NVHPC_NVCC="$NVHPC_SDK_DIR/cuda/11.2/bin/nvcc"
+# NVHPC_CUDA_DIR="$NVHPC_SDK_DIR/cuda/11.2"
+# "$NVHPC_SDK_DIR/compilers/bin/makelocalrc" "$NVHPC_SDK_DIR/compilers/bin/" -x
 
 # AOCC_CXX="/opt/AMD/aocc-compiler-2.3.0/bin/clang++"
 # AOMP_CXX="/usr/lib/aomp/bin/clang++"
@@ -124,7 +124,7 @@ run_build() {
 
 AMD_ARCH="gfx_903"
 NV_ARCH="sm_70"
-NV_ARCH_CCXY="cuda11.3,cc80"
+NV_ARCH_CCXY="cuda11.4,cc80"
 
 build_gcc() {
   local name="gcc_build"
@@ -171,6 +171,28 @@ build_gcc() {
 #  -DCUDA_TOOLKIT_ROOT_DIR=${NVHPC_CUDA_DIR:?} \
 #  -DCUDA_ARCH=$NV_ARCH"
 
+
+  # CMake >= 3.15 only due to Nvidia's Thrust CMake requirements
+  local current=$("$CMAKE_BIN" --version | head -n 1 | cut -d ' ' -f3)
+  local required="3.15.0"
+  if [ "$(printf '%s\n' "$required" "$current" | sort -V | head -n1)" = "$required" ]; then
+    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=CUDA"
+    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=OMP"
+    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=CPP"
+
+    # FIXME CUDA Thrust + TBB throws the following error:
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512fintrin.h(9146): error: identifier "__builtin_ia32_rndscaless_round" is undefined
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512fintrin.h(9155): error: identifier "__builtin_ia32_rndscalesd_round" is undefined
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512fintrin.h(14797): error: identifier "__builtin_ia32_rndscaless_round" is undefined
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512fintrin.h(14806): error: identifier "__builtin_ia32_rndscalesd_round" is undefined
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512dqintrin.h(1365): error: identifier "__builtin_ia32_fpclassss" is undefined
+    #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512dqintrin.h(1372): error: identifier "__builtin_ia32_fpclasssd" is undefined
+
+    #    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=TBB"
+  else
+    echo "CMake version ${current} < ${required}, skipping Thrust models"
+  fi
+
 }
 
 build_clang() {
@@ -193,7 +215,7 @@ build_clang() {
   run_build $name "${CLANG_CXX:?}" OCL "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
   run_build $name "${CLANG_CXX:?}" STD "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
   # run_build $name "${LANG_CXX:?}" STD20 "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" # not yet supported
-  
+
   run_build $name "${CLANG_CXX:?}" TBB "$cxx -DONE_TBB_DIR=$TBB_LIB"
   run_build $name "${CLANG_CXX:?}" TBB "$cxx" # build TBB again with the system TBB
 
@@ -219,7 +241,11 @@ build_aomp() {
 }
 
 build_hip() {
-  run_build hip_build "${HIP_CXX:?}" HIP "-DCMAKE_CXX_COMPILER=${HIP_CXX:?}"
+  local name="hip_build"
+
+  run_build $name "${HIP_CXX:?}" HIP "-DCMAKE_CXX_COMPILER=${HIP_CXX:?}"
+
+  run_build $name "${GCC_CXX:?}" THRUST "-DCMAKE_CXX_COMPILER=${HIP_CXX:?} -DSDK_DIR=$ROCM_PATH -DTHRUST_IMPL=ROCM"
 }
 
 build_icpx() {
