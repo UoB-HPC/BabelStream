@@ -13,6 +13,7 @@ There are multiple implementations of this benchmark in a variety of programming
 Currently implemented are:
   - OpenCL
   - CUDA
+  - HIP
   - OpenACC
   - OpenMP 3 and 4.5
   - C++ Parallel STL
@@ -20,11 +21,14 @@ Currently implemented are:
   - RAJA
   - SYCL
   - TBB
+  - Thrust (via CUDA or HIP)
 
 This code was previously called GPU-STREAM.
 
 This project also contains implementations in alternative languages with different build systems:
-* Scala - [scala-stream](./scala-stream)
+* Julia - [JuliaStream.jl](./src/julia/JuliaStream.jl)
+* Java - [java-stream](./src/java/java-stream)
+* Scala - [scala-stream](./src/scala/scala-stream)
 
 How is this different to STREAM?
 --------------------------------
@@ -109,41 +113,10 @@ Alternatively, refer to the [CI script](./ci-test-compile.sh), which test-compil
 
 ### GNU Make
 
-We have supplied a series of Makefiles, one for each programming model, to assist with building.
-The Makefiles contain common build options, and should be simple to customise for your needs too.
+Support for Make has been removed from 4.0 onwards.
+However, as the build process only involves a few source files, the required compile commands can be extracted from the CI output.
 
-General usage is `make -C src/<model>`
-Common compiler flags and names can be set by passing a `COMPILER` option to Make, e.g. `make COMPILER=GNU`.
-Some models allow specifying a CPU or GPU style target, and this can be set by passing a `TARGET` option to Make, e.g. `make TARGET=GPU`.
-
-Pass in extra flags via the `EXTRA_FLAGS` option.
-
-The binaries are named in the form `<model>-stream`.
-
-#### Building Kokkos for Make
-
-Kokkos version >= 3 requires setting the `KOKKOS_PATH` flag to the *source* directory of a distribution. 
-For example:
-
-```
-cd 
-wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
-tar -xvf 3.1.01.tar.gz # should end up with ~/kokkos-3.1.01
-cd BabelStream
-make -C src/kokkos KOKKOS_PATH=~/kokkos-3.1.01 
-```
-See make output for more information on supported flags.
-
-#### Building RAJA for Make
-
-We use the following command to build RAJA using the Intel Compiler.
-```
-cmake .. -DCMAKE_INSTALL_PREFIX=<prefix> -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DRAJA_PTR="RAJA_USE_RESTRICT_ALIGNED_PTR" -DCMAKE_BUILD_TYPE=ICCBuild -DRAJA_ENABLE_TESTS=Off
-```
-For building with CUDA support, we use the following command.
-```
-cmake .. -DCMAKE_INSTALL_PREFIX=<prefix> -DRAJA_PTR="RAJA_USE_RESTRICT_ALIGNED_PTR" -DRAJA_ENABLE_CUDA=1 -DRAJA_ENABLE_TESTS=Off
-```
+<!-- TODO add CI snipped here -->
 
 Results
 -------
