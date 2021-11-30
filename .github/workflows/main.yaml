@@ -59,7 +59,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: compilers
-          key: ${{ runner.os }}-${{ hashFiles('./src/ci-prepare-bionic.sh') }}
+          key: ${{ runner.os }}-${{ hashFiles('./ci-prepare-bionic.sh') }}
 
       - name: Prepare compilers
         if: steps.prepare-compilers.outputs.cache-hit != 'true'
