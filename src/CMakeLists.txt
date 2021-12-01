@@ -7,7 +7,21 @@ project(BabelStream VERSION 3.5 LANGUAGES CXX)
 # some nicer defaults for standard C++
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+include(FetchContent)
 
+FetchContent_Declare(
+        opencl_header
+        URL https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v2021.06.30.zip
+        URL_HASH MD5=af7ab7918a6a11c60370c8651a9f0192
+)
+
+macro(setup_opencl_header_includes)
+    FetchContent_GetProperties(opencl_header)
+    if (NOT opencl_header_POPULATED)
+        FetchContent_Populate(opencl_header)
+        set(OpenCL_INCLUDE_DIR ${opencl_header_SOURCE_DIR})
+    endif ()
+endmacro()
 
 #set(MODEL SYCL)
 #set(SYCL_COMPILER COMPUTECPP)
@@ -149,7 +163,7 @@ message(STATUS "Default ${CMAKE_BUILD_TYPE} flags are `${DEFAULT_${BUILD_TYPE}_F
 # setup common build flag defaults if there are no overrides
 if (NOT DEFINED ${BUILD_TYPE}_FLAGS)
     set(ACTUAL_${BUILD_TYPE}_FLAGS ${DEFAULT_${BUILD_TYPE}_FLAGS})
-    elseif()
+elseif ()
     set(ACTUAL_${BUILD_TYPE}_FLAGS ${${BUILD_TYPE}_FLAGS})
 endif ()
 
@@ -192,4 +206,4 @@ if (COMMAND setup_target)
     setup_target(${EXE_NAME})
 endif ()
 
-install (TARGETS ${EXE_NAME} DESTINATION bin)
+install(TARGETS ${EXE_NAME} DESTINATION bin)

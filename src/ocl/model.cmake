@@ -9,8 +9,7 @@ register_flag_optional(OpenCL_LIBRARY
 
 
 macro(setup)
-    # don't point to the CL dir as the imports already have the CL prefix
-    set(OpenCL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}")
+    setup_opencl_header_includes()
     find_package(OpenCL REQUIRED)
     register_link_library(OpenCL::OpenCL)
 endmacro()
