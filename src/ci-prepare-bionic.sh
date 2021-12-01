@@ -225,7 +225,7 @@ setup_tbb() {
 
 setup_clang_gcc() {
 
-  sudo apt-get install -y -qq gcc-10-offload-nvptx gcc-10-offload-amdgcn libtbb2 libtbb-dev g++-10 clang
+  sudo apt-get install -y -qq gcc-10-offload-nvptx gcc-10-offload-amdgcn libtbb2 libtbb-dev g++-10 clang libomp-dev
 
   export_var GCC_CXX "$(which g++-10)"
   verify_bin_exists "$GCC_CXX"
