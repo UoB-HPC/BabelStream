@@ -7,7 +7,21 @@ project(BabelStream VERSION 3.5 LANGUAGES CXX)
 # some nicer defaults for standard C++
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+include(FetchContent)
 
+FetchContent_Declare(
+        opencl_header
+        URL https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v2021.06.30.zip
+        URL_HASH MD5=af7ab7918a6a11c60370c8651a9f0192
+)
+
+macro(setup_opencl_header_includes)
+    FetchContent_GetProperties(opencl_header)
+    if (NOT opencl_header_POPULATED)
+        FetchContent_Populate(opencl_header)
+        set(OpenCL_INCLUDE_DIR ${opencl_header_SOURCE_DIR})
+    endif ()
+endmacro()
 
 #set(MODEL SYCL)
 #set(SYCL_COMPILER COMPUTECPP)
@@ -101,19 +115,19 @@ endif ()
 include(register_models.cmake)
 
 # register out models <model_name> <preprocessor_def_name> <source files...>
-register_model(OMP OMP OMPStream.cpp)
-register_model(OCL OCL OCLStream.cpp)
-register_model(STD STD STDStream.cpp)
-register_model(STD20 STD20 STD20Stream.cpp)
-register_model(HIP HIP HIPStream.cpp)
-register_model(CUDA CUDA CUDAStream.cu)
-register_model(KOKKOS KOKKOS KokkosStream.cpp)
-register_model(SYCL SYCL SYCLStream.cpp)
-register_model(ACC ACC ACCStream.cpp)
+register_model(omp OMP OMPStream.cpp)
+register_model(ocl OCL OCLStream.cpp)
+register_model(std STD STDStream.cpp)
+register_model(std20 STD20 STD20Stream.cpp)
+register_model(hip HIP HIPStream.cpp)
+register_model(cuda CUDA CUDAStream.cu)
+register_model(kokkos KOKKOS KokkosStream.cpp)
+register_model(sycl SYCL SYCLStream.cpp)
+register_model(acc ACC ACCStream.cpp)
 # defining RAJA collides with the RAJA namespace so USE_RAJA
-register_model(RAJA USE_RAJA RAJAStream.cpp)
-register_model(TBB TBB TBBStream.cpp)
-register_model(THRUST THRUST ThrustStream.cu) # Thrust uses cu, even for rocThrust
+register_model(raja USE_RAJA RAJAStream.cpp)
+register_model(tbb TBB TBBStream.cpp)
+register_model(thrust THRUST ThrustStream.cu) # Thrust uses cu, even for rocThrust
 
 
 set(USAGE ON CACHE BOOL "Whether to print all custom flags for the selected model")
@@ -149,7 +163,7 @@ message(STATUS "Default ${CMAKE_BUILD_TYPE} flags are `${DEFAULT_${BUILD_TYPE}_F
 # setup common build flag defaults if there are no overrides
 if (NOT DEFINED ${BUILD_TYPE}_FLAGS)
     set(ACTUAL_${BUILD_TYPE}_FLAGS ${DEFAULT_${BUILD_TYPE}_FLAGS})
-    elseif()
+elseif ()
     set(ACTUAL_${BUILD_TYPE}_FLAGS ${${BUILD_TYPE}_FLAGS})
 endif ()
 
@@ -171,6 +185,7 @@ message(STATUS "Executable  : ${EXE_NAME}")
 
 # below we have all the usual CMake target setup steps
 
+include_directories(.)
 add_executable(${EXE_NAME} ${IMPL_SOURCES} main.cpp)
 target_link_libraries(${EXE_NAME} PUBLIC ${LINK_LIBRARIES})
 target_compile_definitions(${EXE_NAME} PUBLIC ${IMPL_DEFINITIONS})
@@ -186,9 +201,9 @@ target_link_options(${EXE_NAME} PUBLIC LINKER:${CXX_EXTRA_LINKER_FLAGS})
 target_link_options(${EXE_NAME} PUBLIC ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS})
 
 # some models require the target to be already specified so they can finish their setup here
-# this only happens if the MODEL.cmake definition contains the `setup_target` macro
+# this only happens if the model.cmake definition contains the `setup_target` macro
 if (COMMAND setup_target)
     setup_target(${EXE_NAME})
 endif ()
 
-install (TARGETS ${EXE_NAME} DESTINATION bin)
+install(TARGETS ${EXE_NAME} DESTINATION bin)

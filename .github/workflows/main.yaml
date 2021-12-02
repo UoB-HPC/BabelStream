@@ -8,12 +8,12 @@ jobs:
     runs-on: ubuntu-18.04
     defaults:
       run:
-        working-directory: ./java-stream
+        working-directory: ./src/java/java-stream
     steps:
       - uses: actions/checkout@v2
       - name: Test build project
         run: ./mvnw clean package
-      - name: Test run 
+      - name: Test run
         if: ${{ ! cancelled() }}
         run: java -jar target/java-stream.jar --arraysize 2048
 
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-18.04
     defaults:
       run:
-        working-directory: ./JuliaStream.jl
+        working-directory: ./src/julia/JuliaStream.jl
     steps:
       - uses: actions/checkout@v2
       - name: Setup project
@@ -46,17 +46,21 @@ jobs:
         run: julia             --project src/AMDGPUStream.jl      --list
 
 
-  test:
+  test-cpp:
     runs-on: ubuntu-18.04
+    defaults:
+      run:
+        working-directory: ./src
     steps:
       - uses: actions/checkout@v2
 
       - name: Cache compiler
+        if: ${{ !env.ACT }}
         id: prepare-compilers
         uses: actions/cache@v2
         with:
           path: compilers
-          key: ${{ runner.os }}-${{ hashFiles('ci-prepare-bionic.sh') }}
+          key: ${{ runner.os }}-${{ hashFiles('./ci-prepare-bionic.sh') }}
 
       - name: Prepare compilers
         if: steps.prepare-compilers.outputs.cache-hit != 'true'

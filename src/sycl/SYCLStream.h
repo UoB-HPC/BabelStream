@@ -10,7 +10,6 @@
 #include <sstream>
 
 #include "Stream.h"
-
 #include "CL/sycl.hpp"
 
 #define IMPLEMENTATION_STRING "SYCL"
