@@ -3,6 +3,7 @@ BabelStream
 
 <img src="https://github.com/UoB-HPC/BabelStream/blob/gh-pages/img/BabelStreamlogo.png?raw=true" alt="logo" height="300" align="right" />
 
+[![CI](https://github.com/UoB-HPC/BabelStream/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/UoB-HPC/BabelStream/actions/workflows/main.yaml)
 
 Measure memory transfer rates to/from global device memory on GPUs.
 This benchmark is similar in spirit, and based on, the STREAM benchmark [1] for CPUs.
@@ -13,6 +14,7 @@ There are multiple implementations of this benchmark in a variety of programming
 Currently implemented are:
   - OpenCL
   - CUDA
+  - HIP
   - OpenACC
   - OpenMP 3 and 4.5
   - C++ Parallel STL
@@ -20,11 +22,14 @@ Currently implemented are:
   - RAJA
   - SYCL
   - TBB
+  - Thrust (via CUDA or HIP)
 
 This code was previously called GPU-STREAM.
 
 This project also contains implementations in alternative languages with different build systems:
-* Scala - [scala-stream](./scala-stream)
+* Julia - [JuliaStream.jl](./src/julia/JuliaStream.jl)
+* Java - [java-stream](./src/java/java-stream)
+* Scala - [scala-stream](./src/scala/scala-stream)
 
 How is this different to STREAM?
 --------------------------------
@@ -66,11 +71,13 @@ The project supports building with CMake >= 3.13.0, it can be installed without 
 As with any CMake project, first configure the project:
 
 ```shell
-> cd babelstream
+> cd babelstream/src
 > cmake -Bbuild -H. -DMODEL=<model> <model specific flags prefixed with -D...> # configure the build, build type defaults to Release 
 > cmake --build build # compile it 
-> ./build/babelstream # executable available at ./build/
+> ./build/<model>-stream # executable available at ./build/
 ```
+
+Source for each model's implementations are located in `./src/<model>`.
 
 By default, we have defined a set of optimal flags for known HPC compilers.
 There are assigned those to `RELEASE_FLAGS`, and you can override them if required.
@@ -78,8 +85,8 @@ There are assigned those to `RELEASE_FLAGS`, and you can override them if requir
 To find out what flag each model supports or requires, simply configure while only specifying the model.
 For example:
 ```shell
-> cd babelstream
-> cmake -Bbuild -H. -DMODEL=OCL 
+> cd babelstream/src
+> cmake -Bbuild -H. -DMODEL=ocl 
 ...
 - Common Release flags are `-O3`, set RELEASE_FLAGS to override
 -- CXX_EXTRA_FLAGS: 
@@ -93,8 +100,8 @@ For example:
         Use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`) 
 -- CXX_EXTRA_LINKER_FLAGS: 
         Append to linker flags (i.e GCC's `-Wl` or equivalent)
--- Available models:  OMP;OCL;STD;STD20;HIP;CUDA;KOKKOS;SYCL;ACC;RAJA;TBB
--- Selected model  :  OCL
+-- Available models:  omp;ocl;std;std20;hip;cuda;kokkos;sycl;acc;raja;tbb
+-- Selected model  :  ocl
 -- Supported flags:
 
    CMAKE_CXX_COMPILER (optional, default=c++): Any CXX compiler that is supported by CMake detection
@@ -107,41 +114,10 @@ Alternatively, refer to the [CI script](./ci-test-compile.sh), which test-compil
 
 ### GNU Make
 
-We have supplied a series of Makefiles, one for each programming model, to assist with building.
-The Makefiles contain common build options, and should be simple to customise for your needs too.
+Support for Make has been removed from 4.0 onwards.
+However, as the build process only involves a few source files, the required compile commands can be extracted from the CI output.
 
-General usage is `make -f <Model>.make`
-Common compiler flags and names can be set by passing a `COMPILER` option to Make, e.g. `make COMPILER=GNU`.
-Some models allow specifying a CPU or GPU style target, and this can be set by passing a `TARGET` option to Make, e.g. `make TARGET=GPU`.
-
-Pass in extra flags via the `EXTRA_FLAGS` option.
-
-The binaries are named in the form `<model>-stream`.
-
-#### Building Kokkos for Make
-
-Kokkos version >= 3 requires setting the `KOKKOS_PATH` flag to the *source* directory of a distribution. 
-For example:
-
-```
-cd 
-wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
-tar -xvf 3.1.01.tar.gz # should end up with ~/kokkos-3.1.01
-cd BabelStream
-make -f Kokkos.make KOKKOS_PATH=~/kokkos-3.1.01 
-```
-See make output for more information on supported flags.
-
-#### Building RAJA for Make
-
-We use the following command to build RAJA using the Intel Compiler.
-```
-cmake .. -DCMAKE_INSTALL_PREFIX=<prefix> -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DRAJA_PTR="RAJA_USE_RESTRICT_ALIGNED_PTR" -DCMAKE_BUILD_TYPE=ICCBuild -DRAJA_ENABLE_TESTS=Off
-```
-For building with CUDA support, we use the following command.
-```
-cmake .. -DCMAKE_INSTALL_PREFIX=<prefix> -DRAJA_PTR="RAJA_USE_RESTRICT_ALIGNED_PTR" -DRAJA_ENABLE_CUDA=1 -DRAJA_ENABLE_TESTS=Off
-```
+<!-- TODO add CI snipped here -->
 
 Results
 -------

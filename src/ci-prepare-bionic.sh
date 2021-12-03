@@ -225,10 +225,7 @@ setup_tbb() {
 
 setup_clang_gcc() {
 
-  echo "deb http://archive.ubuntu.com/ubuntu focal main universe" | sudo tee -a /etc/apt/sources.list
-
-  sudo apt-get update -qq
-  sudo apt-get install -y -qq gcc-10-offload-nvptx gcc-10-offload-amdgcn libtbb2 libtbb-dev g++-10
+  sudo apt-get install -y -qq gcc-10-offload-nvptx gcc-10-offload-amdgcn libtbb2 libtbb-dev g++-10 clang libomp-dev
 
   export_var GCC_CXX "$(which g++-10)"
   verify_bin_exists "$GCC_CXX"
@@ -251,9 +248,6 @@ setup_clang_gcc() {
 }
 
 setup_rocm() {
-  wget -q -O - "https://repo.radeon.com/rocm/rocm.gpg.key" | sudo apt-key add -
-  echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/4.5 ubuntu main' | sudo tee /etc/apt/sources.list.d/rocm.list
-  sudo apt-get update -qq
   sudo apt-get install -y -qq rocm-dev rocthrust-dev
   export_var ROCM_PATH "/opt/rocm"
   export_var PATH "$ROCM_PATH/bin:$PATH" # ROCm needs this for many of their libraries' CMake build to work
@@ -320,9 +314,21 @@ if [ "${GITHUB_ACTIONS:-false}" = true ]; then
   echo "Running in GitHub Actions, defaulting to special export"
   TERM=xterm
   export TERM=xterm
+
+  # drop the lock in case we got one from a failed run
+  rm /var/lib/dpkg/lock-frontend || true
+  rm /var/cache/apt/archives/lock || true
+
+  wget -q -O - "https://repo.radeon.com/rocm/rocm.gpg.key" | sudo apt-key add -
+  echo "deb http://archive.ubuntu.com/ubuntu focal main universe" | sudo tee -a /etc/apt/sources.list
+  echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/4.5 ubuntu main' | sudo tee /etc/apt/sources.list.d/rocm.list
+
+  sudo apt-get update -qq
+  sudo apt-get install -y -qq cmake
+
   if [ "$SETUP" = true ]; then
-    echo "Deleting extra packages for space in 5 seconds..."
-    sleep 5
+    echo "Deleting extra packages for space in 2 seconds..."
+    sleep 2
     echo "Starting apt-get remove:"
     sudo apt-get remove -y azure-cli google-cloud-sdk hhvm google-chrome-stable firefox powershell mono-devel
     sudo apt-get autoremove -y

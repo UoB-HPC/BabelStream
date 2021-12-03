@@ -14,7 +14,7 @@ All notable changes to this project will be documented in this file.
 - Added nstream kernel from PRK with associate command line option.
 - CMake build system added for all models.
 - SYCL device check for FP64 support.
-- New implementation using TBB.
+- New implementations: TBB, Thrust, Julia, Scala, Java.
 - Compiler options for Fujitsu added to OpenMP.
 
 ### Changed
@@ -39,6 +39,7 @@ All notable changes to this project will be documented in this file.
   Pre-building kernels is also not required, and shows no overhead as the first iteration is not timed.
 - OpenACC Cray compiler flags.
 - Build support for Kokkos 2.x (No code changes made).
+- All Makefiles; build system will now use CMake exclusively.
 
 ## [v3.4] - 2019-04-10
 
