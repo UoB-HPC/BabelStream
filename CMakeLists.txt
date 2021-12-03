@@ -49,7 +49,7 @@ endmacro()
 #set(CXX_EXTRA_FLAGS -O2)
 
 #set(CMAKE_CXX_COMPILER /usr/lib/aomp/bin/clang++)
-#set(MODEL OMP)
+#set(MODEL omp)
 ##set(OFFLOAD "AMD:gfx803")
 #set(OFFLOAD "NVIDIA:sm_35")
 #set(CXX_EXTRA_FLAGS --cuda-path=/opt/cuda-10.2/)
@@ -112,7 +112,7 @@ if ((DEFINED CXX_EXTRA_FLAGS) AND (NOT DEFINED CXX_EXTRA_LINK_FLAGS))
 endif ()
 
 # include our macros
-include(register_models.cmake)
+include(cmake/register_models.cmake)
 
 # register out models <model_name> <preprocessor_def_name> <source files...>
 register_model(omp OMP OMPStream.cpp)
@@ -185,8 +185,8 @@ message(STATUS "Executable  : ${EXE_NAME}")
 
 # below we have all the usual CMake target setup steps
 
-include_directories(.)
-add_executable(${EXE_NAME} ${IMPL_SOURCES} main.cpp)
+include_directories(src)
+add_executable(${EXE_NAME} ${IMPL_SOURCES} src/main.cpp)
 target_link_libraries(${EXE_NAME} PUBLIC ${LINK_LIBRARIES})
 target_compile_definitions(${EXE_NAME} PUBLIC ${IMPL_DEFINITIONS})
 

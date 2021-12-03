@@ -88,30 +88,30 @@ run_build() {
 ###
 # KOKKOS_SRC="/home/tom/Downloads/kokkos-3.3.00"
 # RAJA_SRC="/home/tom/Downloads/RAJA-v0.13.0"
-
-# GCC_CXX="/usr/bin/g++"
+#
+# GCC_CXX="$(which g++-10)"
 # CLANG_CXX="/usr/bin/clang++"
-
-# NVHPC_SDK_DIR="/home/tom/Downloads/nvhpc_2021_212_Linux_x86_64_cuda_11.2/install_components/Linux_x86_64/21.2/"
+#
+# NVHPC_SDK_DIR="/home/tom/Downloads/nvhpc_2021_219_Linux_x86_64_cuda_multi/install_components/Linux_x86_64/21.9/"
 # NVHPC_NVCXX="$NVHPC_SDK_DIR/compilers/bin/nvc++"
-# NVHPC_NVCC="$NVHPC_SDK_DIR/cuda/11.2/bin/nvcc"
-# NVHPC_CUDA_DIR="$NVHPC_SDK_DIR/cuda/11.2"
+# NVHPC_NVCC="$NVHPC_SDK_DIR/cuda/11.4/bin/nvcc"
+# NVHPC_CUDA_DIR="$NVHPC_SDK_DIR/cuda/11.4"
 # "$NVHPC_SDK_DIR/compilers/bin/makelocalrc" "$NVHPC_SDK_DIR/compilers/bin/" -x
-
+#
 # AOCC_CXX="/opt/AMD/aocc-compiler-2.3.0/bin/clang++"
 # AOMP_CXX="/usr/lib/aomp/bin/clang++"
 # OCL_LIB="/home/tom/Downloads/oclcpuexp-2020.11.11.0.04_rel/x64/libOpenCL.so"
-
+#
 # # AMD needs this rocm_path thing exported...
-# export ROCM_PATH="/opt/rocm-4.0.0"
-# HIP_CXX="/opt/rocm-4.0.0/bin/hipcc"
-# COMPUTECPP_DIR="/home/tom/Desktop/computecpp_archive/ComputeCpp-CE-2.3.0-x86_64-linux-gnu"
+# export ROCM_PATH="/opt/rocm-4.5.0"
+# HIP_CXX="/opt/rocm-4.5.0/bin/hipcc"
+# COMPUTECPP_DIR="/home/tom/Downloads/ComputeCpp-CE-2.7.0-x86_64-linux-gnu/"
 # DPCPP_DIR="/home/tom/Downloads/dpcpp_compiler"
 # HIPSYCL_DIR="/opt/hipsycl/cff515c/"
-
-# ICPX_CXX="/opt/intel/oneapi/compiler/2021.1.2/linux/bin/icpx"
-# ICPC_CXX="/opt/intel/oneapi/compiler/2021.1.2/linux/bin/intel64/icpc"# TBB_LIB="/home/tom/Downloads/oneapi-tbb-2021.1.1/"
-
+#
+# ICPX_CXX="/opt/intel/oneapi/compiler/2021.4.0/linux/bin/icpx"
+# ICPC_CXX="/opt/intel/oneapi/compiler/2021.4.0/linux/bin/intel64/icpc"# TBB_LIB="/home/tom/Downloads/oneapi-tbb-2021.1.1/"
+#
 # GCC_STD_PAR_LIB="tbb"
 # CLANG_STD_PAR_LIB="tbb"
 # GCC_OMP_OFFLOAD_AMD=false

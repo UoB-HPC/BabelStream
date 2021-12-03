@@ -71,7 +71,7 @@ The project supports building with CMake >= 3.13.0, it can be installed without 
 As with any CMake project, first configure the project:
 
 ```shell
-> cd babelstream/src
+> cd babelstream
 > cmake -Bbuild -H. -DMODEL=<model> <model specific flags prefixed with -D...> # configure the build, build type defaults to Release 
 > cmake --build build # compile it 
 > ./build/<model>-stream # executable available at ./build/
@@ -85,7 +85,7 @@ There are assigned those to `RELEASE_FLAGS`, and you can override them if requir
 To find out what flag each model supports or requires, simply configure while only specifying the model.
 For example:
 ```shell
-> cd babelstream/src
+> cd babelstream
 > cmake -Bbuild -H. -DMODEL=ocl 
 ...
 - Common Release flags are `-O3`, set RELEASE_FLAGS to override
@@ -108,7 +108,7 @@ For example:
    OpenCL_LIBRARY (optional, default=): Path to OpenCL library, usually called libOpenCL.so
 ...
 ```
-Alternatively, refer to the [CI script](./ci-test-compile.sh), which test-compiles most of the models, and see which flags are used there.
+Alternatively, refer to the [CI script](./src/ci-test-compile.sh), which test-compiles most of the models, and see which flags are used there.
 
 *It is recommended that you delete the `build` directory when you change any of the build flags.* 
 
