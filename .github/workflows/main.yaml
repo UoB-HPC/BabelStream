@@ -63,15 +63,15 @@ jobs:
         id: prepare-compilers
         uses: actions/cache@v2
         with:
-          path: ./src/compilers
+          path: ./compilers
           key: ${{ runner.os }}-${{ hashFiles('./src/ci-prepare-bionic.sh') }}
 
       - name: Prepare compilers
         if: steps.prepare-compilers.outputs.cache-hit != 'true'
-        run: source ./ci-prepare-bionic.sh ./compilers SETUP true || true
+        run: source ./src/ci-prepare-bionic.sh ./compilers SETUP true || true
 
       - name: Setup test environment
-        run: source ./ci-prepare-bionic.sh ./compilers VARS false || true
+        run: source ./src/ci-prepare-bionic.sh ./compilers VARS false || true
 
         # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session
