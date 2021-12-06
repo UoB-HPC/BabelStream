@@ -10,14 +10,20 @@ Currently, we support three CPU threading API as devices:
   see [rayon_stream.rs](src/rayon_stream.rs)
 * [Crossbeam](https://github.com/crossbeam-rs/crossbeam) - Parallel with partitions per thread,
   see [crossbeam_stream.rs](src/crossbeam_stream.rs)
+* Arc - Parallel with `Vec` per thread (static partitions) wrapped in `Mutex` contained in `Arc`s,
+  see [crossbeam_stream.rs](src/arc_stream.rs)
+* Unsafe - Parallel with unsafe pointer per thread (static partitions) to `Vec`,
+  see [crossbeam_stream.rs](src/unsafe_stream.rs)
 
 In addition, this implementation also supports the following extra flags:
-
+****
 ```
 --init    Initialise each benchmark array at allocation time on the main thread
 --malloc  Use libc malloc instead of the Rust's allocator for benchmark array allocation
 --pin     Pin threads to distinct cores, this has NO effect in Rayon devices
 ```
+
+Max thread count is controlled by the environment variable `BABELSTREAM_NUM_THREADS` which is compatible for all devices (avoid setting `RAYON_NUM_THREADS`, the implementation will issue a warning if this happened).   
 
 There is an ongoing investigation on potential performance issues under NUMA situations. As part of
 the experiment, this implementation made use of the

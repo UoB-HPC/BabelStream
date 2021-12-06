@@ -2,6 +2,7 @@
 #![feature(vec_into_raw_parts)]
 
 use std::alloc::System;
+use std::env;
 use std::fmt::{Debug, Display};
 use std::iter::Sum;
 use std::mem::size_of;
@@ -11,15 +12,19 @@ use num_traits::abs;
 use structopt::StructOpt;
 use tabular::{Row, Table};
 
-use crate::crossbeam_stream::ThreadedDevice;
+use crate::arc_stream::ArcDevice;
+use crate::crossbeam_stream::CrossbeamDevice;
 use crate::plain_stream::SerialDevice;
 use crate::rayon_stream::RayonDevice;
 use crate::stream::{AllocatorType, ArrayType, RustStream, StreamData};
+use crate::unsafe_stream::UnsafeDevice;
 
+mod arc_stream;
 mod crossbeam_stream;
 mod plain_stream;
 mod rayon_stream;
 mod stream;
+mod unsafe_stream;
 
 #[derive(Debug, StructOpt)]
 struct Options {
@@ -119,9 +124,7 @@ fn check_solution<T: ArrayType + Display + Sum + Into<f64>, D, A: AllocatorType>
 fn run_cpu<T: ArrayType + Sync + Send + Sum + Into<f64> + Display, D, A: AllocatorType>(
   option: &Options, mut stream: StreamData<T, D, A>,
 ) -> bool
-where
-  StreamData<T, D, A>: RustStream<T>,
-{
+where StreamData<T, D, A>: RustStream<T> {
   let benchmark = match (option.nstream_only, option.triad_only) {
     (true, false) => Benchmark::NStream,
     (false, true) => Benchmark::Triad,
@@ -175,7 +178,8 @@ where
 
   let tabulate = |xs: &Vec<Duration>, name: &str, t_size: usize| -> Vec<(&str, String)> {
     let tail = &xs[1..]; // tail only
-                         // do stats
+
+    // do stats
     let max = tail.iter().max().map(|d| d.as_secs_f64());
     let min = tail.iter().min().map(|d| d.as_secs_f64());
     match (min, max) {
@@ -234,6 +238,7 @@ where
   let solutions_correct = match benchmark {
     Benchmark::All => {
       let (results, sum) = stream.run_all(option.numtimes);
+      stream.read_arrays();
       let correct = check_solution(benchmark, option.numtimes, &stream, Some(sum));
       tabulate_all(vec![
         tabulate(&results.copy, "Copy", 2 * array_bytes),
@@ -246,12 +251,14 @@ where
     }
     Benchmark::NStream => {
       let results = stream.run_nstream(option.numtimes);
+      stream.read_arrays();
       let correct = check_solution(benchmark, option.numtimes, &stream, None);
       tabulate_all(vec![tabulate(&results, "Nstream", 4 * array_bytes)]);
       correct
     }
     Benchmark::Triad => {
       let results = stream.run_triad(option.numtimes);
+      stream.read_arrays();
       let correct = check_solution(benchmark, option.numtimes, &stream, None);
       let total_bytes = 3 * array_bytes * option.numtimes;
       let bandwidth = giga_scale * (total_bytes as f64 / results.as_secs_f64());
@@ -260,7 +267,7 @@ where
       correct
     }
   };
-  &stream.clean_up();
+  stream.clean_up();
   solutions_correct
 }
 
@@ -274,139 +281,138 @@ static START_SCALAR: f32 = 0.4;
 static FLOAT_INIT_SCALAR: f32 = START_SCALAR;
 static FLOAT_INIT: (f32, f32, f32) = (START_A, START_B, START_C);
 
-static DOUBLE_START_SCALAR: f64 = START_SCALAR as f64;
+static DOUBLE_INIT_SCALAR: f64 = START_SCALAR as f64;
 static DOUBLE_INIT: (f64, f64, f64) = (START_A as f64, START_B as f64, START_C as f64);
 
 pub fn run(args: &Vec<String>) -> bool {
+  let opt: Options = Options::from_iter(args);
 
-  let options: Options = Options::from_iter(args);
-
-  if options.numtimes < 2 {
+  if opt.numtimes < 2 {
     panic!("numtimes must be >= 2")
   }
 
   let alloc = System;
-  let alloc_name = if options.malloc { "libc-malloc" } else { "rust-system" };
+  let alloc_name = if opt.malloc { "libc-malloc" } else { "rust-system" };
+
+  fn mk_data<T: ArrayType, D, A: AllocatorType>(
+    opt: &Options, init: (T, T, T), scalar: T, dev: D, alloc: A,
+  ) -> StreamData<T, D, A> {
+    StreamData::new_in(opt.arraysize, scalar, init, dev, alloc, opt.malloc, opt.init)
+  }
+
+  let num_thread_key = "BABELSTREAM_NUM_THREADS";
+  let max_ncores = num_cpus::get();
+  let ncores = match env::var(num_thread_key) {
+    Ok(v) => match v.parse::<i64>() {
+      Err(bad) => {
+        colour::e_yellow_ln!(
+          "Cannot parse {} (reason: {}), defaulting to {}",
+          bad,
+          num_thread_key,
+          max_ncores
+        );
+        max_ncores
+      }
+      Ok(n) if n <= 0 || n > max_ncores as i64 => {
+        println!("{} out of bound ({}), defaulting to {}", num_thread_key, n, max_ncores);
+        max_ncores
+      }
+      Ok(n) => n as usize,
+    },
+    Err(_) => {
+      println!("{} not set, defaulting to max ({})", num_thread_key, max_ncores);
+      max_ncores
+    }
+  };
 
   let rayon_device = &|| {
-    let dev = RayonDevice { pool: rayon::ThreadPoolBuilder::default().build().unwrap() };
-    if !options.csv {
+    let rayon_num_thread_key = "RAYON_NUM_THREADS";
+    if env::var(rayon_num_thread_key).is_ok() {
+      colour::e_yellow_ln!("{} is ignored, set {} instead", rayon_num_thread_key, num_thread_key)
+    }
+    let dev = RayonDevice {
+      pool: rayon::ThreadPoolBuilder::default().num_threads(ncores).build().unwrap(),
+    };
+    if !opt.csv {
       println!("Using {} thread(s), alloc={}", dev.pool.current_num_threads(), alloc_name);
-      if options.pin {
+      if opt.pin {
         colour::e_yellow_ln!("Pinning threads have no effect on Rayon!")
       }
     }
-    if options.float {
-      run_cpu(
-        &options,
-        StreamData::new_in(
-          options.arraysize,
-          FLOAT_INIT_SCALAR,
-          FLOAT_INIT,
-          dev,
-          alloc,
-          options.malloc,
-          options.init,
-        ),
-      )
+    if opt.float {
+      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev, alloc))
     } else {
-      run_cpu(
-        &options,
-        StreamData::new_in(
-          options.arraysize,
-          DOUBLE_START_SCALAR,
-          DOUBLE_INIT,
-          dev,
-          alloc,
-          options.malloc,
-          options.init,
-        ),
-      )
+      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev, alloc))
+    }
+  };
+
+  let arc_device = &|| {
+    if !opt.csv {
+      println!("Using {} thread, pin={}, alloc={}", ncores, opt.pin, alloc_name);
+    }
+    if opt.float {
+      let dev = ArcDevice::<f32, _>::new(ncores, opt.pin, alloc);
+      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev, alloc))
+    } else {
+      let dev = ArcDevice::<f64, _>::new(ncores, opt.pin, alloc);
+      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev, alloc))
+    }
+  };
+
+  let unsafe_device = &|| {
+    if !opt.csv {
+      println!("Using {} thread, pin={}, alloc={}", ncores, opt.pin, alloc_name);
+    }
+    if opt.float {
+      let dev = UnsafeDevice::<f32>::new(ncores, opt.pin);
+      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev, alloc))
+    } else {
+      let dev = UnsafeDevice::<f64>::new(ncores, opt.pin);
+      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev, alloc))
     }
   };
 
   let crossbeam_device = &|| {
-    let ncores = num_cpus::get();
-    let dev = ThreadedDevice::new(ncores, options.pin);
-    if !options.csv {
-      println!("Using {} thread(s), pin={}, alloc={}", ncores, options.pin, alloc_name)
+    let dev = CrossbeamDevice::new(ncores, opt.pin);
+    if !opt.csv {
+      println!("Using {} thread(s), pin={}, alloc={}", ncores, opt.pin, alloc_name)
     }
-    if options.float {
-      run_cpu(
-        &options,
-        StreamData::new_in(
-          options.arraysize,
-          FLOAT_INIT_SCALAR,
-          FLOAT_INIT,
-          dev,
-          alloc,
-          options.malloc,
-          options.init,
-        ),
-      )
+    if opt.float {
+      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev, alloc))
     } else {
-      run_cpu(
-        &options,
-        StreamData::new_in(
-          options.arraysize,
-          DOUBLE_START_SCALAR,
-          DOUBLE_INIT,
-          dev,
-          alloc,
-          options.malloc,
-          options.init,
-        ),
-      )
+      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev, alloc))
     }
   };
+
   let st_device = &|| {
-    let dev = SerialDevice { pin: options.pin };
-    if !options.csv {
-      println!("Using 1 thread, pin={}, alloc={}", options.pin, alloc_name);
+    let dev = SerialDevice { pin: opt.pin };
+    if !opt.csv {
+      println!("Using 1 thread, pin={}, alloc={}", opt.pin, alloc_name);
     }
-    if options.float {
-      run_cpu(
-        &options,
-        StreamData::new_in(
-          options.arraysize,
-          FLOAT_INIT_SCALAR,
-          FLOAT_INIT,
-          dev,
-          alloc,
-          options.malloc,
-          options.init,
-        ),
-      )
+    if opt.float {
+      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev, alloc))
     } else {
-      run_cpu(
-        &options,
-        StreamData::new_in(
-          options.arraysize,
-          DOUBLE_START_SCALAR,
-          DOUBLE_INIT,
-          dev,
-          alloc,
-          options.malloc,
-          options.init,
-        ),
-      )
+      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev, alloc))
     }
   };
+
   let devices: Vec<(String, &'_ dyn Fn() -> bool)> = vec![
-    ("CPU (Rayon)".to_string(), rayon_device),
-    (format!("CPU (Crossbeam, pinning={})", options.pin), crossbeam_device),
     ("CPU (Single threaded)".to_string(), st_device),
+    ("CPU (Rayon)".to_string(), rayon_device),
+    (format!("CPU (Arc, pinning={})", opt.pin), arc_device),
+    (format!("CPU (Unsafe, pinning={})", opt.pin), unsafe_device),
+    (format!("CPU (Crossbeam, pinning={})", opt.pin), crossbeam_device),
   ];
 
-  if options.list {
+  if opt.list {
     devices.iter().enumerate().for_each(|(i, (name, _))| {
       println!("[{}] {}", i, name);
     });
     true
   } else {
-    match devices.get(options.device) {
+    match devices.get(opt.device) {
       Some((name, run)) => {
-        if !&options.csv {
+        if !&opt.csv {
           println!(
             "BabelStream\n\
                               Version: {}\n\
@@ -414,14 +420,14 @@ pub fn run(args: &Vec<String>) -> bool {
             VERSION.unwrap_or("unknown"),
             name
           );
-          if options.init {
+          if opt.init {
             println!("Initialising arrays on main thread");
           }
         }
         run()
       }
       None => {
-        eprintln!("Device index {} not available", options.device);
+        eprintln!("Device index {} not available", opt.device);
         false
       }
     }

@@ -6,13 +6,13 @@ use crossbeam::thread;
 use self::core_affinity::CoreId;
 use crate::stream::{AllocatorType, ArrayType, RustStream, StreamData};
 
-pub struct ThreadedDevice {
+pub struct CrossbeamDevice {
   pub(crate) ncore: usize,
   pub(crate) pin: bool,
   pub(crate) core_ids: Vec<CoreId>,
 }
 
-impl ThreadedDevice {
+impl CrossbeamDevice {
   pub fn new(ncore: usize, pin: bool) -> Self {
     let mut core_ids = match core_affinity::get_core_ids() {
       Some(xs) => xs,
@@ -22,15 +22,13 @@ impl ThreadedDevice {
       }
     };
     core_ids.resize(ncore, core_ids[0]);
-    ThreadedDevice { ncore, pin, core_ids }
+    CrossbeamDevice { ncore, pin, core_ids }
   }
 }
 
-impl ThreadedDevice {
+impl CrossbeamDevice {
   // divide the length by the number of cores, the last core gets less work if it does not divide
-  fn chunk_size(&self, len: usize) -> usize {
-    (len as f64 / self.ncore as f64).ceil() as usize
-  }
+  fn chunk_size(&self, len: usize) -> usize { (len as f64 / self.ncore as f64).ceil() as usize }
 
   // make a mutable chunk from the vec
   fn mk_mut_chunks<'a, T, A: AllocatorType>(&self, xs: &'a mut Vec<T, A>) -> ChunksMut<'a, T> {
@@ -48,7 +46,7 @@ extern crate core_affinity;
 
 // Crossbeam threaded version, it should be semantically equal to the single threaded version
 impl<T: ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send> RustStream<T>
-  for StreamData<T, ThreadedDevice, A>
+  for StreamData<T, CrossbeamDevice, A>
 {
   fn init_arrays(&mut self) {
     thread::scope(|s| {

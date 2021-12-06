@@ -124,6 +124,7 @@ impl<T: Default + Clone, D, A: AllocatorType> StreamData<T, D, A> {
 
 pub trait RustStream<T: Default> {
   fn init_arrays(&mut self);
+  fn read_arrays(&mut self) {} // default to no-op as most impl. doesn't need this
   fn copy(&mut self);
   fn mul(&mut self);
   fn add(&mut self);
