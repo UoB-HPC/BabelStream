@@ -8,6 +8,7 @@ kokkos-stream
 std-stream
 sycl-stream
 hip-stream
+tbb-stream
 
 *.o
 *.bc
@@ -21,3 +22,10 @@ KokkosCore_config.*
 .DS_Store
 
 Makefile
+
+build/
+cmake-build-*/
+CMakeFiles/
+.idea/
+.vscode/
+.directory

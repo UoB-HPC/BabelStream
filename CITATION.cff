@@ -1,0 +1,14 @@
+cff-version: 1.1.0
+message: If you use this software, please cite it as below.
+authors:
+  - family-names: Deakin
+    given-names: Tom
+    affiliation: University of Bristol
+    website: https://hpc.tomdeakin.com
+  - family-names: McIntosh-Smith
+    given-names: Simon
+    affiliation: University of Bristol
+    website: https://uob-hpc.github.io
+title: BabelStream
+version: 3.4
+date-released: 2019-04-10

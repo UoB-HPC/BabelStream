@@ -1,0 +1,7 @@
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+
+[compat]
+julia = "1.6"

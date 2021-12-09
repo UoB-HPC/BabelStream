@@ -3,6 +3,7 @@ BabelStream
 
 <img src="https://github.com/UoB-HPC/BabelStream/blob/gh-pages/img/BabelStreamlogo.png?raw=true" alt="logo" height="300" align="right" />
 
+[![CI](https://github.com/UoB-HPC/BabelStream/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/UoB-HPC/BabelStream/actions/workflows/main.yaml)
 
 Measure memory transfer rates to/from global device memory on GPUs.
 This benchmark is similar in spirit, and based on, the STREAM benchmark [1] for CPUs.
@@ -13,15 +14,22 @@ There are multiple implementations of this benchmark in a variety of programming
 Currently implemented are:
   - OpenCL
   - CUDA
+  - HIP
   - OpenACC
   - OpenMP 3 and 4.5
   - C++ Parallel STL
   - Kokkos
   - RAJA
   - SYCL
+  - TBB
+  - Thrust (via CUDA or HIP)
 
 This code was previously called GPU-STREAM.
 
+This project also contains implementations in alternative languages with different build systems:
+* Julia - [JuliaStream.jl](./src/julia/JuliaStream.jl)
+* Java - [java-stream](./src/java/java-stream)
+* Scala - [scala-stream](./src/scala/scala-stream)
 
 How is this different to STREAM?
 --------------------------------
@@ -57,43 +65,59 @@ Usage
 
 Drivers, compiler and software applicable to whichever implementation you would like to build against is required.
 
-We have supplied a series of Makefiles, one for each programming model, to assist with building.
-The Makefiles contain common build options, and should be simple to customise for your needs too.
+### CMake
 
-General usage is `make -f <Model>.make`
-Common compiler flags and names can be set by passing a `COMPILER` option to Make, e.g. `make COMPILER=GNU`.
-Some models allow specifying a CPU or GPU style target, and this can be set by passing a `TARGET` option to Make, e.g. `make TARGET=GPU`.
+The project supports building with CMake >= 3.13.0, it can be installed without root via the [official script](https://cmake.org/download/).
+As with any CMake project, first configure the project:
 
-Pass in extra flags via the `EXTRA_FLAGS` option.
+```shell
+> cd babelstream
+> cmake -Bbuild -H. -DMODEL=<model> <model specific flags prefixed with -D...> # configure the build, build type defaults to Release 
+> cmake --build build # compile it 
+> ./build/<model>-stream # executable available at ./build/
+```
 
-The binaries are named in the form `<model>-stream`.
+Source for each model's implementations are located in `./src/<model>`.
 
-Building Kokkos
----------------
+By default, we have defined a set of optimal flags for known HPC compilers.
+There are assigned those to `RELEASE_FLAGS`, and you can override them if required.
 
-Kokkos version >= 3 requires setting the `KOKKOS_PATH` flag to the *source* directory of a distribution. 
+To find out what flag each model supports or requires, simply configure while only specifying the model.
 For example:
+```shell
+> cd babelstream
+> cmake -Bbuild -H. -DMODEL=ocl 
+...
+- Common Release flags are `-O3`, set RELEASE_FLAGS to override
+-- CXX_EXTRA_FLAGS: 
+        Appends to common compile flags. These will be used at link phase at well.
+        To use separate flags at link time, set `CXX_EXTRA_LINKER_FLAGS`
+-- CXX_EXTRA_LINK_FLAGS: 
+        Appends to link flags which appear *before* the objects.
+        Do not use this for linking libraries, as the link line is order-dependent
+-- CXX_EXTRA_LIBRARIES: 
+        Append to link flags which appears *after* the objects.
+        Use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`) 
+-- CXX_EXTRA_LINKER_FLAGS: 
+        Append to linker flags (i.e GCC's `-Wl` or equivalent)
+-- Available models:  omp;ocl;std;std20;hip;cuda;kokkos;sycl;acc;raja;tbb
+-- Selected model  :  ocl
+-- Supported flags:
 
+   CMAKE_CXX_COMPILER (optional, default=c++): Any CXX compiler that is supported by CMake detection
+   OpenCL_LIBRARY (optional, default=): Path to OpenCL library, usually called libOpenCL.so
+...
 ```
-cd 
-wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
-tar -xvf 3.1.01.tar.gz # should end up with ~/kokkos-3.1.01
-cd BabelStream
-make -f Kokkos.make KOKKOS_PATH=~/kokkos-3.1.01 
-```
-See make output for more information on supported flags.
+Alternatively, refer to the [CI script](./src/ci-test-compile.sh), which test-compiles most of the models, and see which flags are used there.
 
-Building RAJA
--------------
+*It is recommended that you delete the `build` directory when you change any of the build flags.* 
 
-We use the following command to build RAJA using the Intel Compiler.
-```
-cmake .. -DCMAKE_INSTALL_PREFIX=<prefix> -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DRAJA_PTR="RAJA_USE_RESTRICT_ALIGNED_PTR" -DCMAKE_BUILD_TYPE=ICCBuild -DRAJA_ENABLE_TESTS=Off
-```
-For building with CUDA support, we use the following command.
-```
-cmake .. -DCMAKE_INSTALL_PREFIX=<prefix> -DRAJA_PTR="RAJA_USE_RESTRICT_ALIGNED_PTR" -DRAJA_ENABLE_CUDA=1 -DRAJA_ENABLE_TESTS=Off
-```
+### GNU Make
+
+Support for Make has been removed from 4.0 onwards.
+However, as the build process only involves a few source files, the required compile commands can be extracted from the CI output.
+
+<!-- TODO add CI snipped here -->
 
 Results
 -------
@@ -113,9 +137,11 @@ Citing
 
 Please cite BabelStream via this reference:
 
-> Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM v2.0: Benchmarking the achievable memory bandwidth of many-core processors across diverse parallel programming models. 2016. Paper presented at P^3MA Workshop at ISC High Performance, Frankfurt, Germany.
+> Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM v2.0: Benchmarking the achievable memory bandwidth of many-core processors across diverse parallel programming models. 2016. Paper presented at P^3MA Workshop at ISC High Performance, Frankfurt, Germany. DOI: 10.1007/978- 3-319-46079-6_34
 
 **Other BabelStream publications:**
+
+> Deakin T, Price J, Martineau M, McIntosh-Smith S. Evaluating attainable memory bandwidth of parallel programming models via BabelStream. International Journal of Computational Science and Engineering. Special issue. Vol. 17, No. 3, pp. 247–262. 2018.DOI: 10.1504/IJCSE.2018.095847
 
 > Deakin T, McIntosh-Smith S. GPU-STREAM: Benchmarking the achievable memory bandwidth of Graphics Processing Units. 2015. Poster session presented at IEEE/ACM SuperComputing, Austin, United States.
 You can view the [Poster and Extended Abstract](http://sc15.supercomputing.org/sites/all/themes/SC15images/tech_poster/tech_poster_pages/post150.html).
@@ -124,8 +150,6 @@ You can view the [Poster and Extended Abstract](http://sc15.supercomputing.org/s
 You can view the [Poster and Extended Abstract](http://sc16.supercomputing.org/sc-archive/tech_poster/tech_poster_pages/post139.html).
 
 > Raman K, Deakin T, Price J, McIntosh-Smith S. Improving achieved memory bandwidth from C++ codes on Intel Xeon Phi Processor (Knights Landing). IXPUG Spring Meeting, Cambridge, UK, 2017.
-
-> Deakin T, Price J, Martineau M, McIntosh-Smith S. Evaluating attainable memory bandwidth of parallel programming models via BabelStream. International Journal of Computational Science and Engineering. Special issue (in press). 2017.
 
 > Deakin T, Price J, McIntosh-Smith S. Portable methods for measuring cache hierarchy performance. 2017. Poster sessions presented at IEEE/ACM SuperComputing, Denver, United States.
 You can view the [Poster and Extended Abstract](http://sc17.supercomputing.org/SC17%20Archive/tech_poster/tech_poster_pages/post155.html)

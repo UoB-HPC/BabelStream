@@ -1,0 +1,11 @@
+[
+  {
+    "name": "sun.misc.Unsafe",
+    "fields": [
+      {
+        "name": "theUnsafe",
+        "allowUnsafeAccess": true
+      }
+    ]
+  }
+]
