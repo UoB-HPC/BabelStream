@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-18.04
     defaults:
       run:
-        working-directory: ./rust-stream
+        working-directory: ./src/rust/rust-stream
     steps:
       - uses: actions/checkout@v2
       - name: Setup project
