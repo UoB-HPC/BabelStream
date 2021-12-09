@@ -165,7 +165,7 @@ T SYCLStream<T>::dot()
 
     cgh.parallel_for(sycl::range<1>{array_size},
       // Reduction object, to perform summation - initialises the result to zero
-      sycl::reduction(d_sum, cgh, std::plus<T>(), sycl::property::reduction::initialize_to_identity),
+      sycl::reduction(d_sum, cgh, std::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
       [=](sycl::id<1> idx, auto& sum)
       {
         sum += ka[idx] * kb[idx];
