@@ -123,6 +123,7 @@ register_model(hip HIP HIPStream.cpp)
 register_model(cuda CUDA CUDAStream.cu)
 register_model(kokkos KOKKOS KokkosStream.cpp)
 register_model(sycl SYCL SYCLStream.cpp)
+register_model(sycl2020 SYCL2020 SYCLStream2020.cpp)
 register_model(acc ACC ACCStream.cpp)
 # defining RAJA collides with the RAJA namespace so USE_RAJA
 register_model(raja USE_RAJA RAJAStream.cpp)
