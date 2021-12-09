@@ -17,8 +17,8 @@ This code was previously called GPU-STREAM.
 - [Programming Models](#programming-models)
 - [How is this different to STREAM?](#how-is-this-different-to-stream)
 - [Building](#building)
-   - [CMake](#cmake)
-   - [GNU Make (removed)](#gnu-make)
+    - [CMake](#cmake)
+    - [GNU Make (removed)](#gnu-make)
 - [Results](#results)
 - [Contributing](#contributing)
 - [Citing](#citing)
@@ -29,23 +29,23 @@ This code was previously called GPU-STREAM.
 
 BabelStream is currently implemented in the following parallel programming models, listed in no particular order:
 
-  - OpenCL
-  - CUDA
-  - HIP
-  - OpenACC
-  - OpenMP 3 and 4.5
-  - C++ Parallel STL
-  - Kokkos
-  - RAJA
-  - SYCL and SYCL 2020
-  - TBB
-  - Thrust (via CUDA or HIP)
-
+- OpenCL
+- CUDA
+- HIP
+- OpenACC
+- OpenMP 3 and 4.5
+- C++ Parallel STL
+- Kokkos
+- RAJA
+- SYCL and SYCL 2020
+- TBB
+- Thrust (via CUDA or HIP)
 
 This project also contains implementations in alternative languages with different build systems:
 * Julia - [JuliaStream.jl](./src/julia/JuliaStream.jl)
 * Java - [java-stream](./src/java/java-stream)
 * Scala - [scala-stream](./src/scala/scala-stream)
+* Rust - [rust-stream](./src/rust/rust-stream)
 
 ## How is this different to STREAM?
 
@@ -136,7 +136,7 @@ For example:
 
 Alternatively, refer to the [CI script](./src/ci-test-compile.sh), which test-compiles most of the models, and see which flags are used there.
 
-*It is recommended that you delete the `build` directory when you change any of the build flags.* 
+*It is recommended that you delete the `build` directory when you change any of the build flags.*
 
 ### GNU Make
 
@@ -170,15 +170,15 @@ Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM v2.0: Benchmarking 
 * Deakin T, Price J, Martineau M, McIntosh-Smith S. Evaluating attainable memory bandwidth of parallel programming models via BabelStream. International Journal of Computational Science and Engineering. Special issue. Vol. 17, No. 3, pp. 247–262. 2018.DOI: 10.1504/IJCSE.2018.095847
 
 * Deakin T, McIntosh-Smith S. GPU-STREAM: Benchmarking the achievable memory bandwidth of Graphics Processing Units. 2015. Poster session presented at IEEE/ACM SuperComputing, Austin, United States.
-You can view the [Poster and Extended Abstract](http://sc15.supercomputing.org/sites/all/themes/SC15images/tech_poster/tech_poster_pages/post150.html).
+  You can view the [Poster and Extended Abstract](http://sc15.supercomputing.org/sites/all/themes/SC15images/tech_poster/tech_poster_pages/post150.html).
 
 * Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM: Now in 2D!. 2016. Poster session presented at IEEE/ACM SuperComputing, Salt Lake City, United States.
-You can view the [Poster and Extended Abstract](http://sc16.supercomputing.org/sc-archive/tech_poster/tech_poster_pages/post139.html).
+  You can view the [Poster and Extended Abstract](http://sc16.supercomputing.org/sc-archive/tech_poster/tech_poster_pages/post139.html).
 
 * Raman K, Deakin T, Price J, McIntosh-Smith S. Improving achieved memory bandwidth from C++ codes on Intel Xeon Phi Processor (Knights Landing). IXPUG Spring Meeting, Cambridge, UK, 2017.
 
 * Deakin T, Price J, McIntosh-Smith S. Portable methods for measuring cache hierarchy performance. 2017. Poster sessions presented at IEEE/ACM SuperComputing, Denver, United States.
-You can view the [Poster and Extended Abstract](http://sc17.supercomputing.org/SC17%20Archive/tech_poster/tech_poster_pages/post155.html)
+  You can view the [Poster and Extended Abstract](http://sc17.supercomputing.org/SC17%20Archive/tech_poster/tech_poster_pages/post155.html)
 
 
 [1]: McCalpin, John D., 1995: "Memory Bandwidth and Machine Balance in Current High Performance Computers", IEEE Computer Society Technical Committee on Computer Architecture (TCCA) Newsletter, December 1995.
