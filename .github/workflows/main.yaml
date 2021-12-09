@@ -3,6 +3,7 @@ on: [push, pull_request]
 
 
 jobs:
+
   test-rust:
     runs-on: ubuntu-18.04
     defaults:
@@ -18,6 +19,49 @@ jobs:
         run: cargo +nightly test --release
       - name: Test run project
         run: ./target/release/rust-stream --arraysize 2048
+
+  test-java:
+    runs-on: ubuntu-18.04
+    defaults:
+      run:
+        working-directory: ./java-stream
+    steps:
+      - uses: actions/checkout@v2
+      - name: Test build project
+        run: ./mvnw clean package
+      - name: Test run 
+        if: ${{ ! cancelled() }}
+        run: java -jar target/java-stream.jar --arraysize 2048
+
+  test-julia:
+    runs-on: ubuntu-18.04
+    defaults:
+      run:
+        working-directory: ./JuliaStream.jl
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup project
+        run: julia             --project -e 'import Pkg; Pkg.instantiate()'
+      - name: Test run PlainStream.jl
+        if: ${{ ! cancelled() }}
+        run: julia             --project src/PlainStream.jl       --arraysize 2048
+      - name: Test run ThreadedStream.jl
+        if: ${{ ! cancelled() }}
+        run: julia --threads 2 --project src/ThreadedStream.jl    --arraysize 2048
+      - name: Test run DistributedStream.jl (no flag)
+        if: ${{ ! cancelled() }}
+        run: julia             --project src/DistributedStream.jl --arraysize 2048
+      - name: Test run DistributedStream.jl (-p 2)
+        if: ${{ ! cancelled() }}
+        run: julia -p 2        --project src/DistributedStream.jl --arraysize 2048
+      - name: Test run CUDAStream.jl
+        if: ${{ ! cancelled() }}
+        run: julia             --project src/CUDAStream.jl        --list
+      - name: Test run AMDGPUStream.jl
+        if: ${{ ! cancelled() }}
+        run: julia             --project src/AMDGPUStream.jl      --list
+
+
   test:
     runs-on: ubuntu-18.04
     steps:

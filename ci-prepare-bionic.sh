@@ -134,20 +134,21 @@ setup_aocc() {
 
 setup_nvhpc() {
   echo "Preparing Nvidia HPC SDK"
-
   local tarball="nvhpc.tar.gz"
-#  local url="http://localhost:8000/nvhpc_2021_212_Linux_x86_64_cuda_11.2.tar.gz"
-  local url="https://developer.download.nvidia.com/hpc-sdk/21.2/nvhpc_2021_212_Linux_x86_64_cuda_11.2.tar.gz"
-
+#  local url="http://localhost:8000/nvhpc_2021_219_Linux_x86_64_cuda_11.4.tar.gz"
+  local url="https://developer.download.nvidia.com/hpc-sdk/21.9/nvhpc_2021_219_Linux_x86_64_cuda_11.4.tar.gz"
   get_and_untar "$tarball" "$url"
 
-  local sdk_dir="$PWD/nvhpc_2021_212_Linux_x86_64_cuda_11.2/install_components/Linux_x86_64/21.2"
+  local sdk_dir="$PWD/nvhpc_2021_219_Linux_x86_64_cuda_11.4/install_components/Linux_x86_64/21.9"
   local bin_dir="$sdk_dir/compilers/bin"
   "$bin_dir/makelocalrc" "$bin_dir" -x
 
+  export_var NVHPC_SDK_DIR "$sdk_dir"
+  export_var NVHPC_CUDA_DIR "$sdk_dir/cuda/11.4"
+
   export_var NVHPC_NVCXX "$bin_dir/nvc++"
-  export_var NVHPC_NVCC "$sdk_dir/cuda/11.2/bin/nvcc"
-  export_var NVHPC_CUDA_DIR "$sdk_dir/cuda/11.2"
+  export_var NVHPC_NVCC "$sdk_dir/cuda/11.4/bin/nvcc"
+
   echo "Installed CUDA versions:"
   ls "$sdk_dir/cuda"
   verify_bin_exists "$NVHPC_NVCXX"
@@ -251,10 +252,11 @@ setup_clang_gcc() {
 
 setup_rocm() {
   wget -q -O - "https://repo.radeon.com/rocm/rocm.gpg.key" | sudo apt-key add -
-  echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ xenial main' | sudo tee /etc/apt/sources.list.d/rocm.list
+  echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/4.5 ubuntu main' | sudo tee /etc/apt/sources.list.d/rocm.list
   sudo apt-get update -qq
-  sudo apt-get install -y -qq rocm-dev
+  sudo apt-get install -y -qq rocm-dev rocthrust-dev
   export_var ROCM_PATH "/opt/rocm"
+  export_var PATH "$ROCM_PATH/bin:$PATH" # ROCm needs this for many of their libraries' CMake build to work
   export_var HIP_CXX "$ROCM_PATH/bin/hipcc"
   verify_bin_exists "$HIP_CXX"
   "$HIP_CXX" --version

@@ -3,7 +3,8 @@ ifndef COMPILER
 define compiler_help
 Set COMPILER to change flags (defaulting to GNU).
 Available compilers are:
-  CLANG CRAY GNU GNU_PPC INTEL XL PGI NEC ARMCLANG AOMP
+  CLANG CRAY GNU GNU_PPC INTEL XL PGI
+  NEC ARMCLANG AOMP FUJITSU
 
 Note: GCC on PPC requires -mcpu=native instead of -march=native so we have a special case for it
 
@@ -49,6 +50,7 @@ COMPILER_XL = xlc++
 COMPILER_PGI = pgc++
 COMPILER_NEC = /opt/nec/ve/bin/nc++
 COMPILER_AOMP = clang++
+COMPILER_FUJITSU=FCC
 CXX = $(COMPILER_$(COMPILER))
 
 FLAGS_GNU = -O3 -std=c++11 -march=native
@@ -61,6 +63,7 @@ FLAGS_PGI = -O3 -std=c++11
 FLAGS_NEC = -O4 -finline -std=c++11
 FLAGS_ARMCLANG = -O3 -std=c++11
 FLAGS_AOMP = -O3 -std=c++11
+FLAGS_FUJITSU=-Kfast -std=c++11 -KA64FX -KSVE -KARMV8_3_A -Kzfill=100 -Kprefetch_sequential=soft -Kprefetch_line=8 -Kprefetch_line_L2=16
 CXXFLAGS = $(FLAGS_$(COMPILER))
 
 # OpenMP flags for CPUs
@@ -73,6 +76,7 @@ OMP_CLANG_CPU = -fopenmp=libomp
 OMP_XL_CPU = -qsmp=omp -qthreaded
 OMP_PGI_CPU = -mp
 OMP_NEC_CPU = -fopenmp
+OMP_FUJITSU_CPU=-Kopenmp
 
 # OpenMP flags for NVIDIA
 OMP_CRAY_NVIDIA  = -DOMP_TARGET_GPU
