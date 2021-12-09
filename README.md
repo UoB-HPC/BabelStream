@@ -1,5 +1,4 @@
-BabelStream
-==========
+# BabelStream
 
 <img src="https://github.com/UoB-HPC/BabelStream/blob/gh-pages/img/BabelStreamlogo.png?raw=true" alt="logo" height="300" align="right" />
 
@@ -10,8 +9,26 @@ This benchmark is similar in spirit, and based on, the STREAM benchmark [1] for 
 
 Unlike other GPU memory bandwidth benchmarks this does *not* include the PCIe transfer time.
 
-There are multiple implementations of this benchmark in a variety of programming models.
-Currently implemented are:
+There are multiple implementations of this benchmark in a variety of [programming models](#models).
+
+This code was previously called GPU-STREAM.
+
+## Table of Contents
+- [Programming Models](#programming-models)
+- [How is this different to STREAM?](#how-is-this-different-to-stream)
+- [Building](#building)
+   - [CMake](#cmake)
+   - [GNU Make (removed)](#gnu-make)
+- [Results](#results)
+- [Contributing](#contributing)
+- [Citing](#citing)
+    - [Other BabelStream publications](#other-babelstream-publications)
+
+
+## Programming Models
+
+BabelStream is currently implemented in the following parallel programming models, listed in no particular order:
+
   - OpenCL
   - CUDA
   - HIP
@@ -20,19 +37,17 @@ Currently implemented are:
   - C++ Parallel STL
   - Kokkos
   - RAJA
-  - SYCL
+  - SYCL and SYCL 2020
   - TBB
   - Thrust (via CUDA or HIP)
 
-This code was previously called GPU-STREAM.
 
 This project also contains implementations in alternative languages with different build systems:
 * Julia - [JuliaStream.jl](./src/julia/JuliaStream.jl)
 * Java - [java-stream](./src/java/java-stream)
 * Scala - [scala-stream](./src/scala/scala-stream)
 
-How is this different to STREAM?
---------------------------------
+## How is this different to STREAM?
 
 BabelStream implements the four main kernels of the STREAM benchmark (along with a dot product), but by utilising different programming models expands the platforms which the code can run beyond CPUs.
 
@@ -49,36 +64,46 @@ BabelStream therefore provides a measure of what memory bandwidth performance ca
 BabelStream also includes the nstream kernel from the Parallel Research Kernels (PRK) project, available on [GitHub](https://github.com/ParRes/Kernels).
 Details about PRK can be found in the following references:
 
-> Van der Wijngaart, Rob F., and Timothy G. Mattson. The parallel research kernels. IEEE High Performance Extreme Computing Conference (HPEC). IEEE, 2014.
+* Van der Wijngaart, Rob F., and Timothy G. Mattson. The parallel research kernels. IEEE High Performance Extreme Computing Conference (HPEC). IEEE, 2014.
 
-> R. F. Van der Wijngaart, A. Kayi, J. R. Hammond, G. Jost, T. St. John, S. Sridharan, T. G. Mattson, J. Abercrombie, and J. Nelson. Comparing runtime systems with exascale ambitions using the Parallel Research Kernels. ISC 2016, [DOI: 10.1007/978-3-319-41321-1_17](https://doi.org/10.1007/978-3-319-41321-1_17).
+* R. F. Van der Wijngaart, A. Kayi, J. R. Hammond, G. Jost, T. St. John, S. Sridharan, T. G. Mattson, J. Abercrombie, and J. Nelson. Comparing runtime systems with exascale ambitions using the Parallel Research Kernels. ISC 2016, [DOI: 10.1007/978-3-319-41321-1_17](https://doi.org/10.1007/978-3-319-41321-1_17).
 
-> Jeff R. Hammond and Timothy G. Mattson. Evaluating data parallelism in C++ using the Parallel Research Kernels. IWOCL 2019, [DOI: 10.1145/3318170.3318192](https://doi.org/10.1145/3318170.3318192).
+* Jeff R. Hammond and Timothy G. Mattson. Evaluating data parallelism in C++ using the Parallel Research Kernels. IWOCL 2019, [DOI: 10.1145/3318170.3318192](https://doi.org/10.1145/3318170.3318192).
 
 
-Website
--------
-[uob-hpc.github.io/BabelStream/](https://uob-hpc.github.io/BabelStream/)
-
-Usage
------
+## Building
 
 Drivers, compiler and software applicable to whichever implementation you would like to build against is required.
 
 ### CMake
 
-The project supports building with CMake >= 3.13.0, it can be installed without root via the [official script](https://cmake.org/download/).
-As with any CMake project, first configure the project:
+The project supports building with CMake >= 3.13.0, which can be installed without root via the [official script](https://cmake.org/download/).
+
+Each BabelStream implementation (programming model) is built as follows:
 
 ```shell
-> cd babelstream
-> cmake -Bbuild -H. -DMODEL=<model> <model specific flags prefixed with -D...> # configure the build, build type defaults to Release 
-> cmake --build build # compile it 
-> ./build/<model>-stream # executable available at ./build/
+$ cd babelstream
+
+# configure the build, build type defaults to Release
+# The -DMODEL flag is required
+$ cmake -Bbuild -H. -DMODEL=<model> <model specific flags prefixed with -D...>
+
+# compile
+$ cmake --build build
+
+# run executables in ./build
+$ ./build/<model>-stream
 ```
 
-Source for each model's implementations are located in `./src/<model>`.
+The `MODEL` option selects one implementation of BabelStream to build.
+The source for each model's implementations are located in `./src/<model>`.
 
+Currently available models are:
+```
+omp;ocl;std;std20;hip;cuda;kokkos;sycl;sycl2020;acc;raja;tbb;thrust
+```
+
+#### Overriding default flags
 By default, we have defined a set of optimal flags for known HPC compilers.
 There are assigned those to `RELEASE_FLAGS`, and you can override them if required.
 
@@ -108,6 +133,7 @@ For example:
    OpenCL_LIBRARY (optional, default=): Path to OpenCL library, usually called libOpenCL.so
 ...
 ```
+
 Alternatively, refer to the [CI script](./src/ci-test-compile.sh), which test-compiles most of the models, and see which flags are used there.
 
 *It is recommended that you delete the `build` directory when you change any of the build flags.* 
@@ -119,39 +145,39 @@ However, as the build process only involves a few source files, the required com
 
 <!-- TODO add CI snipped here -->
 
-Results
--------
+## Results
 
-Sample results can be found in the `results` subdirectory. If you would like to submit updated results, please submit a Pull Request.
+Sample results can be found in the `results` subdirectory.
+Newer results are found in our [Performance Portability](https://github.com/UoB-HPC/performance-portability) repository.
 
-Contributing
-------------
+
+## Contributing
 
 As of v4.0, the `main` branch of this repository will hold the latest released version.
 
 The `develop` branch will contain unreleased features due for the next (major and/or minor) release of BabelStream.
 Pull Requests should be made against the `develop` branch.
 
-Citing
-------
+## Citing
+
 
 Please cite BabelStream via this reference:
 
-> Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM v2.0: Benchmarking the achievable memory bandwidth of many-core processors across diverse parallel programming models. 2016. Paper presented at P^3MA Workshop at ISC High Performance, Frankfurt, Germany. DOI: 10.1007/978- 3-319-46079-6_34
+Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM v2.0: Benchmarking the achievable memory bandwidth of many-core processors across diverse parallel programming models. 2016. Paper presented at P^3MA Workshop at ISC High Performance, Frankfurt, Germany. DOI: 10.1007/978- 3-319-46079-6_34
 
-**Other BabelStream publications:**
+### Other BabelStream publications
 
-> Deakin T, Price J, Martineau M, McIntosh-Smith S. Evaluating attainable memory bandwidth of parallel programming models via BabelStream. International Journal of Computational Science and Engineering. Special issue. Vol. 17, No. 3, pp. 247–262. 2018.DOI: 10.1504/IJCSE.2018.095847
+* Deakin T, Price J, Martineau M, McIntosh-Smith S. Evaluating attainable memory bandwidth of parallel programming models via BabelStream. International Journal of Computational Science and Engineering. Special issue. Vol. 17, No. 3, pp. 247–262. 2018.DOI: 10.1504/IJCSE.2018.095847
 
-> Deakin T, McIntosh-Smith S. GPU-STREAM: Benchmarking the achievable memory bandwidth of Graphics Processing Units. 2015. Poster session presented at IEEE/ACM SuperComputing, Austin, United States.
+* Deakin T, McIntosh-Smith S. GPU-STREAM: Benchmarking the achievable memory bandwidth of Graphics Processing Units. 2015. Poster session presented at IEEE/ACM SuperComputing, Austin, United States.
 You can view the [Poster and Extended Abstract](http://sc15.supercomputing.org/sites/all/themes/SC15images/tech_poster/tech_poster_pages/post150.html).
 
-> Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM: Now in 2D!. 2016. Poster session presented at IEEE/ACM SuperComputing, Salt Lake City, United States.
+* Deakin T, Price J, Martineau M, McIntosh-Smith S. GPU-STREAM: Now in 2D!. 2016. Poster session presented at IEEE/ACM SuperComputing, Salt Lake City, United States.
 You can view the [Poster and Extended Abstract](http://sc16.supercomputing.org/sc-archive/tech_poster/tech_poster_pages/post139.html).
 
-> Raman K, Deakin T, Price J, McIntosh-Smith S. Improving achieved memory bandwidth from C++ codes on Intel Xeon Phi Processor (Knights Landing). IXPUG Spring Meeting, Cambridge, UK, 2017.
+* Raman K, Deakin T, Price J, McIntosh-Smith S. Improving achieved memory bandwidth from C++ codes on Intel Xeon Phi Processor (Knights Landing). IXPUG Spring Meeting, Cambridge, UK, 2017.
 
-> Deakin T, Price J, McIntosh-Smith S. Portable methods for measuring cache hierarchy performance. 2017. Poster sessions presented at IEEE/ACM SuperComputing, Denver, United States.
+* Deakin T, Price J, McIntosh-Smith S. Portable methods for measuring cache hierarchy performance. 2017. Poster sessions presented at IEEE/ACM SuperComputing, Denver, United States.
 You can view the [Poster and Extended Abstract](http://sc17.supercomputing.org/SC17%20Archive/tech_poster/tech_poster_pages/post155.html)
 
 
