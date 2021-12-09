@@ -5,7 +5,7 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
-#include "SYCLStream.h"
+#include "SYCLStream2020.h"
 
 #include <iostream>
 
