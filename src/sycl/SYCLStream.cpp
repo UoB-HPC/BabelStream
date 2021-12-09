@@ -28,29 +28,7 @@ SYCLStream<T>::SYCLStream(const size_t ARRAY_SIZE, const int device_index)
   if (device_index >= devices.size())
     throw std::runtime_error("Invalid device index");
 
-<<<<<<< HEAD:SYCLStream.cpp
   sycl::device dev = devices[device_index];
-=======
-  // Check device can support FP64 if needed
-  if (sizeof(T) == sizeof(double))
-  {
-    if (dev.get_info<info::device::double_fp_config>().size() == 0) {
-      throw std::runtime_error("Device does not support double precision, please use --float");
-    }
-  }
-
-  // Determine sensible dot kernel NDRange configuration
-  if (dev.is_cpu())
-  {
-    dot_num_groups = dev.get_info<info::device::max_compute_units>();
-    dot_wgsize     = dev.get_info<info::device::native_vector_width_double>() * 2;
-  }
-  else
-  {
-    dot_num_groups = dev.get_info<info::device::max_compute_units>() * 4;
-    dot_wgsize     = dev.get_info<info::device::max_work_group_size>();
-  }
->>>>>>> main:src/sycl/SYCLStream.cpp
 
   // Print out device information
   std::cout << "Using SYCL device " << getDeviceName(device_index) << std::endl;

@@ -11,14 +11,10 @@
 #include <memory>
 
 #include "Stream.h"
-<<<<<<< HEAD:SYCLStream.h
 
 #include <sycl/sycl.hpp>
-=======
-#include "CL/sycl.hpp"
->>>>>>> main:src/sycl/SYCLStream.h
 
-#define IMPLEMENTATION_STRING "SYCL"
+#define IMPLEMENTATION_STRING "SYCL 2020"
 
 template <class T>
 class SYCLStream : public Stream<T>
