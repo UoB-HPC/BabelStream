@@ -1,5 +1,4 @@
-// Copyright (c) 2020 Tom Deakin
-// University of Bristol HPC
+// Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
 //
 // For full license terms please see the LICENSE file distributed with this
 // source code
@@ -7,14 +6,14 @@
 #pragma once
 
 #include <iostream>
-#include <vector>
-
+#include <stdexcept>
 #include "Stream.h"
 
-#define IMPLEMENTATION_STRING "C++20"
+#define IMPLEMENTATION_STRING "STD (data-oriented)"
+
 
 template <class T>
-class STD20Stream : public Stream<T>
+class STDDataStream : public Stream<T>
 {
   protected:
     // Size of arrays
@@ -25,9 +24,10 @@ class STD20Stream : public Stream<T>
     std::vector<T> b;
     std::vector<T> c;
 
+
   public:
-    STD20Stream(const int, int);
-    ~STD20Stream() = default;
+    STDDataStream(const int, int) noexcept;
+    ~STDDataStream() = default;
 
     virtual void copy() override;
     virtual void add() override;
@@ -38,6 +38,5 @@ class STD20Stream : public Stream<T>
 
     virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
-
 };
 

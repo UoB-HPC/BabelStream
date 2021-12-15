@@ -3,7 +3,7 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
-#include "STDStream.h"
+#include "STDDataStream.h"
 
 #include <algorithm>
 #include <execution>
@@ -16,13 +16,13 @@ auto exe_policy = std::execution::par_unseq;
 
 
 template <class T>
-STDStream<T>::STDStream(const int ARRAY_SIZE, int device)
-  noexcept : array_size{ARRAY_SIZE}, range(0, array_size), a(array_size), b(array_size), c(array_size) 
+STDDataStream<T>::STDDataStream(const int ARRAY_SIZE, int device)
+  noexcept : array_size{ARRAY_SIZE}, a(array_size), b(array_size), c(array_size)
 {
 }
 
 template <class T>
-void STDStream<T>::init_arrays(T initA, T initB, T initC)
+void STDDataStream<T>::init_arrays(T initA, T initB, T initC)
 {
   std::fill(exe_policy, a.begin(), a.end(), initA);
   std::fill(exe_policy, b.begin(), b.end(), initB);
@@ -30,7 +30,7 @@ void STDStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void STDStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
+void STDDataStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
   h_a = a;
   h_b = b;
@@ -38,54 +38,47 @@ void STDStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
 }
 
 template <class T>
-void STDStream<T>::copy()
+void STDDataStream<T>::copy()
 {
   // c[i] = a[i]
   std::copy(exe_policy, a.begin(), a.end(), c.begin());
 }
 
 template <class T>
-void STDStream<T>::mul()
+void STDDataStream<T>::mul()
 {
   //  b[i] = scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), b.begin(), [&, scalar = startScalar](int i) {
-    return scalar * c[i];
-  });
+  std::transform(exe_policy, c.begin(), c.end(), b.begin(), [scalar = startScalar](T ci){ return scalar*ci; });
 }
 
 template <class T>
-void STDStream<T>::add()
+void STDDataStream<T>::add()
 {
   //  c[i] = a[i] + b[i];
-  std::transform(exe_policy, range.begin(), range.end(), c.begin(), [&](int i) {
-    return a[i] + b[i];
-  });
+  std::transform(exe_policy, a.begin(), a.end(), b.begin(), c.begin(), std::plus<T>());
 }
 
 template <class T>
-void STDStream<T>::triad()
+void STDDataStream<T>::triad()
 {
   //  a[i] = b[i] + scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), a.begin(), [&, scalar = startScalar](int i) {
-    return b[i] + scalar * c[i];
-  });
+  std::transform(exe_policy, b.begin(), b.end(), c.begin(), a.begin(), [scalar = startScalar](T bi, T ci){ return bi+scalar*ci; });
 }
 
 template <class T>
-void STDStream<T>::nstream()
+void STDDataStream<T>::nstream()
 {
   //  a[i] += b[i] + scalar * c[i];
   //  Need to do in two stages with C++11 STL.
   //  1: a[i] += b[i]
   //  2: a[i] += scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), a.begin(), [&, scalar = startScalar](int i) {
-    return a[i] + b[i] + scalar * c[i];
-  });
+  std::transform(exe_policy, a.begin(), a.end(), b.begin(), a.begin(), [](T ai, T bi){ return ai + bi; });
+  std::transform(exe_policy, a.begin(), a.end(), c.begin(), a.begin(), [scalar = startScalar](T ai, T ci){ return ai + scalar*ci; });
 }
    
 
 template <class T>
-T STDStream<T>::dot()
+T STDDataStream<T>::dot()
 {
   // sum = 0; sum += a[i]*b[i]; return sum;
   return std::transform_reduce(exe_policy, a.begin(), a.end(), b.begin(), 0.0);
@@ -105,6 +98,6 @@ std::string getDeviceDriver(const int)
 {
   return std::string("Device driver unavailable");
 }
-template class STDStream<float>;
-template class STDStream<double>;
+template class STDDataStream<float>;
+template class STDDataStream<double>;
 

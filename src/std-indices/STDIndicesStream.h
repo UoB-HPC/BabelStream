@@ -9,11 +9,11 @@
 #include <stdexcept>
 #include "Stream.h"
 
-#define IMPLEMENTATION_STRING "STD"
+#define IMPLEMENTATION_STRING "STD (index-oriented)"
 
-template <typename N = size_t>
+template <typename N>
 class ranged {
-  N from, to; 
+  N from, to;
 public:
   ranged(N from, N to ): from(from), to(to) {}
     class iterator {
@@ -22,16 +22,21 @@ public:
       using difference_type = N;
       using value_type = N;
       using pointer = const N*;
-      using reference = N&;
+      using reference = const N&;
       using iterator_category = std::random_access_iterator_tag;
       explicit iterator(N _num = 0) : num(_num) {}
+
       iterator& operator++() { num++; return *this; }
       iterator operator++(int) { iterator retval = *this; ++(*this); return retval; }
+      iterator operator+(const value_type v) const { return iterator(num + v); }
+
       bool operator==(iterator other) const { return num == other.num; }
       bool operator!=(iterator other) const { return *this != other; }
+      bool operator<(iterator other) const { return num < other.num; }
+
       reference operator*() const { return num;}
       difference_type operator-(const iterator &it) const { return num - it.num; }
-      value_type operator[](const difference_type &i) const { return num+i; }
+      value_type operator[](const difference_type &i) const { return num + i; }
 
     };
     iterator begin() { return iterator(from); }
@@ -39,7 +44,7 @@ public:
 };
 
 template <class T>
-class STDStream : public Stream<T>
+class STDIndicesStream : public Stream<T>
 {
   protected:
     // Size of arrays
@@ -55,8 +60,8 @@ class STDStream : public Stream<T>
 
 
   public:
-    STDStream(const int, int) noexcept;
-    ~STDStream() = default;
+    STDIndicesStream(const int, int) noexcept;
+    ~STDIndicesStream() = default;
 
     virtual void copy() override;
     virtual void add() override;
