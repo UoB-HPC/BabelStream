@@ -74,17 +74,14 @@ class STDIndicesStream : public Stream<T>
 #if defined(ONEDPL_USE_DPCPP_BACKEND)
     // SYCL oneDPL backend
     using ExecutionPolicy = oneapi::dpl::execution::device_policy<>;
-    using Allocator = sycl::usm_allocator<T, sycl::usm::alloc::shared>;
     using IteratorType = oneapi::dpl::counting_iterator<int>;
 #elif defined(USE_ONEDPL)
     // every other non-SYCL oneDPL backend (i.e TBB, OMP)
     using ExecutionPolicy = decltype(oneapi::dpl::execution::par_unseq);
-    using Allocator = std::allocator<T>;
     using IteratorType = oneapi::dpl::counting_iterator<int>;
 #else
     // normal std execution policies
     using ExecutionPolicy = decltype(std::execution::par_unseq);
-    using Allocator = std::allocator<T>;
     using IteratorType = ranged_iterator<int>;
 #endif
 
@@ -92,17 +89,16 @@ class STDIndicesStream : public Stream<T>
     IteratorType range_end;
 
     ExecutionPolicy exe_policy{};
-    Allocator allocator;
 
     // Device side pointers
-    std::vector<T, Allocator> a;
-    std::vector<T, Allocator> b;
-    std::vector<T, Allocator> c;
+    T* a;
+    T* b;
+    T* c;
 
 
   public:
     STDIndicesStream(const int, int);
-    ~STDIndicesStream() = default;
+    ~STDIndicesStream();
 
     virtual void copy() override;
     virtual void add() override;

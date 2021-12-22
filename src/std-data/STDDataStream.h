@@ -46,29 +46,25 @@ class STDDataStream : public Stream<T>
 #if defined(ONEDPL_USE_DPCPP_BACKEND)
     // SYCL oneDPL backend
     using ExecutionPolicy = oneapi::dpl::execution::device_policy<>;
-    using Allocator = sycl::usm_allocator<T, sycl::usm::alloc::shared>;
 #elif defined(USE_ONEDPL)
     // every other non-SYCL oneDPL backend (i.e TBB, OMP)
     using ExecutionPolicy = decltype(oneapi::dpl::execution::par_unseq);
-    using Allocator = std::allocator<T>;
 #else
     // normal std execution policies
     using ExecutionPolicy = decltype(std::execution::par_unseq);
-    using Allocator = std::allocator<T>;
 #endif
 
     ExecutionPolicy exe_policy{};
-    Allocator allocator;
 
     // Device side pointers
-    std::vector<T, Allocator> a;
-    std::vector<T, Allocator> b;
-    std::vector<T, Allocator> c;
+    T* a;
+    T* b;
+    T* c;
 
 
   public:
     STDDataStream(const int, int);
-    ~STDDataStream() = default;
+    ~STDDataStream();
 
     virtual void copy() override;
     virtual void add() override;
