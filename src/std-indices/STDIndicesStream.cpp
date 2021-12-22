@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Tom Deakin
+// Copyright (c) 2021 Tom Deakin and Tom Lin
 // University of Bristol HPC
 //
 // For full license terms please see the LICENSE file distributed with this

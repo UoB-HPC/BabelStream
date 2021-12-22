@@ -1,4 +1,5 @@
 // Copyright (c) 2020 NVIDIA CORPORATION. All rights reserved.
+// Updated 2021 by University of Bristol
 //
 // For full license terms please see the LICENSE file distributed with this
 // source code
