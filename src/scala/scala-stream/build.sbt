@@ -4,7 +4,7 @@ lazy val root = (project in file("."))
   .enablePlugins(NativeImagePlugin)
   .settings(
     scalaVersion := "3.0.0",
-    version := "3.4.0",
+    version := "4.0",
     organization := "uk.ac.bristol.uob-hpc",
     organizationName := "University of Bristol",
     Compile / mainClass := mainCls,
