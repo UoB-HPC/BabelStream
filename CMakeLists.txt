@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 project(BabelStream VERSION 3.5 LANGUAGES CXX)
 
+# uncomment for debugging build issues:
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # some nicer defaults for standard C++
@@ -22,45 +23,6 @@ macro(setup_opencl_header_includes)
         set(OpenCL_INCLUDE_DIR ${opencl_header_SOURCE_DIR})
     endif ()
 endmacro()
-
-#set(MODEL SYCL)
-#set(SYCL_COMPILER COMPUTECPP)
-#set(SYCL_COMPILER_DIR /home/tom/Desktop/computecpp_archive/ComputeCpp-CE-2.3.0-x86_64-linux-gnu)
-#set(MODEL RAJA)
-#set(RAJA_IN_TREE /home/tom/Downloads/RAJA-v0.13.0/)
-#set(ENABLE_CUDA ON)
-#set(TARGET NVIDIA)
-#set(CUDA_TOOLKIT_ROOT_DIR /opt/cuda-11.2)
-#set(CUDA_ARCH sm_70)
-#set(BLT_DIR /home/tom/Downloads/blt-0.3.6/)
-
-#set(MODEL std-data)
-#set(CMAKE_CXX_COMPILER /home/tom/Downloads/nvhpc_2021_219_Linux_x86_64_cuda_multi/install_components/Linux_x86_64/21.9/compilers/bin/nvc++)
-#set(NVHPC_OFFLOAD "cuda11.4,cc61")
-
-#set(MODEL CUDA)
-#set(ARCH  sm_70)
-#set(CMAKE_CUDA_COMPILER /opt/cuda-11.2/bin/nvcc)
-
-#set(MODEL OCL)
-#set(OpenCL_LIBRARY /opt/rocm-4.0.0/opencl/lib/libOpenCL.so)
-#set(OpenCL_INCLUDE_DIR /opt/rocm-4.0.0/opencl/lib)
-#set(RELEASE_FLAGS -Ofast)
-#set(CXX_EXTRA_FLAGS -O2)
-
-#set(CMAKE_CXX_COMPILER /usr/lib/aomp/bin/clang++)
-#set(MODEL omp)
-##set(OFFLOAD "AMD:gfx803")
-#set(OFFLOAD "NVIDIA:sm_35")
-#set(CXX_EXTRA_FLAGS --cuda-path=/opt/cuda-10.2/)
-
-#set(OFFLOAD "AMD:_70")
-#set(CXX_EXTRA_FLAGS --cuda-path=/opt/cuda-10.2/ --gcc-toolchain=/home/tom/spack/opt/spack/linux-fedora33-zen2/gcc-10.2.1/gcc-8.3.0-latmjo2hl2yv53255xkwko7k3y7bx2vv)
-#set(CXX_EXTRA_LINKER_FLAGS  )
-#set(MODEL HIP)
-
-#set(MODEL KOKKOS)
-#set(KOKKOS_IN_TREE /home/tom/Downloads/kokkos-3.3.00/)
 
 # the final executable name
 set(EXE_NAME babelstream)

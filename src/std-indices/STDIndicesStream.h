@@ -1,4 +1,5 @@
-// Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
+// Copyright (c) 2020 Tom Deakin
+// University of Bristol HPC
 //
 // For full license terms please see the LICENSE file distributed with this
 // source code
@@ -11,6 +12,10 @@
 
 #define IMPLEMENTATION_STRING "STD (index-oriented)"
 
+
+// A lightweight counting iterator which will be used by the STL algorithms
+// NB: C++ <= 17 doesn't have this built-in, and it's only added later in ranges-v3 (C++2a) which this
+// implementation doesn't target
 template <typename N>
 class ranged {
   N from, to;

@@ -1,4 +1,5 @@
-// Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
+// Copyright (c) 2020 Tom Deakin
+// University of Bristol HPC
 //
 // For full license terms please see the LICENSE file distributed with this
 // source code
