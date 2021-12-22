@@ -1,4 +1,5 @@
-// Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
+// Copyright (c) 2020 NVIDIA CORPORATION. All rights reserved.
+// Updated 2021 by University of Bristol
 //
 // For full license terms please see the LICENSE file distributed with this
 // source code
@@ -9,23 +10,25 @@
 #include <stdexcept>
 #include "Stream.h"
 
-#define IMPLEMENTATION_STRING "STD"
+#define IMPLEMENTATION_STRING "STD (data-oriented)"
+
 
 template <class T>
-class STDStream : public Stream<T>
+class STDDataStream : public Stream<T>
 {
   protected:
     // Size of arrays
     int array_size;
 
     // Device side pointers
-    T *a;
-    T *b;
-    T *c;
+    std::vector<T> a;
+    std::vector<T> b;
+    std::vector<T> c;
+
 
   public:
-    STDStream(const int, int) noexcept;
-    ~STDStream();
+    STDDataStream(const int, int) noexcept;
+    ~STDDataStream() = default;
 
     virtual void copy() override;
     virtual void add() override;

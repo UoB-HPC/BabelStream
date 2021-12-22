@@ -4,14 +4,14 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
-#include "STD20Stream.hpp"
+#include "STDRangesStream.hpp"
 
 #include <algorithm>
 #include <execution>
 #include <ranges>
 
 template <class T>
-STD20Stream<T>::STD20Stream(const int ARRAY_SIZE, int device)
+STDRangesStream<T>::STDRangesStream(const int ARRAY_SIZE, int device)
  : array_size{ARRAY_SIZE}
 {
   a = std::vector<T>(array_size);
@@ -20,7 +20,7 @@ STD20Stream<T>::STD20Stream(const int ARRAY_SIZE, int device)
 }
 
 template <class T>
-void STD20Stream<T>::init_arrays(T initA, T initB, T initC)
+void STDRangesStream<T>::init_arrays(T initA, T initB, T initC)
 {
   std::for_each_n(
     std::execution::par_unseq,
@@ -34,7 +34,7 @@ void STD20Stream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void STD20Stream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
+void STDRangesStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
   // Element-wise copy.
   h_a = a;
@@ -43,7 +43,7 @@ void STD20Stream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::
 }
 
 template <class T>
-void STD20Stream<T>::copy()
+void STDRangesStream<T>::copy()
 {
   std::for_each_n(
     std::execution::par_unseq,
@@ -55,7 +55,7 @@ void STD20Stream<T>::copy()
 }
 
 template <class T>
-void STD20Stream<T>::mul()
+void STDRangesStream<T>::mul()
 {
   const T scalar = startScalar;
 
@@ -69,7 +69,7 @@ void STD20Stream<T>::mul()
 }
 
 template <class T>
-void STD20Stream<T>::add()
+void STDRangesStream<T>::add()
 {
   std::for_each_n(
     std::execution::par_unseq,
@@ -81,7 +81,7 @@ void STD20Stream<T>::add()
 }
 
 template <class T>
-void STD20Stream<T>::triad()
+void STDRangesStream<T>::triad()
 {
   const T scalar = startScalar;
 
@@ -95,7 +95,7 @@ void STD20Stream<T>::triad()
 }
 
 template <class T>
-void STD20Stream<T>::nstream()
+void STDRangesStream<T>::nstream()
 {
   const T scalar = startScalar;
 
@@ -109,7 +109,7 @@ void STD20Stream<T>::nstream()
 }
 
 template <class T>
-T STD20Stream<T>::dot()
+T STDRangesStream<T>::dot()
 {
   // sum += a[i] * b[i];
   return
@@ -133,6 +133,6 @@ std::string getDeviceDriver(const int)
   return std::string("Device driver unavailable");
 }
 
-template class STD20Stream<float>;
-template class STD20Stream<double>;
+template class STDRangesStream<float>;
+template class STDRangesStream<double>;
 

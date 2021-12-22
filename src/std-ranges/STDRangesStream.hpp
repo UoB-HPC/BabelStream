@@ -11,10 +11,10 @@
 
 #include "Stream.h"
 
-#define IMPLEMENTATION_STRING "C++20"
+#define IMPLEMENTATION_STRING "STD C++ ranges"
 
 template <class T>
-class STD20Stream : public Stream<T>
+class STDRangesStream : public Stream<T>
 {
   protected:
     // Size of arrays
@@ -26,8 +26,8 @@ class STD20Stream : public Stream<T>
     std::vector<T> c;
 
   public:
-    STD20Stream(const int, int);
-    ~STD20Stream() = default;
+    STDRangesStream(const int, int);
+    ~STDRangesStream() = default;
 
     virtual void copy() override;
     virtual void add() override;
