@@ -6,34 +6,11 @@
 
 #pragma once
 
+#include <iostream>
+#include <stdexcept>
 #include "Stream.h"
 
 #define IMPLEMENTATION_STRING "STD (data-oriented)"
-
-#ifdef USE_ONEDPL
-    #define PSTL_USAGE_WARNINGS 1
-
-    #include <oneapi/dpl/execution>
-    #include <oneapi/dpl/iterator>
-    #include <oneapi/dpl/algorithm>
-    #include <oneapi/dpl/memory>
-    #include <oneapi/dpl/numeric>
-
-    #ifdef ONEDPL_USE_DPCPP_BACKEND
-        #include <CL/sycl.hpp>
-    #endif
-#else
-    #include <algorithm>
-    #include <execution>
-    #include <numeric>
-
-    #if defined(ONEDPL_USE_DPCPP_BACKEND) || \
-        defined(ONEDPL_USE_TBB_BACKEND)   || \
-        defined(ONEDPL_USE_OPENMP_BACKEND)
-        #error oneDPL missing (ONEDPL_VERSION_MAJOR not defined) but backend (ONEDPL_USE_*_BACKEND) specified
-    #endif
-
-#endif
 
 
 template <class T>
@@ -43,31 +20,14 @@ class STDDataStream : public Stream<T>
     // Size of arrays
     int array_size;
 
-#if defined(ONEDPL_USE_DPCPP_BACKEND)
-    // SYCL oneDPL backend
-    using ExecutionPolicy = oneapi::dpl::execution::device_policy<>;
-    using Allocator = sycl::usm_allocator<T, sycl::usm::alloc::shared>;
-#elif defined(USE_ONEDPL)
-    // every other non-SYCL oneDPL backend (i.e TBB, OMP)
-    using ExecutionPolicy = decltype(oneapi::dpl::execution::par_unseq);
-    using Allocator = std::allocator<T>;
-#else
-    // normal std execution policies
-    using ExecutionPolicy = decltype(std::execution::par_unseq);
-    using Allocator = std::allocator<T>;
-#endif
-
-    ExecutionPolicy exe_policy{};
-    Allocator allocator;
-
     // Device side pointers
-    std::vector<T, Allocator> a;
-    std::vector<T, Allocator> b;
-    std::vector<T, Allocator> c;
+    std::vector<T> a;
+    std::vector<T> b;
+    std::vector<T> c;
 
 
   public:
-    STDDataStream(const int, int);
+    STDDataStream(const int, int) noexcept;
     ~STDDataStream() = default;
 
     virtual void copy() override;

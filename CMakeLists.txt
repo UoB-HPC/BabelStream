@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 project(BabelStream VERSION 3.5 LANGUAGES CXX)
 
 # uncomment for debugging build issues:
-set(CMAKE_VERBOSE_MAKEFILE ON)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # some nicer defaults for standard C++
 set(CMAKE_CXX_EXTENSIONS OFF)

@@ -5,31 +5,21 @@
 // source code
 
 #include "STDDataStream.h"
-#include <iostream>
+
+#include <algorithm>
+#include <execution>
+#include <numeric>
+
+// There are three execution policies:
+// auto exe_policy = std::execution::seq;
+// auto exe_policy = std::execution::par;
+auto exe_policy = std::execution::par_unseq;
+
 
 template <class T>
-STDDataStream<T>::STDDataStream(const int ARRAY_SIZE, int device) : array_size{ARRAY_SIZE},
-#if defined(ONEDPL_USE_DPCPP_BACKEND)
-    exe_policy(oneapi::dpl::execution::make_device_policy(cl::sycl::default_selector{})),
-    allocator(exe_policy.queue()),
-    a(array_size, allocator), b(array_size, allocator), c(array_size, allocator)
-#else
-    a(array_size), b(array_size),c(array_size)
-#endif
+STDDataStream<T>::STDDataStream(const int ARRAY_SIZE, int device)
+  noexcept : array_size{ARRAY_SIZE}, a(array_size), b(array_size), c(array_size)
 {
-#if USE_ONEDPL
-  std::cout << "Using oneDPL backend: ";
-  #if defined(ONEDPL_USE_DPCPP_BACKEND)
-    std::cout << "SYCL USM (device=" << exe_policy.queue().get_device().get_info<sycl::info::device::name>() << ")";
-  #elif defined(ONEDPL_USE_TBB_BACKEND)
-    std::cout << "TBB";
-  #elif defined(ONEDPL_USE_OPENMP_BACKEND)
-    std::cout << "OpenMP";
-  #else
-    std::cout << "Default";
-  #endif
-  std::cout << std::endl;
-#endif
 }
 
 template <class T>
@@ -43,10 +33,9 @@ void STDDataStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void STDDataStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
-  // operator = is deleted because h_* vectors may have different allocator type compared to ours
-  std::copy(a.begin(), a.end(), h_a.begin());
-  std::copy(b.begin(), b.end(), h_b.begin());
-  std::copy(c.begin(), c.end(), h_c.begin());
+  h_a = a;
+  h_b = b;
+  h_c = c;
 }
 
 template <class T>
