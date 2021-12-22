@@ -1,10 +1,10 @@
 # This file is machine-generated - editing it directly is not advised
 
 [[AMDGPU]]
-deps = ["AbstractFFTs", "Adapt", "BinaryProvider", "CEnum", "GPUArrays", "GPUCompiler", "HIP_jll", "LLVM", "Libdl", "LinearAlgebra", "MacroTools", "Pkg", "Printf", "ROCmDeviceLibs_jll", "Random", "Requires", "Setfield", "hsa_rocr_jll"]
-git-tree-sha1 = "d64c97447a753cfbf0158d6c7be513f34526d559"
+deps = ["AbstractFFTs", "Adapt", "BinaryProvider", "CEnum", "GPUArrays", "GPUCompiler", "HIP_jll", "LLVM", "Libdl", "LinearAlgebra", "MacroTools", "Pkg", "Printf", "ROCmDeviceLibs_jll", "Random", "Requires", "Setfield", "Statistics", "hsa_rocr_jll"]
+git-tree-sha1 = "d59f1cf3f90ae6cf6626e8a21f337850cb3792f7"
 uuid = "21141c5a-9bdb-4563-92ae-f87d6854732e"
-version = "0.2.12"
+version = "0.2.17"
 
 [[AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -80,10 +80,10 @@ deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
 [[GPUArrays]]
-deps = ["AbstractFFTs", "Adapt", "LinearAlgebra", "Printf", "Random", "Serialization", "Statistics"]
-git-tree-sha1 = "ececbf05f8904c92814bdbd0aafd5540b0bf2e9a"
+deps = ["Adapt", "LinearAlgebra", "Printf", "Random", "Serialization", "Statistics"]
+git-tree-sha1 = "7772508f17f1d482fe0df72cabc5b55bec06bbe0"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "7.0.1"
+version = "8.1.2"
 
 [[GPUCompiler]]
 deps = ["ExprTools", "InteractiveUtils", "LLVM", "Libdl", "Logging", "TimerOutputs", "UUIDs"]
@@ -109,15 +109,15 @@ version = "1.3.0"
 
 [[LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Printf", "Unicode"]
-git-tree-sha1 = "23a47d417a3cd9c2e73c854bac7dd4731c105ef7"
+git-tree-sha1 = "7cc22e69995e2329cc047a879395b2b74647ab5f"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "4.4.0"
+version = "4.7.0"
 
 [[LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "9c360e5ce980b88bb31a7b086dbb19469008154b"
+git-tree-sha1 = "c5fc4bef251ecd37685bea1c4068a9cfa41e8b9a"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.10+0"
+version = "0.0.13+0"
 
 [[LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -171,9 +171,9 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[MacroTools]]
 deps = ["Markdown", "Random"]
-git-tree-sha1 = "0fb723cd8c45858c22169b2e42269e53271a6df7"
+git-tree-sha1 = "3d3e902b31198a27340d0bf00d6ac452866021cf"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.5.7"
+version = "0.5.9"
 
 [[Markdown]]
 deps = ["Base64"]
@@ -202,9 +202,9 @@ version = "1.4.1"
 
 [[Parameters]]
 deps = ["OrderedCollections", "UnPack"]
-git-tree-sha1 = "2276ac65f1e236e0a6ea70baff3f62ad4c625345"
+git-tree-sha1 = "34c0e9ad262e5f7fc75b10a9952ca7692cfc5fbe"
 uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
-version = "0.12.2"
+version = "0.12.3"
 
 [[Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
@@ -248,9 +248,9 @@ uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[Requires]]
 deps = ["UUIDs"]
-git-tree-sha1 = "4036a3bd08ac7e968e27c203d45f5fff15020621"
+git-tree-sha1 = "8f82019e525f4d5c669692772a6f4b0a58b06a6a"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
-version = "1.1.3"
+version = "1.2.0"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -290,9 +290,9 @@ version = "1.0.1"
 
 [[TimerOutputs]]
 deps = ["ExprTools", "Printf"]
-git-tree-sha1 = "209a8326c4f955e2442c07b56029e88bb48299c7"
+git-tree-sha1 = "7cb456f358e8f9d102a8b25e8dfedf58fa5689bc"
 uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
-version = "0.5.12"
+version = "0.5.13"
 
 [[UUIDs]]
 deps = ["Random", "SHA"]
@@ -396,9 +396,9 @@ version = "4.0.0+0"
 
 [[hsakmt_roct_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "NUMA_jll", "Pkg"]
-git-tree-sha1 = "80e0c9940e15cfd6f1f1e9d9f3953ec4d48d3d4a"
+git-tree-sha1 = "ea54f6be23c6d25613a0872ec23dc5a0b77b4a00"
 uuid = "1cecccd7-a9b6-5045-9cdc-a44c19b16d76"
-version = "4.0.0+0"
+version = "4.2.0+0"
 
 [[nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
