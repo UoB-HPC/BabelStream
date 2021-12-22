@@ -5,21 +5,32 @@
 // source code
 
 #include "STDIndicesStream.h"
-
-#include <algorithm>
-#include <execution>
-#include <numeric>
-
-// There are three execution policies:
-// auto exe_policy = std::execution::seq;
-// auto exe_policy = std::execution::par;
-auto exe_policy = std::execution::par_unseq;
-
+#include <iostream>
 
 template <class T>
-STDIndicesStream<T>::STDIndicesStream(const int ARRAY_SIZE, int device)
-  noexcept : array_size{ARRAY_SIZE}, range(0, array_size), a(array_size), b(array_size), c(array_size) 
+STDIndicesStream<T>::STDIndicesStream(const int ARRAY_SIZE, int device) :
+array_size{ARRAY_SIZE}, range_start(0), range_end(array_size),
+#if defined(ONEDPL_USE_DPCPP_BACKEND)
+exe_policy(oneapi::dpl::execution::make_device_policy(cl::sycl::default_selector{})),
+    allocator(exe_policy.queue()),
+    a(array_size, allocator), b(array_size, allocator), c(array_size, allocator)
+#else
+a(array_size), b(array_size),c(array_size)
+#endif
 {
+#if USE_ONEDPL
+    std::cout << "Using oneDPL backend: ";
+  #if defined(ONEDPL_USE_DPCPP_BACKEND)
+    std::cout << "SYCL USM (device=" << exe_policy.queue().get_device().get_info<sycl::info::device::name>() << ")";
+  #elif defined(ONEDPL_USE_TBB_BACKEND)
+    std::cout << "TBB";
+  #elif defined(ONEDPL_USE_OPENMP_BACKEND)
+    std::cout << "OpenMP";
+  #else
+    std::cout << "Default";
+  #endif
+  std::cout << std::endl;
+#endif
 }
 
 template <class T>
@@ -33,10 +44,12 @@ void STDIndicesStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void STDIndicesStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
-  h_a = a;
-  h_b = b;
-  h_c = c;
+  // operator = is deleted because h_* vectors may have different allocator type compared to ours
+  std::copy(a.begin(), a.end(), h_a.begin());
+  std::copy(b.begin(), b.end(), h_b.begin());
+  std::copy(c.begin(), c.end(), h_c.begin());
 }
+
 
 template <class T>
 void STDIndicesStream<T>::copy()
@@ -49,7 +62,7 @@ template <class T>
 void STDIndicesStream<T>::mul()
 {
   //  b[i] = scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), b.begin(), [&, scalar = startScalar](int i) {
+  std::transform(exe_policy, range_start, range_end, b.begin(), [&, scalar = startScalar](int i) {
     return scalar * c[i];
   });
 }
@@ -58,7 +71,7 @@ template <class T>
 void STDIndicesStream<T>::add()
 {
   //  c[i] = a[i] + b[i];
-  std::transform(exe_policy, range.begin(), range.end(), c.begin(), [&](int i) {
+  std::transform(exe_policy, range_start, range_end, c.begin(), [&](int i) {
     return a[i] + b[i];
   });
 }
@@ -67,7 +80,7 @@ template <class T>
 void STDIndicesStream<T>::triad()
 {
   //  a[i] = b[i] + scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), a.begin(), [&, scalar = startScalar](int i) {
+  std::transform(exe_policy, range_start, range_end, a.begin(), [&, scalar = startScalar](int i) {
     return b[i] + scalar * c[i];
   });
 }
@@ -79,7 +92,7 @@ void STDIndicesStream<T>::nstream()
   //  Need to do in two stages with C++11 STL.
   //  1: a[i] += b[i]
   //  2: a[i] += scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), a.begin(), [&, scalar = startScalar](int i) {
+  std::transform(exe_policy, range_start, range_end, a.begin(), [&, scalar = startScalar](int i) {
     return a[i] + b[i] + scalar * c[i];
   });
 }
