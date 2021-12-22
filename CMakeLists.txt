@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
-project(BabelStream VERSION 3.5 LANGUAGES CXX)
+project(BabelStream VERSION 4.0 LANGUAGES CXX)
 
 # uncomment for debugging build issues:
 #set(CMAKE_VERBOSE_MAKEFILE ON)
