@@ -22,7 +22,7 @@
 #endif
 
 #define TBSIZE 1024
-#define DOT_NUM_BLOCKS 256
+extern int DOT_NUM_BLOCKS;
 
 template <class T>
 class CUDAStream : public Stream<T>

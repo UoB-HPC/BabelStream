@@ -8,6 +8,8 @@
 
 #include "CUDAStream.h"
 
+int DOT_NUM_BLOCKS;
+
 void check_error(void)
 {
   cudaError_t err = cudaGetLastError();
@@ -38,10 +40,16 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
     throw std::runtime_error("Invalid device index");
   cudaSetDevice(device_index);
   check_error();
+  cudaDeviceProp prop;
+  cudaGetDeviceProperties(&prop, device_index);
+  check_error();
 
   // Print out device information
   std::cout << "Using CUDA device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+  DOT_NUM_BLOCKS = 4 * prop.multiProcessorCount;
+  std::cout << "dot " << DOT_NUM_BLOCKS << " " << TBSIZE << " " << array_size
+    << "\n";
 
   array_size = ARRAY_SIZE;
 

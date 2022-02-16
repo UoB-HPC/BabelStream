@@ -45,6 +45,8 @@
 #include "SYCLStream.h"
 #elif defined(SYCL2020)
 #include "SYCLStream2020.h"
+#elif defined(SYCLUSM)
+#include "SYCLStreamUSM.h"
 #elif defined(OMP)
 #include "OMPStream.h"
 #endif
@@ -284,7 +286,7 @@ void run()
   // Use the OpenACC implementation
   stream = new ACCStream<T>(ARRAY_SIZE, deviceIndex);
 
-#elif defined(SYCL) || defined(SYCL2020)
+#elif defined(SYCL) || defined(SYCL2020) || defined(SYCLUSM)
   // Use the SYCL implementation
   stream = new SYCLStream<T>(ARRAY_SIZE, deviceIndex);
 
