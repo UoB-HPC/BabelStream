@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
-- None
+- Fix CUDA memory limit check.
 
 ## [v4.0] - 2021-12-22
 
