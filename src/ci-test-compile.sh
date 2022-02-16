@@ -284,10 +284,17 @@ build_computecpp() {
   -DSYCL_COMPILER=COMPUTECPP \
   -DSYCL_COMPILER_DIR=${COMPUTECPP_DIR:?} \
   -DOpenCL_LIBRARY=${OCL_LIB:?}"
+  run_build computecpp_build "compute++" sycl2020 "-DCMAKE_CXX_COMPILER=${GCC_CXX:?} \
+  -DSYCL_COMPILER=COMPUTECPP \
+  -DSYCL_COMPILER_DIR=${COMPUTECPP_DIR:?} \
+  -DOpenCL_LIBRARY=${OCL_LIB:?}"
 }
 
 build_dpcpp() {
   run_build intel_build "${DPCPP_DIR:?}" sycl "-DCMAKE_CXX_COMPILER=${GCC_CXX:?} \
+  -DSYCL_COMPILER=DPCPP \
+  -DSYCL_COMPILER_DIR=${DPCPP_DIR:?}"
+   run_build intel_build "${DPCPP_DIR:?}" sycl2020 "-DCMAKE_CXX_COMPILER=${GCC_CXX:?} \
   -DSYCL_COMPILER=DPCPP \
   -DSYCL_COMPILER_DIR=${DPCPP_DIR:?}"
 
@@ -298,6 +305,9 @@ build_dpcpp() {
 
 build_hipsycl() {
   run_build hipsycl_build "syclcc" sycl "
+  -DSYCL_COMPILER=HIPSYCL \
+  -DSYCL_COMPILER_DIR=${HIPSYCL_DIR:?}"
+  run_build hipsycl_build "syclcc" sycl2020 "
   -DSYCL_COMPILER=HIPSYCL \
   -DSYCL_COMPILER_DIR=${HIPSYCL_DIR:?}"
 }
