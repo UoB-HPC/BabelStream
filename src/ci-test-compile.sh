@@ -115,7 +115,7 @@ run_build() {
 # GCC_STD_PAR_LIB="tbb"
 # CLANG_STD_PAR_LIB="tbb"
 # GCC_OMP_OFFLOAD_AMD=false
-# GCC_OMP_OFFLOAD_NVIDIA=true
+# GCC_OMP_OFFLOAD_NVIDIA=false
 # CLANG_OMP_OFFLOAD_AMD=false
 # CLANG_OMP_OFFLOAD_NVIDIA=false
 ###
@@ -136,8 +136,9 @@ build_gcc() {
   fi
 
   # some distributions like Ubuntu bionic implements std par with TBB, so conditionally link it here
-  run_build $name "${GCC_CXX:?}" std "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
-  run_build $name "${GCC_CXX:?}" std20 "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
+  run_build $name "${GCC_CXX:?}" std-data "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
+  run_build $name "${GCC_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
+  run_build $name "${GCC_CXX:?}" std-ranges "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
 
   run_build $name "${GCC_CXX:?}" tbb "$cxx -DONE_TBB_DIR=$TBB_LIB"
   run_build $name "${GCC_CXX:?}" tbb "$cxx" # build TBB again with the system TBB
@@ -211,7 +212,8 @@ build_clang() {
   run_build $name "${CLANG_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DMEM=PAGEFAULT"
   run_build $name "${CLANG_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
   run_build $name "${CLANG_CXX:?}" ocl "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
-  run_build $name "${CLANG_CXX:?}" std "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
+  run_build $name "${CLANG_CXX:?}" std-data "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
+  run_build $name "${CLANG_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
   # run_build $name "${LANG_CXX:?}" std20 "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" # not yet supported
   run_build $name "${CLANG_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?}"
   run_build $name "${CLANG_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH"
@@ -219,7 +221,8 @@ build_clang() {
   run_build $name "${CLANG_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DMEM=PAGEFAULT"
   run_build $name "${CLANG_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
   run_build $name "${CLANG_CXX:?}" ocl "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
-  run_build $name "${CLANG_CXX:?}" std "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
+  run_build $name "${CLANG_CXX:?}" std-data "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
+  run_build $name "${CLANG_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
   # run_build $name "${LANG_CXX:?}" std20 "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" # not yet supported
 
   run_build $name "${CLANG_CXX:?}" tbb "$cxx -DONE_TBB_DIR=$TBB_LIB"
@@ -232,7 +235,8 @@ build_clang() {
 build_nvhpc() {
   local name="nvhpc_build"
   local cxx="-DCMAKE_CXX_COMPILER=${NVHPC_NVCXX:?}"
-  run_build $name "${NVHPC_NVCXX:?}" std "$cxx -DNVHPC_OFFLOAD=$NV_ARCH_CCXY"
+  run_build $name "${NVHPC_NVCXX:?}" std-data "$cxx -DNVHPC_OFFLOAD=$NV_ARCH_CCXY"
+  run_build $name "${NVHPC_NVCXX:?}" std-indices "$cxx -DNVHPC_OFFLOAD=$NV_ARCH_CCXY"
   run_build $name "${NVHPC_NVCXX:?}" acc "$cxx -DTARGET_DEVICE=gpu -DTARGET_PROCESSOR=px -DCUDA_ARCH=$NV_ARCH_CCXY"
   run_build $name "${NVHPC_NVCXX:?}" acc "$cxx -DTARGET_DEVICE=multicore -DTARGET_PROCESSOR=zen"
 }

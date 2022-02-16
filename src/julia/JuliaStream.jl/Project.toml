@@ -1,7 +1,7 @@
 name = "JuliaStream"
 uuid = "1bdcc9b7-f5ed-4705-bc7b-be1b748ec681"
 authors = ["Wei-Chen Lin <wl14928@bristol.ac.uk>"]
-version = "3.4.0"
+version = "4.0"
 
 [deps]
 AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"

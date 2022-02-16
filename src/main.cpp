@@ -15,16 +15,18 @@
 #include <iomanip>
 #include <cstring>
 
-#define VERSION_STRING "3.4"
+#define VERSION_STRING "4.0"
 
 #include "Stream.h"
 
 #if defined(CUDA)
 #include "CUDAStream.h"
-#elif defined(STD)
-#include "STDStream.h"
-#elif defined(STD20)
-#include "STD20Stream.hpp"
+#elif defined(STD_DATA)
+#include "STDDataStream.h"
+#elif defined(STD_INDICES)
+#include "STDIndicesStream.h"
+#elif defined(STD_RANGES)
+#include "STDRangesStream.hpp"
 #elif defined(TBB)
 #include "TBBStream.hpp"
 #elif defined(THRUST)
@@ -266,13 +268,17 @@ void run()
   // Use the Kokkos implementation
   stream = new KokkosStream<T>(ARRAY_SIZE, deviceIndex);
 
-#elif defined(STD)
-  // Use the STD implementation
-  stream = new STDStream<T>(ARRAY_SIZE, deviceIndex);
+#elif defined(STD_DATA)
+  // Use the C++ STD data-oriented implementation
+  stream = new STDDataStream<T>(ARRAY_SIZE, deviceIndex);
 
-#elif defined(STD20)
-  // Use the C++20 implementation
-  stream = new STD20Stream<T>(ARRAY_SIZE, deviceIndex);
+#elif defined(STD_INDICES)
+  // Use the C++ STD index-oriented implementation
+  stream = new STDIndicesStream<T>(ARRAY_SIZE, deviceIndex);
+
+#elif defined(STD_RANGES)
+  // Use the C++ STD ranges implementation
+  stream = new STDRangesStream<T>(ARRAY_SIZE, deviceIndex);
 
 #elif defined(TBB)
   // Use the C++20 implementation

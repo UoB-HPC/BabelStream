@@ -1,7 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## Unreleased
+- None
+
+## [v4.0] - 2021-12-22
 
 ### Added
 - New implementation using the C++ parallel STL (C++17).
