@@ -8,8 +8,8 @@
 #include "HIPStream.h"
 #include "hip/hip_runtime.h"
 
-#define TBSIZE 1024
-#define DOT_NUM_BLOCKS 256
+#define TBSIZE 256
+int DOT_NUM_BLOCKS;
 
 void check_error(void)
 {
@@ -42,9 +42,16 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
   hipSetDevice(device_index);
   check_error();
 
+  // get properties
+  hipDeviceProp_t props;
+  hipGetDeviceProperties(&props, 0);
+  DOT_NUM_BLOCKS = props.multiProcessorCount * 4;
+
   // Print out device information
   std::cout << "Using HIP device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+  std::cout << "DOT_NUM_BLOCKS: " << DOT_NUM_BLOCKS << " TBSIZE " <<
+	  TBSIZE << "\n";
 
   array_size = ARRAY_SIZE;
 
@@ -52,8 +59,6 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
   sums = (T*)malloc(sizeof(T) * DOT_NUM_BLOCKS);
 
   // Check buffers fit on the device
-  hipDeviceProp_t props;
-  hipGetDeviceProperties(&props, 0);
   if (props.totalGlobalMem < 3*ARRAY_SIZE*sizeof(T))
     throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
