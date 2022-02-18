@@ -60,6 +60,7 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
 
   // Check buffers fit on the device
   if (props.totalGlobalMem < 3*ARRAY_SIZE*sizeof(T))
+
     throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
   // Create device buffers
