@@ -45,7 +45,7 @@ SYCLStream<T>::SYCLStream(const int ARRAY_SIZE, const int device_index)
   else
   {
     dot_num_groups = dev.get_info<info::device::max_compute_units>() * 4;
-    dot_wgsize     = dev.get_info<info::device::max_work_group_size>();
+    dot_wgsize     = 256;       // good for AMD, doesn't hurt elsewhere
   }
 
   // Print out device information
