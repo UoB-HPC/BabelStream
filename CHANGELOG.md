@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 - Fix CUDA memory limit check.
+- Use long double for `check_solution` in case of large problem size.
 
 ## [v4.0] - 2021-12-22
 
