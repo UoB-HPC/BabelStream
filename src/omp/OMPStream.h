@@ -21,7 +21,7 @@ class OMPStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    long long array_size;
 
     // Device side pointers
     T *a;
@@ -29,7 +29,7 @@ class OMPStream : public Stream<T>
     T *c;
 
   public:
-    OMPStream(const int, int);
+    OMPStream(const long long, int);
     ~OMPStream();
 
     virtual void copy() override;

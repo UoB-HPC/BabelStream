@@ -13,7 +13,7 @@
 #endif
 
 template <class T>
-OMPStream<T>::OMPStream(const int ARRAY_SIZE, int device)
+OMPStream<T>::OMPStream(const long long ARRAY_SIZE, int device)
 {
   array_size = ARRAY_SIZE;
 
@@ -63,7 +63,7 @@ void OMPStream<T>::init_arrays(T initA, T initB, T initC)
 #else
   #pragma omp parallel for
 #endif
-  for (int i = 0; i < array_size; i++)
+  for (long long i = 0; i < array_size; i++)
   {
     a[i] = initA;
     b[i] = initB;
@@ -89,7 +89,7 @@ void OMPStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
 #endif
 
   #pragma omp parallel for
-  for (int i = 0; i < array_size; i++)
+  for (long long i = 0; i < array_size; i++)
   {
     h_a[i] = a[i];
     h_b[i] = b[i];
@@ -109,7 +109,7 @@ void OMPStream<T>::copy()
 #else
   #pragma omp parallel for
 #endif
-  for (int i = 0; i < array_size; i++)
+  for (long long i = 0; i < array_size; i++)
   {
     c[i] = a[i];
   }
@@ -133,7 +133,7 @@ void OMPStream<T>::mul()
 #else
   #pragma omp parallel for
 #endif
-  for (int i = 0; i < array_size; i++)
+  for (long long i = 0; i < array_size; i++)
   {
     b[i] = scalar * c[i];
   }
@@ -156,7 +156,7 @@ void OMPStream<T>::add()
 #else
   #pragma omp parallel for
 #endif
-  for (int i = 0; i < array_size; i++)
+  for (long long i = 0; i < array_size; i++)
   {
     c[i] = a[i] + b[i];
   }
@@ -181,7 +181,7 @@ void OMPStream<T>::triad()
 #else
   #pragma omp parallel for
 #endif
-  for (int i = 0; i < array_size; i++)
+  for (long long i = 0; i < array_size; i++)
   {
     a[i] = b[i] + scalar * c[i];
   }
@@ -206,7 +206,7 @@ void OMPStream<T>::nstream()
 #else
   #pragma omp parallel for
 #endif
-  for (int i = 0; i < array_size; i++)
+  for (long long i = 0; i < array_size; i++)
   {
     a[i] += b[i] + scalar * c[i];
   }
@@ -230,7 +230,7 @@ T OMPStream<T>::dot()
 #else
   #pragma omp parallel for reduction(+:sum)
 #endif
-  for (int i = 0; i < array_size; i++)
+  for (long long i = 0; i < array_size; i++)
   {
     sum += a[i] * b[i];
   }
