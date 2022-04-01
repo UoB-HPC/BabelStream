@@ -52,7 +52,7 @@
 #endif
 
 // Default size of 2^25
-int ARRAY_SIZE = 33554432;
+long long ARRAY_SIZE = 33554432;
 unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
@@ -526,7 +526,7 @@ int parseUInt(const char *str, unsigned int *output)
   return !strlen(next);
 }
 
-int parseInt(const char *str, int *output)
+int parseInt(const char *str, long long *output)
 {
   char *next;
   *output = strtol(str, &next, 10);
