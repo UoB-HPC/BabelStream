@@ -458,10 +458,10 @@ template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum)
 {
   // Generate correct solution
-  T goldA = startA;
-  T goldB = startB;
-  T goldC = startC;
-  T goldSum = 0.0;
+  long double goldA = startA;
+  long double goldB = startB;
+  long double goldC = startC;
+  long double goldSum = 0.0L;
 
   const T scalar = startScalar;
 
@@ -487,13 +487,13 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   goldSum = goldA * goldB * ARRAY_SIZE;
 
   // Calculate the average error
-  long double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldA); });
+  long double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](long double sum, const T val){ return sum + fabsl(val - goldA); });
   errA /= a.size();
-  long double errB = std::accumulate(b.begin(), b.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldB); });
+  long double errB = std::accumulate(b.begin(), b.end(), 0.0, [&](long double sum, const T val){ return sum + fabsl(val - goldB); });
   errB /= b.size();
-  long double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldC); });
+  long double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](long double sum, const T val){ return sum + fabsl(val - goldC); });
   errC /= c.size();
-  long double errSum = fabs((sum - goldSum)/goldSum);
+  long double errSum = fabsl((sum - goldSum)/goldSum);
 
   long double epsi = std::numeric_limits<T>::epsilon() * 100.0;
 
