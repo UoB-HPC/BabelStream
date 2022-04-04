@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <cstring>
+#include <cstdint>
 
 #define VERSION_STRING "4.0"
 
@@ -52,7 +53,7 @@
 #endif
 
 // Default size of 2^25
-long long ARRAY_SIZE = 33554432;
+intptr_t ARRAY_SIZE = 33554432;
 unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
@@ -526,7 +527,7 @@ int parseUInt(const char *str, unsigned int *output)
   return !strlen(next);
 }
 
-int parseInt(const char *str, long long *output)
+int parseInt(const char *str, intptr_t *output)
 {
   char *next;
   *output = strtol(str, &next, 10);
