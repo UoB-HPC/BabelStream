@@ -14,6 +14,8 @@
 
 #define IMPLEMENTATION_STRING "SYCL"
 
+#define LOCAL_SIZE 256
+
 namespace sycl_kernels
 {
   template <class T> class init;
