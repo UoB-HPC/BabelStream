@@ -152,6 +152,7 @@ setup_nvhpc() {
 
   export_var NVHPC_NVCXX "$bin_dir/nvc++"
   export_var NVHPC_NVCC "$bin_dir/nvcc"
+  export_var NVHPC_CUDA_VER "$cuda_ver"
 #  export_var NVHPC_NVCC "$sdk_dir/cuda/$cuda_ver/bin/nvcc"
 
   echo "Installed CUDA versions:"
