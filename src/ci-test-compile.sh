@@ -122,7 +122,7 @@ run_build() {
 
 AMD_ARCH="gfx_903"
 NV_ARCH="sm_70"
-NV_ARCH_CCXY="cuda11.4,cc80"
+NV_ARCH_CCXY="cuda${NVHPC_CUDA_VER:?},cc80"
 
 build_gcc() {
   local name="gcc_build"
@@ -175,9 +175,9 @@ build_gcc() {
   local current=$("$CMAKE_BIN" --version | head -n 1 | cut -d ' ' -f3)
   local required="3.15.0"
   if [ "$(printf '%s\n' "$required" "$current" | sort -V | head -n1)" = "$required" ]; then
-    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=CUDA"
-    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=OMP"
-    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=CPP"
+    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=CUDA"
+    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=OMP"
+    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=CPP"
 
     # FIXME CUDA Thrust + TBB throws the following error:
     #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512fintrin.h(9146): error: identifier "__builtin_ia32_rndscaless_round" is undefined
@@ -187,7 +187,7 @@ build_gcc() {
     #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512dqintrin.h(1365): error: identifier "__builtin_ia32_fpclassss" is undefined
     #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512dqintrin.h(1372): error: identifier "__builtin_ia32_fpclasssd" is undefined
 
-    #    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/include -DTHRUST_IMPL=CUDA -DBACKEND=TBB"
+    #    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=TBB"
   else
     echo "CMake version ${current} < ${required}, skipping Thrust models"
   fi
