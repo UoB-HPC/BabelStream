@@ -53,6 +53,9 @@ macro(setup)
         message(STATUS "NVCC flags: ${CMAKE_CUDA_FLAGS} ${CMAKE_CUDA_FLAGS_${BUILD_TYPE}}")
 
 
+        # XXX NVHPC <= 21.9 has cub-config in `Linux_x86_64/21.9/cuda/11.4/include/cub/cmake`
+        # XXX NVHPC >= 22.3 has cub-config in `Linux_x86_64/22.3/cuda/11.6/lib64/cmake/cub/`
+        # same thing for thrust
         if (SDK_DIR)
             find_package(CUB REQUIRED CONFIG PATHS ${SDK_DIR}/cub)
             find_package(Thrust REQUIRED CONFIG PATHS ${SDK_DIR}/thrust)
