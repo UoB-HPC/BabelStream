@@ -133,21 +133,27 @@ setup_aocc() {
 }
 
 setup_nvhpc() {
-  echo "Preparing Nvidia HPC SDK"
-  local tarball="nvhpc.tar.gz"
-#  local url="http://localhost:8000/nvhpc_2021_219_Linux_x86_64_cuda_11.4.tar.gz"
-  local url="https://developer.download.nvidia.com/hpc-sdk/21.9/nvhpc_2021_219_Linux_x86_64_cuda_11.4.tar.gz"
+ echo "Preparing Nvidia HPC SDK"
+  local nvhpc_ver="22.3"
+  local nvhpc_release="2022_223"
+  local cuda_ver="11.6"
+
+  local tarball="nvhpc_$nvhpc_ver.tar.gz"
+
+  local url="https://developer.download.nvidia.com/hpc-sdk/$nvhpc_ver/nvhpc_${nvhpc_release}_Linux_x86_64_cuda_$cuda_ver.tar.gz"
   get_and_untar "$tarball" "$url"
 
-  local sdk_dir="$PWD/nvhpc_2021_219_Linux_x86_64_cuda_11.4/install_components/Linux_x86_64/21.9"
+  local sdk_dir="$PWD/nvhpc_${nvhpc_release}_Linux_x86_64_cuda_$cuda_ver/install_components/Linux_x86_64/$nvhpc_ver"
   local bin_dir="$sdk_dir/compilers/bin"
   "$bin_dir/makelocalrc" "$bin_dir" -x
 
   export_var NVHPC_SDK_DIR "$sdk_dir"
-  export_var NVHPC_CUDA_DIR "$sdk_dir/cuda/11.4"
+  export_var NVHPC_CUDA_DIR "$sdk_dir/cuda/$cuda_ver"
 
   export_var NVHPC_NVCXX "$bin_dir/nvc++"
-  export_var NVHPC_NVCC "$sdk_dir/cuda/11.4/bin/nvcc"
+  export_var NVHPC_NVCC "$bin_dir/nvcc"
+  export_var NVHPC_CUDA_VER "$cuda_ver"
+#  export_var NVHPC_NVCC "$sdk_dir/cuda/$cuda_ver/bin/nvcc"
 
   echo "Installed CUDA versions:"
   ls "$sdk_dir/cuda"
