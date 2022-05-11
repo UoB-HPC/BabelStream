@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 project(BabelStream VERSION 4.0 LANGUAGES CXX)
 
 # uncomment for debugging build issues:
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
+
+find_package(MPI)
 
 # some nicer defaults for standard C++
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -161,6 +163,12 @@ target_compile_options(${EXE_NAME} PUBLIC "$<$<CONFIG:Debug>:${ACTUAL_DEBUG_FLAG
 
 target_link_options(${EXE_NAME} PUBLIC LINKER:${CXX_EXTRA_LINKER_FLAGS})
 target_link_options(${EXE_NAME} PUBLIC ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS})
+
+# If MPI is available, link relevant libraries
+if(MPI_FOUND)
+    message(STATUS "MPI Detected. Linking relevant MPI libraries")
+    target_link_libraries(${EXE_NAME} PUBLIC MPI::MPI_CXX)
+endif()
 
 # some models require the target to be already specified so they can finish their setup here
 # this only happens if the model.cmake definition contains the `setup_target` macro
