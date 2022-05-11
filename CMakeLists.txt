@@ -5,6 +5,7 @@ project(BabelStream VERSION 4.0 LANGUAGES CXX)
 # uncomment for debugging build issues:
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 
+option(WITH_MPI "Enable MPI" OFF)
 find_package(MPI)
 
 # some nicer defaults for standard C++
@@ -164,11 +165,16 @@ target_compile_options(${EXE_NAME} PUBLIC "$<$<CONFIG:Debug>:${ACTUAL_DEBUG_FLAG
 target_link_options(${EXE_NAME} PUBLIC LINKER:${CXX_EXTRA_LINKER_FLAGS})
 target_link_options(${EXE_NAME} PUBLIC ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS})
 
-# If MPI is available, link relevant libraries
-if(MPI_FOUND)
-    message(STATUS "MPI Detected. Linking relevant MPI libraries")
-    target_link_libraries(${EXE_NAME} PUBLIC MPI::MPI_CXX)
-endif()
+# If MPI is requested, link relevant libraries
+if (WITH_MPI)
+    if (MPI_FOUND)
+        message(STATUS "MPI requested and found. Linking relevant MPI libraries.")
+        target_link_libraries(${EXE_NAME} PUBLIC MPI::MPI_CXX)
+        add_definitions(-DUSE_MPI)
+    else ()
+        message(FATAL_ERROR "MPI requested, but no implementation has been detected.")
+    endif ()
+endif ()
 
 # some models require the target to be already specified so they can finish their setup here
 # this only happens if the model.cmake definition contains the `setup_target` macro
