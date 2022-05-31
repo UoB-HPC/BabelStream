@@ -22,15 +22,9 @@ class HIPStream : public Stream<T>
   #ifndef DWORDS_PER_LANE
   #define DWORDS_PER_LANE 1
   #endif
-  #ifndef CHUNKS_PER_BLOCK
-  #define CHUNKS_PER_BLOCK 8
-  #endif
 #else
   #ifndef DWORDS_PER_LANE
   #define DWORDS_PER_LANE 4
-  #endif
-  #ifndef CHUNKS_PER_BLOCK
-  #define CHUNKS_PER_BLOCK 1
   #endif
 #endif
   // Make sure that either:
@@ -41,7 +35,6 @@ class HIPStream : public Stream<T>
                 (DWORDS_PER_LANE * sizeof(unsigned int) % sizeof(T) == 0),
                 "DWORDS_PER_LANE not divisible by sizeof(element_type)");
 
-  static constexpr unsigned int chunks_per_block{CHUNKS_PER_BLOCK};
   static constexpr unsigned int dwords_per_lane{DWORDS_PER_LANE};
   // Take into account the datatype size
   // That is, if we specify 4 DWORDS_PER_LANE, this is 2 FP64 elements
