@@ -242,6 +242,11 @@ build_nvhpc() {
   local cxx="-DCMAKE_CXX_COMPILER=${NVHPC_NVCXX:?}"
   run_build $name "${NVHPC_NVCXX:?}" std-data "$cxx -DNVHPC_OFFLOAD=$NV_ARCH_CCXY"
   run_build $name "${NVHPC_NVCXX:?}" std-indices "$cxx -DNVHPC_OFFLOAD=$NV_ARCH_CCXY"
+
+  # std again but with vectors
+  run_build $name "${NVHPC_NVCXX:?}" std-data "$cxx -DNVHPC_OFFLOAD=$NV_ARCH_CCXY -DUSE_VECTOR=ON"
+  run_build $name "${NVHPC_NVCXX:?}" std-indices "$cxx -DNVHPC_OFFLOAD=$NV_ARCH_CCXY -DUSE_VECTOR=ON"
+
   run_build $name "${NVHPC_NVCXX:?}" acc "$cxx -DTARGET_DEVICE=gpu -DTARGET_PROCESSOR=px -DCUDA_ARCH=$NV_ARCH_CCXY"
   run_build $name "${NVHPC_NVCXX:?}" acc "$cxx -DTARGET_DEVICE=multicore -DTARGET_PROCESSOR=zen"
 }
