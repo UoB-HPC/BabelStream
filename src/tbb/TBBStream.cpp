@@ -5,15 +5,37 @@
 // source code
 
 #include "TBBStream.hpp"
+#include <cstdlib>
+
+#ifndef ALIGNMENT
+#define ALIGNMENT (2*1024*1024) // 2MB
+#endif
+
+#ifdef USE_VECTOR
+#define BEGIN(x) (x).begin()
+#define END(x) (x).end()
+#else
+#define BEGIN(x) (x)
+#define END(x) ((x) + array_size)
+#endif
 
 template <class T>
 TBBStream<T>::TBBStream(const int ARRAY_SIZE, int device)
- : partitioner(), range(0, ARRAY_SIZE), a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
+ : partitioner(), range(0, ARRAY_SIZE),
+#ifdef USE_VECTOR
+   a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
+#else
+   array_size(ARRAY_SIZE),
+   a((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE)),
+   b((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE)),
+   c((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE))
+#endif
 {
   if(device != 0){
     throw std::runtime_error("Device != 0 is not supported by TBB");
   }
   std::cout << "Using TBB partitioner: " PARTITIONER_NAME << std::endl;
+  std::cout << "Backing storage typeid: " << typeid(a).name() << std::endl;
 }
 
 
@@ -35,9 +57,9 @@ template <class T>
 void TBBStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
   // Element-wise copy.
-  h_a = a;
-  h_b = b;
-  h_c = c;
+  std::copy(BEGIN(a), END(a), h_a.begin());
+  std::copy(BEGIN(b), END(b), h_b.begin());
+  std::copy(BEGIN(c), END(c), h_c.begin());
 }
 
 template <class T>
@@ -132,3 +154,5 @@ std::string getDeviceDriver(const int)
 template class TBBStream<float>;
 template class TBBStream<double>;
 
+#undef BEGIN
+#undef END

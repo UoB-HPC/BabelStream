@@ -3,6 +3,10 @@ register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that is supported by CMake detection"
         "c++")
 
+register_flag_optional(USE_VECTOR
+        "Whether to use std::vector<T> for storage or use aligned_alloc. C++ vectors are *zero* initialised where as aligned_alloc is uninitialised before first use."
+        "OFF")
+
 register_flag_optional(NVHPC_OFFLOAD
         "Enable offloading support (via the non-standard `-stdpar`) for the new NVHPC SDK.
          The values are Nvidia architectures in ccXY format will be passed in via `-gpu=` (e.g `cc70`)
@@ -28,6 +32,8 @@ macro(setup)
         register_append_cxx_flags(ANY ${NVHPC_FLAGS})
         register_append_link_flags(${NVHPC_FLAGS})
     endif ()
-
+    if(USE_VECTOR)
+        register_definitions(USE_VECTOR)
+    endif()
 
 endmacro()

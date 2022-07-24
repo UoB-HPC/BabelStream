@@ -3,6 +3,10 @@ register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that is supported by CMake detection and supports C++20 Ranges"
         "c++")
 
+register_flag_optional(USE_VECTOR
+        "Whether to use std::vector<T> for storage or use aligned_alloc. C++ vectors are *zero* initialised where as aligned_alloc is uninitialised before first use."
+        "OFF")
+
 macro(setup)
 
     # TODO this needs to eventually be removed when CMake adds proper C++20 support or at least update the flag used here
@@ -13,4 +17,7 @@ macro(setup)
     unset(CMAKE_CXX_STANDARD) # drop any existing standard we have set by default
     # and append our own:
     register_append_cxx_flags(ANY -std=c++2a)
+    if(USE_VECTOR)
+        register_definitions(USE_VECTOR)
+    endif()
 endmacro()

@@ -10,6 +10,11 @@
 #include <stdexcept>
 #include "Stream.h"
 
+#ifdef USE_SPAN
+#include <span>
+#endif
+
+
 #define IMPLEMENTATION_STRING "STD (index-oriented)"
 
 
@@ -60,9 +65,11 @@ class STDIndicesStream : public Stream<T>
     ranged<int> range;
 
     // Device side pointers
-    std::vector<T> a;
-    std::vector<T> b;
-    std::vector<T> c;
+#ifdef USE_VECTOR
+    std::vector<T> a, b, c;
+#else
+    T *a, *b, *c;
+#endif
 
 
   public:
