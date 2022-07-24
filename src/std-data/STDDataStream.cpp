@@ -34,7 +34,6 @@ STDDataStream<T>::STDDataStream(const int ARRAY_SIZE, int device)
 #ifdef USE_VECTOR
   a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
 #else
-array_size(ARRAY_SIZE),
   a((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE)),
   b((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE)),
   c((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE))
