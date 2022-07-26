@@ -23,6 +23,11 @@ register_flag_optional(NVHPC_OFFLOAD
            ccall - Compile for all supported compute capabilities"
         "")
 
+register_flag_optional(USE_TBB
+        "Link against an in-tree oneTBB via FetchContent_Declare, see top level CMakeLists.txt for details."
+        "OFF")
+
+
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)
 
@@ -35,5 +40,7 @@ macro(setup)
     if(USE_VECTOR)
         register_definitions(USE_VECTOR)
     endif()
-
+    if (USE_TBB)
+        register_link_library(TBB::tbb)
+    endif ()
 endmacro()

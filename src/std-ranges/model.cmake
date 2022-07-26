@@ -7,6 +7,10 @@ register_flag_optional(USE_VECTOR
         "Whether to use std::vector<T> for storage or use aligned_alloc. C++ vectors are *zero* initialised where as aligned_alloc is uninitialised before first use."
         "OFF")
 
+register_flag_optional(USE_TBB
+        "No-op if ONE_TBB_DIR is set. Link against an in-tree oneTBB via FetchContent_Declare, see top level CMakeLists.txt for details."
+        "OFF")
+
 macro(setup)
 
     # TODO this needs to eventually be removed when CMake adds proper C++20 support or at least update the flag used here
@@ -20,4 +24,7 @@ macro(setup)
     if(USE_VECTOR)
         register_definitions(USE_VECTOR)
     endif()
+    if (USE_TBB)
+        register_link_library(TBB::tbb)
+    endif ()
 endmacro()
