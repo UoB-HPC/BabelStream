@@ -27,10 +27,11 @@ macro(setup)
     if(ONE_TBB_DIR)
         set(TBB_ROOT "${ONE_TBB_DIR}") # see https://github.com/Kitware/VTK/blob/0a31a9a3c1531ae238ac96a372fec4be42282863/CMake/FindTBB.cmake#L34
         # docs on Intel's website refers to TBB_DIR which is not correct
+    endif()
+    if (NOT USE_TBB)
+        # Only find TBB when we're not building in-tree
         find_package(TBB REQUIRED)
     endif()
-
-    # No need to handle USE_TBB as both ONE_TBB_DIR and USE_TBB will create the TBB::tbb target
 
     # see https://github.com/oneapi-src/oneTBB/blob/master/cmake/README.md#tbbconfig---integration-of-binary-packages
     register_link_library(TBB::tbb)
