@@ -92,9 +92,9 @@ if (USE_TBB)
     endif ()
 endif ()
 
-option(USE_TBB "Enable oneDPL library for *supported* models. Enabling this on models that
-                don't explicitly link against DPL is a no-op, see description of your selected
-                model on how this is used." OFF)
+option(USE_ONEDPL "Enable oneDPL library for *supported* models. Enabling this on models that
+                   don't explicitly link against DPL is a no-op, see description of your selected
+                   model on how this is used." OFF)
 
 if (USE_ONEDPL)
     FetchContent_Declare(
