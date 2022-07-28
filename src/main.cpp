@@ -182,7 +182,7 @@ std::vector<std::vector<double>> run_nstream(Stream<T> *stream)
   std::chrono::high_resolution_clock::time_point t1, t2;
 
   // Run nstream in loop
-  for (int k = 0; k < num_times; k++) {
+  for (unsigned int k = 0; k < num_times; k++) {
     t1 = std::chrono::high_resolution_clock::now();
     stream->nstream();
     t2 = std::chrono::high_resolution_clock::now();
@@ -377,7 +377,7 @@ void run()
       sizes = {4 * sizeof(T) * ARRAY_SIZE };
     }
 
-    for (int i = 0; i < timings.size(); ++i)
+    for (size_t i = 0; i < timings.size(); ++i)
     {
       // Get min/max; ignore the first result
       auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());

@@ -13,7 +13,13 @@
 #endif
 
 template <class T>
-OMPStream<T>::OMPStream(const int ARRAY_SIZE, int device)
+OMPStream<T>::OMPStream(const int ARRAY_SIZE,
+#ifdef OMP_TARGET_GPU                        
+                        int device
+#else
+                        int
+#endif                        
+  )
 {
   array_size = ARRAY_SIZE;
 

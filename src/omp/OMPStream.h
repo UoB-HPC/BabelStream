@@ -14,7 +14,11 @@
 
 #include <omp.h>
 
+#ifdef OMP_TARGET_GPU
+#define IMPLEMENTATION_STRING "OpenMP offload"
+#else
 #define IMPLEMENTATION_STRING "OpenMP"
+#endif
 
 template <class T>
 class OMPStream : public Stream<T>
@@ -41,7 +45,4 @@ class OMPStream : public Stream<T>
 
     virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
-
-
-
 };
