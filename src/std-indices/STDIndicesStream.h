@@ -25,17 +25,22 @@ public:
     using difference_type = N;
     using value_type = N;
     using pointer = const N*;
-    using reference = const N&;
+    using reference = N;
     using iterator_category = std::random_access_iterator_tag;
 
+    // XXX This is not part of the iterator spec, it gets picked up by oneDPL if enabled.
+    // Without this, the DPL SYCL backend collects the iterator data on the host and copies to the device.
+    // This type is unused for any nother STL impl.
+    using is_passed_directly = std::true_type;
+
     reference operator *() const { return i_; }
-    const iterator &operator ++() { ++i_; return *this; }
+    iterator &operator ++() { ++i_; return *this; }
     iterator operator ++(int) { iterator copy(*this); ++i_; return copy; }
 
-    const iterator &operator --() { --i_; return *this; }
+    iterator &operator --() { --i_; return *this; }
     iterator operator --(int) { iterator copy(*this); --i_; return copy; }
 
-    const iterator &operator +=(N by) { i_+=by; return *this; }
+    iterator &operator +=(N by) { i_+=by; return *this; }
 
     value_type operator[](const difference_type &i) const { return i_ + i; }
 
