@@ -23,7 +23,7 @@ class STDDataStream : public Stream<T>
 
     // Device side pointers
 #ifdef USE_VECTOR
-    std::vector<T, Allocator<T>> a, b, c;
+    std::vector<T> a, b, c;
 #else
     T *a, *b, *c;
 #endif

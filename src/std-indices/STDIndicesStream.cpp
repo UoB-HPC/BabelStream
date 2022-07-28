@@ -22,11 +22,21 @@
 #define END(x) ((x) + array_size)
 #endif
 
+#ifdef USE_VECTOR
+#if (defined(__NVCOMPILER) || defined(__NVCOMPILER_LLVM__))
+#error "std::vector *is* supported in NVHPC if we capture `this`, however, oneDPL (via SYCL2020) only works correctly with explicit *value* captures."
+#endif
+
+#if defined(USE_ONEDPL)
+#error "std::vector is unspported: oneDPL (via SYCL2020) only works correctly with explicit *value* captures"
+#endif
+#endif
+
 template <class T>
 STDIndicesStream<T>::STDIndicesStream(const int ARRAY_SIZE, int device)
 noexcept : array_size{ARRAY_SIZE}, range(0, array_size),
 #ifdef USE_VECTOR
-  a(ARRAY_SIZE, alloc_vec<T>()), b(ARRAY_SIZE, alloc_vec<T>()), c(ARRAY_SIZE, alloc_vec<T>())
+  a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
 #else
   a(alloc_raw<T>(ARRAY_SIZE)), b(alloc_raw<T>(ARRAY_SIZE)), c(alloc_raw<T>(ARRAY_SIZE))
 #endif
@@ -77,7 +87,7 @@ void STDIndicesStream<T>::copy()
 {
   // c[i] = a[i]
   std::copy(exe_policy, BEGIN(a), END(a), BEGIN(c));
-  }
+}
 
 template <class T>
 void STDIndicesStream<T>::mul()
@@ -86,7 +96,7 @@ void STDIndicesStream<T>::mul()
   std::transform(exe_policy, range.begin(), range.end(), BEGIN(b), [c = this->c, scalar = startScalar](int i) {
     return scalar * c[i];
   });
-  }
+}
 
 template <class T>
 void STDIndicesStream<T>::add()
@@ -95,7 +105,7 @@ void STDIndicesStream<T>::add()
   std::transform(exe_policy, range.begin(), range.end(), BEGIN(c), [a = this->a, b = this->b](int i) {
     return a[i] + b[i];
   });
-  }
+}
 
 template <class T>
 void STDIndicesStream<T>::triad()
@@ -104,7 +114,7 @@ void STDIndicesStream<T>::triad()
   std::transform(exe_policy, range.begin(), range.end(), BEGIN(a), [b = this->b, c = this->c, scalar = startScalar](int i) {
     return b[i] + scalar * c[i];
   });
-  }
+}
 
 template <class T>
 void STDIndicesStream<T>::nstream()
@@ -116,7 +126,7 @@ void STDIndicesStream<T>::nstream()
   std::transform(exe_policy, range.begin(), range.end(), BEGIN(a), [a = this->a, b = this->b, c = this->c, scalar = startScalar](int i) {
     return a[i] + b[i] + scalar * c[i];
   });
-  }
+}
    
 
 template <class T>

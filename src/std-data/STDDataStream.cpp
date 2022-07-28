@@ -18,7 +18,7 @@ template <class T>
 STDDataStream<T>::STDDataStream(const int ARRAY_SIZE, int device)
   noexcept : array_size{ARRAY_SIZE},
 #ifdef USE_VECTOR
-  a(ARRAY_SIZE, alloc_vec<T>()), b(ARRAY_SIZE, alloc_vec<T>()), c(ARRAY_SIZE, alloc_vec<T>())
+  a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
 #else
   a(alloc_raw<T>(ARRAY_SIZE)), b(alloc_raw<T>(ARRAY_SIZE)), c(alloc_raw<T>(ARRAY_SIZE))
 #endif
@@ -69,28 +69,28 @@ void STDDataStream<T>::copy()
 {
   // c[i] = a[i]
   std::copy(exe_policy, BEGIN(a), END(a), BEGIN(c));
-  }
+}
 
 template <class T>
 void STDDataStream<T>::mul()
 {
   //  b[i] = scalar * c[i];
   std::transform(exe_policy, BEGIN(c), END(c), BEGIN(b), [scalar = startScalar](T ci){ return scalar*ci; });
-  }
+}
 
 template <class T>
 void STDDataStream<T>::add()
 {
   //  c[i] = a[i] + b[i];
   std::transform(exe_policy, BEGIN(a), END(a), BEGIN(b), BEGIN(c), std::plus<T>());
-  }
+}
 
 template <class T>
 void STDDataStream<T>::triad()
 {
   //  a[i] = b[i] + scalar * c[i];
   std::transform(exe_policy, BEGIN(b), END(b), BEGIN(c), BEGIN(a), [scalar = startScalar](T bi, T ci){ return bi+scalar*ci; });
-  }
+}
 
 template <class T>
 void STDDataStream<T>::nstream()
@@ -101,7 +101,7 @@ void STDDataStream<T>::nstream()
   //  2: a[i] += scalar * c[i];
   std::transform(exe_policy, BEGIN(a), END(a), BEGIN(b), BEGIN(a), [](T ai, T bi){ return ai + bi; });
   std::transform(exe_policy, BEGIN(a), END(a), BEGIN(c), BEGIN(a), [scalar = startScalar](T ai, T ci){ return ai + scalar*ci; });
-  }
+}
    
 
 template <class T>

@@ -23,11 +23,6 @@ const static auto exe_policy = oneapi::dpl::execution::device_policy<>{
         oneapi::dpl::execution::make_device_policy(cl::sycl::default_selector{})
 };
 
-template<typename T> using Allocator = sycl::usm_allocator<T, sycl::usm::alloc::shared>;
-
-template<class T>
-constexpr Allocator<T> alloc_vec() { return {exe_policy.queue()}; };
-
 template<typename T>
 T *alloc_raw(size_t size) { return sycl::malloc_shared<T>(size, exe_policy.queue()); }
 
@@ -60,11 +55,6 @@ static constexpr auto exe_policy = std::execution::par_unseq;
 #endif
 
 #ifdef USE_STD_PTR_ALLOC_DEALLOC
-
-template<typename T> using Allocator = std::allocator<T>;
-
-template<class T>
-constexpr Allocator<T> alloc_vec() { return {}; };
 
 template<typename T>
 T *alloc_raw(size_t size) { return (T *) aligned_alloc(ALIGNMENT, sizeof(T) * size); }

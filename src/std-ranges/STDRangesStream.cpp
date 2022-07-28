@@ -26,7 +26,7 @@ template <class T>
 STDRangesStream<T>::STDRangesStream(const int ARRAY_SIZE, int device)
 noexcept : array_size{ARRAY_SIZE},
 #ifdef USE_VECTOR
-  a(ARRAY_SIZE, alloc_vec<T>()), b(ARRAY_SIZE, alloc_vec<T>()), c(ARRAY_SIZE, alloc_vec<T>())
+  a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
 #else
   a(alloc_raw<T>(ARRAY_SIZE)), b(alloc_raw<T>(ARRAY_SIZE)), c(alloc_raw<T>(ARRAY_SIZE))
 #endif
@@ -89,7 +89,7 @@ void STDRangesStream<T>::copy()
       c[i] = a[i];
     }
   );
-  }
+}
 
 template <class T>
 void STDRangesStream<T>::mul()
@@ -103,7 +103,7 @@ void STDRangesStream<T>::mul()
       b[i] = scalar * c[i];
     }
   );
-  }
+}
 
 template <class T>
 void STDRangesStream<T>::add()
@@ -115,7 +115,7 @@ void STDRangesStream<T>::add()
       c[i] = a[i] + b[i];
     }
   );
-  }
+}
 
 template <class T>
 void STDRangesStream<T>::triad()
@@ -129,7 +129,7 @@ void STDRangesStream<T>::triad()
       a[i] = b[i] + scalar * c[i];
     }
   );
-  }
+}
 
 template <class T>
 void STDRangesStream<T>::nstream()
@@ -143,7 +143,7 @@ void STDRangesStream<T>::nstream()
       a[i] += b[i] + scalar * c[i];
     }
   );
-  }
+}
 
 template <class T>
 T STDRangesStream<T>::dot()
