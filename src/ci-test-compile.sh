@@ -136,11 +136,15 @@ build_gcc() {
   fi
 
   for use_onedpl in OFF OPENMP TBB; do
+    case "$use_onedpl" in
+      OFF) dpl_conditional_flags="-DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}" ;;
+      *)   dpl_conditional_flags="-DUSE_TBB=ON" ;;
+    esac
     for use_vector in OFF ON; do
       # some distributions like Ubuntu bionic implements std par with TBB, so conditionally link it here
-      run_build $name "${GCC_CXX:?}" std-data    "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
-      run_build $name "${GCC_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
-      run_build $name "${GCC_CXX:?}" std-ranges  "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
+      run_build $name "${GCC_CXX:?}" std-data    "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
+      run_build $name "${GCC_CXX:?}" std-indices "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
+      run_build $name "${GCC_CXX:?}" std-ranges  "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
     done
   done
 
@@ -221,9 +225,13 @@ build_clang() {
 
   for use_onedpl in OFF OPENMP TBB; do
     for use_vector in OFF ON; do
-      run_build $name "${CLANG_CXX:?}" std-data     "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
-      run_build $name "${CLANG_CXX:?}" std-indices  "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
-      # run_build $name "${CLANG_CXX:?}" std-ranges "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector" # not yet supported
+      case "$use_onedpl" in
+        OFF) dpl_conditional_flags="-DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" ;;
+        *)   dpl_conditional_flags="-DUSE_TBB=ON" ;;
+      esac
+      run_build $name "${CLANG_CXX:?}" std-data     "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector "
+      run_build $name "${CLANG_CXX:?}" std-indices  "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
+      # run_build $name "${CLANG_CXX:?}" std-ranges "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector" # not yet supported
     done
   done
 
