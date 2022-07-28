@@ -35,7 +35,7 @@ register_flag_optional(USE_ONEDPL
                    CMake will handle any flags needed to enable OpenMP if the compiler supports it.
           TBB    - Implements policies using TBB.
                    TBB must be linked via USE_TBB or be available in LD_LIBRARY_PATH.
-          SYCL   - Implements policies through SYCL2020.
+          DPCPP  - Implements policies through SYCL2020.
                    This requires the DPC++ compiler (other SYCL compilers are untested), required SYCL flags are added automatically."
         "OFF")
 

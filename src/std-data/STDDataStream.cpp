@@ -69,6 +69,7 @@ void STDDataStream<T>::copy()
 {
   // c[i] = a[i]
   std::copy(exe_policy, BEGIN(a), END(a), BEGIN(c));
+  sync_device();
 }
 
 template <class T>
@@ -76,6 +77,7 @@ void STDDataStream<T>::mul()
 {
   //  b[i] = scalar * c[i];
   std::transform(exe_policy, BEGIN(c), END(c), BEGIN(b), [scalar = startScalar](T ci){ return scalar*ci; });
+  sync_device();
 }
 
 template <class T>
@@ -83,6 +85,7 @@ void STDDataStream<T>::add()
 {
   //  c[i] = a[i] + b[i];
   std::transform(exe_policy, BEGIN(a), END(a), BEGIN(b), BEGIN(c), std::plus<T>());
+  sync_device();
 }
 
 template <class T>
@@ -90,6 +93,7 @@ void STDDataStream<T>::triad()
 {
   //  a[i] = b[i] + scalar * c[i];
   std::transform(exe_policy, BEGIN(b), END(b), BEGIN(c), BEGIN(a), [scalar = startScalar](T bi, T ci){ return bi+scalar*ci; });
+  sync_device();
 }
 
 template <class T>
@@ -101,6 +105,7 @@ void STDDataStream<T>::nstream()
   //  2: a[i] += scalar * c[i];
   std::transform(exe_policy, BEGIN(a), END(a), BEGIN(b), BEGIN(a), [](T ai, T bi){ return ai + bi; });
   std::transform(exe_policy, BEGIN(a), END(a), BEGIN(c), BEGIN(a), [scalar = startScalar](T ai, T ci){ return ai + scalar*ci; });
+  sync_device();
 }
    
 

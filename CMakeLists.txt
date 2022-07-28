@@ -121,8 +121,15 @@ if (USE_ONEDPL)
             endmacro()
         endif ()
         add_subdirectory(${onedpl_SOURCE_DIR} ${onedpl_BINARY_DIR} EXCLUDE_FROM_ALL)
+
+        # Fixup oneDPL's omission on setting DPCPP definitions.
+        # We do this after the creation of the oneDPL target.
+        if (ONEDPL_BACKEND MATCHES "^(dpcpp|dpcpp_only)$")
+            target_compile_definitions(oneDPL INTERFACE ONEDPL_USE_DPCPP_BACKEND=1)
+        endif ()
+
     endif ()
-endif()
+endif ()
 
 
 # include our macros

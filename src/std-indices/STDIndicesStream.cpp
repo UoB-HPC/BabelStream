@@ -77,6 +77,7 @@ void STDIndicesStream<T>::copy()
 {
   // c[i] = a[i]
   std::copy(exe_policy, BEGIN(a), END(a), BEGIN(c));
+  sync_device();
 }
 
 template <class T>
@@ -86,6 +87,7 @@ void STDIndicesStream<T>::mul()
   std::transform(exe_policy, range.begin(), range.end(), BEGIN(b), [this, scalar = startScalar](int i) {
     return scalar * c[i];
   });
+  sync_device();
 }
 
 template <class T>
@@ -95,6 +97,7 @@ void STDIndicesStream<T>::add()
   std::transform(exe_policy, range.begin(), range.end(), BEGIN(c), [this](int i) {
     return a[i] + b[i];
   });
+  sync_device();
 }
 
 template <class T>
@@ -104,6 +107,7 @@ void STDIndicesStream<T>::triad()
   std::transform(exe_policy, range.begin(), range.end(), BEGIN(a), [this, scalar = startScalar](int i) {
     return b[i] + scalar * c[i];
   });
+  sync_device();
 }
 
 template <class T>
@@ -116,6 +120,7 @@ void STDIndicesStream<T>::nstream()
   std::transform(exe_policy, range.begin(), range.end(), BEGIN(a), [this, scalar = startScalar](int i) {
     return a[i] + b[i] + scalar * c[i];
   });
+  sync_device();
 }
    
 
