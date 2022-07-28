@@ -89,8 +89,7 @@ void STDRangesStream<T>::copy()
       c[i] = a[i];
     }
   );
-  sync_device();
-}
+  }
 
 template <class T>
 void STDRangesStream<T>::mul()
@@ -104,8 +103,7 @@ void STDRangesStream<T>::mul()
       b[i] = scalar * c[i];
     }
   );
-  sync_device();
-}
+  }
 
 template <class T>
 void STDRangesStream<T>::add()
@@ -117,8 +115,7 @@ void STDRangesStream<T>::add()
       c[i] = a[i] + b[i];
     }
   );
-  sync_device();
-}
+  }
 
 template <class T>
 void STDRangesStream<T>::triad()
@@ -132,8 +129,7 @@ void STDRangesStream<T>::triad()
       a[i] = b[i] + scalar * c[i];
     }
   );
-  sync_device();
-}
+  }
 
 template <class T>
 void STDRangesStream<T>::nstream()
@@ -147,8 +143,7 @@ void STDRangesStream<T>::nstream()
       a[i] += b[i] + scalar * c[i];
     }
   );
-  sync_device();
-}
+  }
 
 template <class T>
 T STDRangesStream<T>::dot()

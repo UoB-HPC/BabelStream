@@ -34,8 +34,6 @@ T *alloc_raw(size_t size) { return sycl::malloc_shared<T>(size, exe_policy.queue
 template<typename T>
 void dealloc_raw(T *ptr) { sycl::free(ptr, exe_policy.queue()); }
 
-static void sync_device(){exe_policy.queue().wait_and_throw(); }
-
 #else
 
 // auto exe_policy = dpl::execution::seq;
@@ -73,7 +71,5 @@ T *alloc_raw(size_t size) { return (T *) aligned_alloc(ALIGNMENT, sizeof(T) * si
 
 template<typename T>
 void dealloc_raw(T *ptr) { free(ptr); }
-
-static void sync_device(){ /*no-op*/ }
 
 #endif

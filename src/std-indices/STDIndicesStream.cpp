@@ -77,38 +77,34 @@ void STDIndicesStream<T>::copy()
 {
   // c[i] = a[i]
   std::copy(exe_policy, BEGIN(a), END(a), BEGIN(c));
-  sync_device();
-}
+  }
 
 template <class T>
 void STDIndicesStream<T>::mul()
 {
   //  b[i] = scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), BEGIN(b), [this, scalar = startScalar](int i) {
+  std::transform(exe_policy, range.begin(), range.end(), BEGIN(b), [c = this->c, scalar = startScalar](int i) {
     return scalar * c[i];
   });
-  sync_device();
-}
+  }
 
 template <class T>
 void STDIndicesStream<T>::add()
 {
   //  c[i] = a[i] + b[i];
-  std::transform(exe_policy, range.begin(), range.end(), BEGIN(c), [this](int i) {
+  std::transform(exe_policy, range.begin(), range.end(), BEGIN(c), [a = this->a, b = this->b](int i) {
     return a[i] + b[i];
   });
-  sync_device();
-}
+  }
 
 template <class T>
 void STDIndicesStream<T>::triad()
 {
   //  a[i] = b[i] + scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), BEGIN(a), [this, scalar = startScalar](int i) {
+  std::transform(exe_policy, range.begin(), range.end(), BEGIN(a), [b = this->b, c = this->c, scalar = startScalar](int i) {
     return b[i] + scalar * c[i];
   });
-  sync_device();
-}
+  }
 
 template <class T>
 void STDIndicesStream<T>::nstream()
@@ -117,11 +113,10 @@ void STDIndicesStream<T>::nstream()
   //  Need to do in two stages with C++11 STL.
   //  1: a[i] += b[i]
   //  2: a[i] += scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), BEGIN(a), [this, scalar = startScalar](int i) {
+  std::transform(exe_policy, range.begin(), range.end(), BEGIN(a), [a = this->a, b = this->b, c = this->c, scalar = startScalar](int i) {
     return a[i] + b[i] + scalar * c[i];
   });
-  sync_device();
-}
+  }
    
 
 template <class T>
