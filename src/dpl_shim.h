@@ -15,7 +15,7 @@
 #include <oneapi/dpl/algorithm>
 #include <oneapi/dpl/numeric>
 
-#ifdef ONEDPL_USE_DPCPP_BACKEND
+#if ONEDPL_USE_DPCPP_BACKEND
 
 #include <CL/sycl.hpp>
 

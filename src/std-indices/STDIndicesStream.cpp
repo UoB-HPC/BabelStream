@@ -32,13 +32,13 @@ noexcept : array_size{ARRAY_SIZE}, range(0, array_size),
 #endif
 {
     std::cout << "Backing storage typeid: " << typeid(a).name() << std::endl;
-#if USE_ONEDPL
+#ifdef USE_ONEDPL
     std::cout << "Using oneDPL backend: ";
-#if defined(ONEDPL_USE_DPCPP_BACKEND)
+#if ONEDPL_USE_DPCPP_BACKEND
     std::cout << "SYCL USM (device=" << exe_policy.queue().get_device().get_info<sycl::info::device::name>() << ")";
-#elif defined(ONEDPL_USE_TBB_BACKEND)
+#elif ONEDPL_USE_TBB_BACKEND
     std::cout << "TBB " TBB_VERSION_STRING;
-#elif defined(ONEDPL_USE_OPENMP_BACKEND)
+#elif ONEDPL_USE_OPENMP_BACKEND
     std::cout << "OpenMP";
 #else
     std::cout << "Default";

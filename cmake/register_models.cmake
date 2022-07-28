@@ -71,10 +71,6 @@ macro(register_definitions)
     list(APPEND IMPL_DEFINITIONS ${ARGN})
 endmacro()
 
-macro(register_directories)
-    list(APPEND IMPL_DIRECTORIES ${ARGN})
-endmacro()
-
 macro(register_flag_required NAME DESCRIPTION)
     list(APPEND CUSTOM_FLAGS_TRIPLE "${NAME}" "${DESCRIPTION}" ON "")
 endmacro()

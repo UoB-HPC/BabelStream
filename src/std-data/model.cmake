@@ -41,9 +41,6 @@ register_flag_optional(USE_ONEDPL
 
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)
-
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/shim_onedpl.cmake)
-
     if (NVHPC_OFFLOAD)
         set(NVHPC_FLAGS -stdpar -gpu=${NVHPC_OFFLOAD})
         # propagate flags to linker so that it links with the gpu stuff as well
@@ -55,5 +52,9 @@ macro(setup)
     endif ()
     if (USE_TBB)
         register_link_library(TBB::tbb)
+    endif ()
+    if (USE_ONEDPL)
+        register_definitions(USE_ONEDPL)
+        register_link_library(oneDPL)
     endif ()
 endmacro()
