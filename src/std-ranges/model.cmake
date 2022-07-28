@@ -11,6 +11,18 @@ register_flag_optional(USE_TBB
         "No-op if ONE_TBB_DIR is set. Link against an in-tree oneTBB via FetchContent_Declare, see top level CMakeLists.txt for details."
         "OFF")
 
+register_flag_optional(USE_ONEDPL
+        "Link oneDPL which implements C++17 executor policies (via execution_policy_tag) for different backends.
+
+        Possible values are:
+          OPENMP - Implements policies using OpenMP.
+                   CMake will handle any flags needed to enable OpenMP if the compiler supports it.
+          TBB    - Implements policies using TBB.
+                   TBB must be linked via USE_TBB or be available in LD_LIBRARY_PATH.
+          SYCL   - Implements policies through SYCL2020.
+                   This requires the DPC++ compiler (other SYCL compilers are untested), required SYCL flags are added automatically."
+        "OFF")
+
 macro(setup)
 
     # TODO this needs to eventually be removed when CMake adds proper C++20 support or at least update the flag used here
@@ -21,9 +33,10 @@ macro(setup)
     unset(CMAKE_CXX_STANDARD) # drop any existing standard we have set by default
     # and append our own:
     register_append_cxx_flags(ANY -std=c++2a)
-    if(USE_VECTOR)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/shim_onedpl.cmake)
+    if (USE_VECTOR)
         register_definitions(USE_VECTOR)
-    endif()
+    endif ()
     if (USE_TBB)
         register_link_library(TBB::tbb)
     endif ()

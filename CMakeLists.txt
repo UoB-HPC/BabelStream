@@ -76,19 +76,40 @@ option(USE_TBB "Enable oneTBB library for *supported* models. Enabling this on m
                 model on how this is used." OFF)
 
 if (USE_TBB)
-    include(FetchContent)
     FetchContent_Declare(
             TBB
             GIT_REPOSITORY https://github.com/oneapi-src/oneTBB.git
             GIT_TAG faaf43c4ab22cb4b4267d65d5e218fa58800eea8
     )
-    # Not using FetchContent_MakeAvailable because we need EXCLUDE_FROM_ALL
+    # Don't fail builds on waring (TBB has -Wall while not being free of warnings from unused symbols...)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+    set(TBB_STRICT OFF)
+    # Not using FetchContent_MakeAvailable (CMake>= 3.14) because we need EXCLUDE_FROM_ALL
     FetchContent_GetProperties(TBB)
     if (NOT TBB_POPULATED)
         FetchContent_Populate(TBB)
         add_subdirectory(${tbb_SOURCE_DIR} ${tbb_BINARY_DIR} EXCLUDE_FROM_ALL)
     endif ()
 endif ()
+
+option(USE_TBB "Enable oneDPL library for *supported* models. Enabling this on models that
+                don't explicitly link against DPL is a no-op, see description of your selected
+                model on how this is used." OFF)
+
+if (USE_ONEDPL)
+    FetchContent_Declare(
+            oneDPL
+            GIT_REPOSITORY https://github.com/oneapi-src/oneDPL.git
+            GIT_TAG oneDPL-2021.7.0-release
+    )
+    # Not using FetchContent_MakeAvailable (CMake>= 3.14) because we need EXCLUDE_FROM_ALL
+    FetchContent_GetProperties(oneDPL)
+    if (NOT oneDPL_POPULATED)
+        FetchContent_Populate(oneDPL)
+        add_subdirectory(${onedpl_SOURCE_DIR} ${onedpl_BINARY_DIR} EXCLUDE_FROM_ALL)
+    endif ()
+endif()
+
 
 # include our macros
 include(cmake/register_models.cmake)
@@ -170,6 +191,7 @@ include_directories(src)
 add_executable(${EXE_NAME} ${IMPL_SOURCES} src/main.cpp)
 target_link_libraries(${EXE_NAME} PUBLIC ${LINK_LIBRARIES})
 target_compile_definitions(${EXE_NAME} PUBLIC ${IMPL_DEFINITIONS})
+target_include_directories(${EXE_NAME} PUBLIC ${IMPL_DIRECTORIES})
 
 if (CXX_EXTRA_LIBRARIES)
     target_link_libraries(${EXE_NAME} PUBLIC ${CXX_EXTRA_LIBRARIES})

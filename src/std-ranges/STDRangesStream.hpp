@@ -5,10 +5,10 @@
 // source code
 
 #pragma once
+#include "dpl_shim.h"
 
 #include <iostream>
-#include <vector>
-
+#include <stdexcept>
 #include "Stream.h"
 
 #define IMPLEMENTATION_STRING "STD C++ ranges"
@@ -22,14 +22,14 @@ class STDRangesStream : public Stream<T>
 
     // Device side pointers
 #ifdef USE_VECTOR
-    std::vector<T> a, b, c;
+    std::vector<T, Allocator<T>> a, b, c;
 #else
     T *a, *b, *c;
 #endif
 
   public:
-    STDRangesStream(const int, int);
-    ~STDRangesStream() = default;
+    STDRangesStream(const int, int) noexcept;
+    ~STDRangesStream();
 
     virtual void copy() override;
     virtual void add() override;

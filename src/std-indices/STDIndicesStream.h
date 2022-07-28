@@ -5,18 +5,13 @@
 // source code
 
 #pragma once
+#include "dpl_shim.h"
 
 #include <iostream>
 #include <stdexcept>
 #include "Stream.h"
 
-#ifdef USE_SPAN
-#include <span>
-#endif
-
-
 #define IMPLEMENTATION_STRING "STD (index-oriented)"
-
 
 // A lightweight counting iterator which will be used by the STL algorithms
 // NB: C++ <= 17 doesn't have this built-in, and it's only added later in ranges-v3 (C++2a) which this
@@ -78,7 +73,7 @@ class STDIndicesStream : public Stream<T>
 
     // Device side pointers
 #ifdef USE_VECTOR
-    std::vector<T> a, b, c;
+    std::vector<T, Allocator<T>> a, b, c;
 #else
     T *a, *b, *c;
 #endif
@@ -86,7 +81,7 @@ class STDIndicesStream : public Stream<T>
 
   public:
     STDIndicesStream(const int, int) noexcept;
-    ~STDIndicesStream() = default;
+    ~STDIndicesStream();
 
     virtual void copy() override;
     virtual void add() override;

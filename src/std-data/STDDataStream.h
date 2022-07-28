@@ -5,6 +5,7 @@
 // source code
 
 #pragma once
+#include "dpl_shim.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -22,7 +23,7 @@ class STDDataStream : public Stream<T>
 
     // Device side pointers
 #ifdef USE_VECTOR
-    std::vector<T> a, b, c;
+    std::vector<T, Allocator<T>> a, b, c;
 #else
     T *a, *b, *c;
 #endif
@@ -30,7 +31,7 @@ class STDDataStream : public Stream<T>
 
   public:
     STDDataStream(const int, int) noexcept;
-    ~STDDataStream() = default;
+    ~STDDataStream();
 
     virtual void copy() override;
     virtual void add() override;

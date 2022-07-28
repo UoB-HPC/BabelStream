@@ -22,22 +22,39 @@
 #define END(x) ((x) + array_size)
 #endif
 
-// There are three execution policies:
-// auto exe_policy = std::execution::seq;
-// auto exe_policy = std::execution::par;
-constexpr auto exe_policy = std::execution::par_unseq;
-
 template <class T>
 STDRangesStream<T>::STDRangesStream(const int ARRAY_SIZE, int device)
- : array_size{ARRAY_SIZE},
+noexcept : array_size{ARRAY_SIZE},
 #ifdef USE_VECTOR
-  a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
+  a(ARRAY_SIZE, alloc_vec<T>()), b(ARRAY_SIZE, alloc_vec<T>()), c(ARRAY_SIZE, alloc_vec<T>())
 #else
-  a((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE)),
-  b((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE)),
-  c((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE))
+  a(alloc_raw<T>(ARRAY_SIZE)), b(alloc_raw<T>(ARRAY_SIZE)), c(alloc_raw<T>(ARRAY_SIZE))
 #endif
-{ std::cout <<"Backing storage typeid: " << typeid(a).name() << std::endl; }
+{
+    std::cout << "Backing storage typeid: " << typeid(a).name() << std::endl;
+#if USE_ONEDPL
+    std::cout << "Using oneDPL backend: ";
+#if defined(ONEDPL_USE_DPCPP_BACKEND)
+    std::cout << "SYCL USM (device=" << exe_policy.queue().get_device().get_info<sycl::info::device::name>() << ")";
+#elif defined(ONEDPL_USE_TBB_BACKEND)
+    std::cout << "TBB " TBB_VERSION_STRING;
+#elif defined(ONEDPL_USE_OPENMP_BACKEND)
+    std::cout << "OpenMP";
+#else
+    std::cout << "Default";
+#endif
+    std::cout << std::endl;
+#endif
+}
+
+template<class T>
+STDRangesStream<T>::~STDRangesStream() {
+#ifndef USE_VECTOR
+    dealloc_raw(a);
+    dealloc_raw(b);
+    dealloc_raw(c);
+#endif
+}
 
 template <class T>
 void STDRangesStream<T>::init_arrays(T initA, T initB, T initC)
