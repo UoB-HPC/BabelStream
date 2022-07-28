@@ -138,7 +138,7 @@ build_gcc() {
   for use_onedpl in OFF OPENMP TBB; do
     case "$use_onedpl" in
       OFF) dpl_conditional_flags="-DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"  ;;
-      *)   dpl_conditional_flags="-DUSE_TBB=ON -DCXX_EXTRA_FLAGS=-DPSTL_USE_PARALLEL_POLICIES=0" ;;
+      *)   dpl_conditional_flags="-DUSE_TBB=ON -DCXX_EXTRA_FLAGS=-D_GLIBCXX_USE_TBB_PAR_BACKEND=0" ;;
     esac
     for use_vector in OFF ON; do
       # some distributions like Ubuntu bionic implements std par with TBB, so conditionally link it here
@@ -227,7 +227,7 @@ build_clang() {
     for use_vector in OFF ON; do
       case "$use_onedpl" in
         OFF) dpl_conditional_flags="-DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" ;;
-        *)   dpl_conditional_flags="-DUSE_TBB=ON -DCXX_EXTRA_FLAGS=-DPSTL_USE_PARALLEL_POLICIES=0"  ;;
+        *)   dpl_conditional_flags="-DUSE_TBB=ON -DCXX_EXTRA_FLAGS=-D_GLIBCXX_USE_TBB_PAR_BACKEND=0"  ;;
       esac
       run_build $name "${CLANG_CXX:?}" std-data     "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector "
       run_build $name "${CLANG_CXX:?}" std-indices  "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
