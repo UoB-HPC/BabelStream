@@ -135,16 +135,14 @@ build_gcc() {
     "./$BUILD_DIR/omp_$name/omp-stream" -s 1048576 -n 10
   fi
 
-  # some distributions like Ubuntu bionic implements std par with TBB, so conditionally link it here
-  run_build $name "${GCC_CXX:?}" std-data "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
-  run_build $name "${GCC_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
-  run_build $name "${GCC_CXX:?}" std-ranges "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
-
-  # std again but with vectors
-  run_build $name "${GCC_CXX:?}" std-data "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-} -DUSE_VECTOR=ON"
-  run_build $name "${GCC_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-} -DUSE_VECTOR=ON"
-  run_build $name "${GCC_CXX:?}" std-ranges "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-} -DUSE_VECTOR=ON"
-
+  for use_onedpl in OFF OPENMP TBB; do
+    for use_vector in OFF ON; do
+      # some distributions like Ubuntu bionic implements std par with TBB, so conditionally link it here
+      run_build $name "${GCC_CXX:?}" std-data    "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
+      run_build $name "${GCC_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
+      run_build $name "${GCC_CXX:?}" std-ranges  "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
+    done
+  done
 
   run_build $name "${GCC_CXX:?}" tbb "$cxx -DONE_TBB_DIR=$TBB_LIB"
   run_build $name "${GCC_CXX:?}" tbb "$cxx" # build TBB again with the system TBB
@@ -220,14 +218,14 @@ build_clang() {
   run_build $name "${CLANG_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DMEM=PAGEFAULT"
   run_build $name "${CLANG_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
   run_build $name "${CLANG_CXX:?}" ocl "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
-  run_build $name "${CLANG_CXX:?}" std-data "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
-  run_build $name "${CLANG_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
-  # run_build $name "${LANG_CXX:?}" std20 "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" # not yet supported
 
-  # std again but with vectors
-  run_build $name "${CLANG_CXX:?}" std-data "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-} -DUSE_VECTOR=ON"
-  run_build $name "${CLANG_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-} -DUSE_VECTOR=ON"
-  # run_build $name "${LANG_CXX:?}" std20 "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-} -DUSE_VECTOR=ON" # not yet supported
+  for use_onedpl in OFF OPENMP TBB; do
+    for use_vector in OFF ON; do
+      run_build $name "${CLANG_CXX:?}" std-data     "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
+      run_build $name "${CLANG_CXX:?}" std-indices  "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector"
+      # run_build $name "${CLANG_CXX:?}" std-ranges "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-} -DUSE_ONEDPL=$use_onedpl -DUSE_VECTOR=$use_vector" # not yet supported
+    done
+  done
 
   run_build $name "${CLANG_CXX:?}" tbb "$cxx -DONE_TBB_DIR=$TBB_LIB"
   run_build $name "${CLANG_CXX:?}" tbb "$cxx" # build TBB again with the system TBB
