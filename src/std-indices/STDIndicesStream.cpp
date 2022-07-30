@@ -6,10 +6,6 @@
 
 #include "STDIndicesStream.h"
 
-#include <algorithm>
-#include <execution>
-#include <numeric>
-
 #ifndef ALIGNMENT
 #define ALIGNMENT (2*1024*1024) // 2MB
 #endif

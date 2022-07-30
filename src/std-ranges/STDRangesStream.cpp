@@ -6,10 +6,6 @@
 
 #include "STDRangesStream.hpp"
 
-#include <algorithm>
-#include <execution>
-#include <ranges>
-
 #ifndef ALIGNMENT
 #define ALIGNMENT (2*1024*1024) // 2MB
 #endif
