@@ -18,6 +18,7 @@
 #define VERSION_STRING "4.0"
 
 #include "Stream.h"
+#include "compiler.h"
 
 #if defined(CUDA)
 #include "CUDAStream.h"
@@ -87,7 +88,9 @@ int main(int argc, char *argv[])
     std::cout
       << "BabelStream" << std::endl
       << "Version: " << VERSION_STRING << std::endl
-      << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
+      << "Implementation: " << IMPLEMENTATION_STRING << std::endl
+      << "Compiler: " << COMPILER_NAME << std::endl;
+      
   }
 
   if (use_float)
