@@ -1,5 +1,5 @@
 
-// Copyright (c) 2015-16 Tom Deakin, Simon McIntosh-Smith,
+// Copyright (c) 2015-22 Tom Deakin, Simon McIntosh-Smith,
 // University of Bristol HPC
 //
 // For full license terms please see the LICENSE file distributed with this
@@ -19,6 +19,7 @@
 
 #include "Stream.h"
 #include "compiler.h"
+// #include "version.h"
 
 #if defined(CUDA)
 #include "CUDAStream.h"
@@ -86,11 +87,12 @@ int main(int argc, char *argv[])
   if (!output_as_csv)
   {
     std::cout
-      << "BabelStream" << std::endl
-      << "Version: " << VERSION_STRING << std::endl
+      << "BabelStream" << std::endl 
+      //      << "Version: " << VERSION_STRING << "(" << BABELSTREAM_GIT_COMMIT_ID << ")" << std::endl
       << "Implementation: " << IMPLEMENTATION_STRING << std::endl
-      << "Compiler: " << COMPILER_NAME << std::endl;
-      
+      << "Compiler: " << COMPILER_NAME << std::endl
+      //      << "Compile options: << BABELSTREAM_CXX_FLAGS << std::endl
+      ;
   }
 
   if (use_float)

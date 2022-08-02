@@ -113,6 +113,20 @@ endif ()
 registered_flags_action(check RESULT)
 message(STATUS "${RESULT}")
 
+# Determine git commit ID
+find_program(GIT_EXECUTABLE "git")
+if(GIT_EXECUTABLE)
+    execute_process (
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_ID
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else()
+    set(GIT_COMMIT_ID "unknown")
+endif()
+message (STATUS "Git commit ID: ${GIT_COMMIT_ID}")
+
 # run model specific setup, i.e append build flags, etc
 setup()
 
@@ -169,3 +183,8 @@ if (COMMAND setup_target)
 endif ()
 
 install(TARGETS ${EXE_NAME} DESTINATION bin)
+
+# Store metadata about the build in version.h
+# NOT WORKING... can't work out where to put this output file so that it can
+# be included...
+configure_file(src/version.h.in src/version.h)
