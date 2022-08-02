@@ -185,6 +185,6 @@ endif ()
 install(TARGETS ${EXE_NAME} DESTINATION bin)
 
 # Store metadata about the build in version.h
-# NOT WORKING... can't work out where to put this output file so that it can
-# be included...
-configure_file(src/version.h.in src/version.h)
+# *** NOT WORKING ***
+# I can't work out where to put this output file so that it can be included...
+# configure_file(src/version.h.in src/version.h)

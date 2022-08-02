@@ -1,0 +1,18 @@
+//===-- version.h.in - Version information file -------------------*- C -*-===//
+//
+// Copyright (c) 2022
+// University of Bristol HPC
+//
+// For full license terms please see the LICENSE file distributed with this
+// source code
+//===----------------------------------------------------------------------===//
+
+// This file is processed by cmake to generate version.h
+#ifndef VERSION_H_INCLUDED
+#define VERSION_H_INCLUDED
+
+#define BABELSTREAM_DEFS "${IMPL_DEFINITIONS}"
+#define BABELSTREAM_CXX_FLAGS "${${BUILD_TYPE}_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}} ${ACTUAL_${BUILD_TYPE}_FLAGS} ${CXX_EXTRA_FLAGS}"
+#define BABELSTREAM_GIT_COMMIT_ID "${GIT_COMMIT_ID}"
+
+#endif
