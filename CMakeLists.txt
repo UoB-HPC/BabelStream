@@ -125,7 +125,7 @@ message(STATUS "Default ${CMAKE_BUILD_TYPE} flags are `${DEFAULT_${BUILD_TYPE}_F
 # setup common build flag defaults if there are no overrides
 if (NOT DEFINED ${BUILD_TYPE}_FLAGS)
     set(ACTUAL_${BUILD_TYPE}_FLAGS ${DEFAULT_${BUILD_TYPE}_FLAGS})
-elseif ()
+else ()
     set(ACTUAL_${BUILD_TYPE}_FLAGS ${${BUILD_TYPE}_FLAGS})
 endif ()
 
