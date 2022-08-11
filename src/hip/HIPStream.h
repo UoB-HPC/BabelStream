@@ -55,7 +55,6 @@ class HIPStream : public Stream<T>
     T *d_a;
     T *d_b;
     T *d_c;
-    T *d_sum;
 
 
   public:

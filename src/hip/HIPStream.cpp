@@ -27,8 +27,6 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
     block_count(array_size / (TBSIZE * elements_per_lane))
 {
 
-  std::cerr << "Elements per lane: " << elements_per_lane << std::endl;
-  std::cerr << "Chunks per block: " << chunks_per_block << std::endl;
   // The array size must be divisible by total number of elements
   // moved per block for kernel launches
   if (ARRAY_SIZE % (TBSIZE * elements_per_lane) != 0)
@@ -39,7 +37,6 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
        << ").";
     throw std::runtime_error(ss.str());
   }
-  std::cerr << "block count " << block_count << std::endl;
 
   // Set device
   int count;
@@ -56,7 +53,10 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
 
   array_size = ARRAY_SIZE;
 
-  // Allocate the host array for partial sums for dot kernels
+  // Allocate the host array for partial sums for dot kernels using hipHostMalloc.
+  // This creates an array on the host which is visible to the device. However, it requires
+  // synchronization (e.g. hipDeviceSynchronize) for the result to be available on the host
+  // after it has been passed through to a kernel.
   hipHostMalloc(&sums, sizeof(T) * block_count, hipHostMallocNonCoherent);
   check_error();
 
