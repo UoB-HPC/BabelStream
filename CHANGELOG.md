@@ -2,7 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
-- None
+### Changed
+- RAJA CUDA CMake build issues resolved.
 
 ## [v4.0] - 2021-12-22
 
