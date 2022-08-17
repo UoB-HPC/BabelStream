@@ -17,7 +17,7 @@ set(KOKKOS_FLAGS_CPU_INTEL -qopt-streaming-stores=always)
 
 macro(setup)
 
-    set(CMAKE_CXX_STANDARD 14)
+    set(CMAKE_CXX_STANDARD 17)
     cmake_policy(SET CMP0074 NEW) #see https://github.com/kokkos/kokkos/blob/master/BUILD.md
 
     message(STATUS "Building using in-tree Kokkos source at `${KOKKOS_IN_TREE}`")
