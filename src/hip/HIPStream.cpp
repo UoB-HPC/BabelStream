@@ -124,17 +124,19 @@ void HIPStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector
 template <size_t elements_per_lane, typename T>
 __launch_bounds__(TBSIZE)
 __global__
-void copy_kernel(const T * __restrict a, T * __restrict c)
+void copy_kernel(const T * a, T * c)
 {
-  const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
-  for (size_t j = 0; j < elements_per_lane; ++j)
-    c[gidx + j] = a[gidx + j];
+  const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
+  c[i] = a[i];
+  // const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
+  // for (size_t j = 0; j < elements_per_lane; ++j)
+  //   c[gidx + j] = a[gidx + j];
 }
 
 template <class T>
 void HIPStream<T>::copy()
 {
-  copy_kernel<elements_per_lane, T><<<dim3(block_count), dim3(TBSIZE), 0, 0>>>(d_a, d_c);
+  copy_kernel<elements_per_lane, T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_c);
   check_error();
   hipDeviceSynchronize();
   check_error();
@@ -143,18 +145,20 @@ void HIPStream<T>::copy()
 template <size_t elements_per_lane, typename T>
 __launch_bounds__(TBSIZE)
 __global__
-void mul_kernel(T * __restrict b, const T * __restrict c)
+void mul_kernel(T * b, const T * c)
 {
   const T scalar = startScalar;
-  const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
-  for (size_t j = 0; j < elements_per_lane; ++j)
-    b[gidx + j] = scalar * c[gidx + j];
+  const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
+  b[i] = scalar * c[i];
+  // const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
+  // for (size_t j = 0; j < elements_per_lane; ++j)
+  //   b[gidx + j] = scalar * c[gidx + j];
 }
 
 template <class T>
 void HIPStream<T>::mul()
 {
-  mul_kernel<elements_per_lane, T><<<dim3(block_count), dim3(TBSIZE), 0, 0>>>(d_b, d_c);
+  mul_kernel<elements_per_lane, T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_b, d_c);
   check_error();
   hipDeviceSynchronize();
   check_error();
@@ -163,17 +167,19 @@ void HIPStream<T>::mul()
 template <size_t elements_per_lane, typename T>
 __launch_bounds__(TBSIZE)
 __global__
-void add_kernel(const T * __restrict a, const T * __restrict b, T * __restrict c)
+void add_kernel(const T * a, const T * b, T * c)
 {
-  const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
-  for (size_t j = 0; j < elements_per_lane; ++j)
-    c[gidx + j] = a[gidx + j] + b[gidx + j];
+  const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
+  c[i] = a[i] + b[i];
+  // const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
+  // for (size_t j = 0; j < elements_per_lane; ++j)
+  //  c[gidx + j] = a[gidx + j] + b[gidx + j];
 }
 
 template <class T>
 void HIPStream<T>::add()
 {
-  add_kernel<elements_per_lane, T><<<dim3(block_count), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c);
+  add_kernel<elements_per_lane, T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c);
   check_error();
   hipDeviceSynchronize();
   check_error();
@@ -182,18 +188,20 @@ void HIPStream<T>::add()
 template <size_t elements_per_lane, typename T>
 __launch_bounds__(TBSIZE)
 __global__
-void triad_kernel(T * __restrict a, const T * __restrict b, const T * __restrict c)
+void triad_kernel(T * a, const T * b, const T * c)
 {
   const T scalar = startScalar;
-  const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
-  for (size_t j = 0; j < elements_per_lane; ++j)
-    a[gidx + j] = b[gidx + j] + scalar * c[gidx + j];
+  const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
+  a[i] = b[i] + scalar * c[i];
+  // const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
+  // for (size_t j = 0; j < elements_per_lane; ++j)
+  //   a[gidx + j] = b[gidx + j] + scalar * c[gidx + j];
 }
 
 template <class T>
 void HIPStream<T>::triad()
 {
-  triad_kernel<elements_per_lane, T><<<dim3(block_count), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c);
+  triad_kernel<elements_per_lane, T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c);
   check_error();
   hipDeviceSynchronize();
   check_error();
@@ -220,7 +228,7 @@ void HIPStream<T>::nstream()
 
 template <size_t elements_per_lane, typename T>
 __launch_bounds__(TBSIZE)
-__global__ void dot_kernel(const T * __restrict a, const T * __restrict b, T * __restrict sum, int array_size)
+__global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
 {
   __shared__ T tb_sum[TBSIZE];
 
