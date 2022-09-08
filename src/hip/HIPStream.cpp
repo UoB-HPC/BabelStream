@@ -23,17 +23,23 @@ void check_error(void)
 
 template <class T>
 HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
-  : array_size{ARRAY_SIZE},
-    block_count(array_size / (TBSIZE * elements_per_lane))
 {
 
-  // The array size must be divisible by total number of elements
-  // moved per block for kernel launches
-  if (ARRAY_SIZE % (TBSIZE * elements_per_lane) != 0)
+  // The array size must be divisible by TBSIZE for kernel launches
+  if (ARRAY_SIZE % TBSIZE != 0)
   {
     std::stringstream ss;
-    ss << "Array size must be a multiple of elements operated on per block ("
-       << TBSIZE * elements_per_lane
+    ss << "Array size must be a multiple of " << TBSIZE;
+    throw std::runtime_error(ss.str());
+  }
+
+  // The array size must be divisible by total number of elements
+  // moved per block for the dot kernel
+  if (ARRAY_SIZE % (TBSIZE * dot_elements_per_lane) != 0)
+  {
+    std::stringstream ss;
+    ss << "Array size for the dot kernel must be a multiple of elements operated on per block ("
+       << TBSIZE * dot_elements_per_lane
        << ").";
     throw std::runtime_error(ss.str());
   }
@@ -52,12 +58,13 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
 
   array_size = ARRAY_SIZE;
+  dot_num_blocks = array_size / (TBSIZE * dot_elements_per_lane);
 
   // Allocate the host array for partial sums for dot kernels using hipHostMalloc.
   // This creates an array on the host which is visible to the device. However, it requires
   // synchronization (e.g. hipDeviceSynchronize) for the result to be available on the host
   // after it has been passed through to a kernel.
-  hipHostMalloc(&sums, sizeof(T) * block_count, hipHostMallocNonCoherent);
+  hipHostMalloc(&sums, sizeof(T) * dot_num_blocks, hipHostMallocNonCoherent);
   check_error();
 
   // Check buffers fit on the device
@@ -121,113 +128,90 @@ void HIPStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector
   check_error();
 }
 
-template <size_t elements_per_lane, typename T>
-__launch_bounds__(TBSIZE)
-__global__
-void copy_kernel(const T * a, T * c)
+template <typename T>
+__global__ void copy_kernel(const T * a, T * c)
 {
   const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
   c[i] = a[i];
-  // const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
-  // for (size_t j = 0; j < elements_per_lane; ++j)
-  //   c[gidx + j] = a[gidx + j];
 }
 
 template <class T>
 void HIPStream<T>::copy()
 {
-  copy_kernel<elements_per_lane, T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_c);
+  copy_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_c);
   check_error();
   hipDeviceSynchronize();
   check_error();
 }
 
-template <size_t elements_per_lane, typename T>
-__launch_bounds__(TBSIZE)
-__global__
-void mul_kernel(T * b, const T * c)
+template <typename T>
+__global__ void mul_kernel(T * b, const T * c)
 {
   const T scalar = startScalar;
   const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
   b[i] = scalar * c[i];
-  // const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
-  // for (size_t j = 0; j < elements_per_lane; ++j)
-  //   b[gidx + j] = scalar * c[gidx + j];
 }
 
 template <class T>
 void HIPStream<T>::mul()
 {
-  mul_kernel<elements_per_lane, T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_b, d_c);
+  mul_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_b, d_c);
   check_error();
   hipDeviceSynchronize();
   check_error();
 }
 
-template <size_t elements_per_lane, typename T>
-__launch_bounds__(TBSIZE)
-__global__
-void add_kernel(const T * a, const T * b, T * c)
+template <typename T>
+__global__ void add_kernel(const T * a, const T * b, T * c)
 {
   const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
   c[i] = a[i] + b[i];
-  // const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
-  // for (size_t j = 0; j < elements_per_lane; ++j)
-  //  c[gidx + j] = a[gidx + j] + b[gidx + j];
 }
 
 template <class T>
 void HIPStream<T>::add()
 {
-  add_kernel<elements_per_lane, T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c);
+  add_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c);
   check_error();
   hipDeviceSynchronize();
   check_error();
 }
 
-template <size_t elements_per_lane, typename T>
-__launch_bounds__(TBSIZE)
-__global__
-void triad_kernel(T * a, const T * b, const T * c)
+template <typename T>
+__global__ void triad_kernel(T * a, const T * b, const T * c)
 {
   const T scalar = startScalar;
   const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
   a[i] = b[i] + scalar * c[i];
-  // const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
-  // for (size_t j = 0; j < elements_per_lane; ++j)
-  //   a[gidx + j] = b[gidx + j] + scalar * c[gidx + j];
 }
 
 template <class T>
 void HIPStream<T>::triad()
 {
-  triad_kernel<elements_per_lane, T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c);
+  triad_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c);
   check_error();
   hipDeviceSynchronize();
   check_error();
 }
 
-template <size_t elements_per_lane, typename T>
-__launch_bounds__(TBSIZE)
-__global__ void nstream_kernel(T * __restrict a, const T * __restrict b, const T * __restrict c)
+template <typename T>
+__global__ void nstream_kernel(T * a, const T * b, const T * c)
 {
   const T scalar = startScalar;
-  const size_t gidx = (threadIdx.x + blockIdx.x * blockDim.x) * elements_per_lane;
-  for (size_t j = 0; j < elements_per_lane; ++j)
-    a[gidx + j] += b[gidx + j] + scalar * c[gidx + j];
+  const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
+  a[i] += b[i] + scalar * c[i];
 }
 
 template <class T>
 void HIPStream<T>::nstream()
 {
-  nstream_kernel<elements_per_lane, T><<<dim3(block_count), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c);
+  nstream_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c);
   check_error();
   hipDeviceSynchronize();
   check_error();
 }
 
-template <size_t elements_per_lane, typename T>
-__launch_bounds__(TBSIZE)
+template <typename T>
 __global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
 {
   __shared__ T tb_sum[TBSIZE];
@@ -236,7 +220,7 @@ __global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
   size_t i = blockDim.x * blockIdx.x + local_i;
 
   tb_sum[local_i] = 0.0;
-  for (size_t j = 0; j < elements_per_lane && i < array_size; ++j, i += blockDim.x*gridDim.x)
+  for (; i < array_size; i += blockDim.x*gridDim.x)
     tb_sum[local_i] += a[i] * b[i];
 
   for (size_t offset = blockDim.x / 2; offset > 0; offset /= 2)
@@ -255,13 +239,13 @@ __global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
 template <class T>
 T HIPStream<T>::dot()
 {
-  dot_kernel<elements_per_lane, T><<<dim3(block_count), dim3(TBSIZE), 0, 0>>>(d_a, d_b, sums, array_size);
+  dot_kernel<T><<<dim3(dot_num_blocks), dim3(TBSIZE), 0, 0>>>(d_a, d_b, sums, array_size);
   check_error();
   hipDeviceSynchronize();
   check_error();
 
   T sum = 0.0;
-  for (int i = 0; i < block_count; i++)
+  for (int i = 0; i < dot_num_blocks; i++)
     sum += sums[i];
 
   return sum;
