@@ -2,8 +2,13 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
+### Added
+- Ability to build Kokkos and RAJA versions against existing packages.
+
 ### Changed
 - RAJA CUDA CMake build issues resolved.
+- Fix CUDA memory limit check.
+- Use long double for `check_solution` in case of large problem size.
 
 ## [v4.0] - 2021-12-22
 
