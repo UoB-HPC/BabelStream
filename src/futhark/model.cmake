@@ -1,3 +1,11 @@
+# Use
+#
+#   cmake -Bbuild -H. -DMODEL=futhark -DFUTHARK_BACKEND=foo
+#
+# to use the Futhark backend, where 'foo' must be one of 'multicore',
+# 'c', 'opencl', or 'cuda'.  Defaults to 'multicore'.  Expects that
+# the Futhark compiler is found somewhere on PATH.
+
 set(FUTHARK_BACKEND "multicore" CACHE STRING "Futhark compiler backend")
 
 macro(setup)

@@ -40,6 +40,7 @@ BabelStream is currently implemented in the following parallel programming model
 - SYCL and SYCL 2020
 - TBB
 - Thrust (via CUDA or HIP)
+- Futhark
 
 This project also contains implementations in alternative languages with different build systems:
 * Julia - [JuliaStream.jl](./src/julia/JuliaStream.jl)
