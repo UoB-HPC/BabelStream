@@ -12,9 +12,7 @@
 #include <stdexcept>
 
 #include "Stream.h"
-extern "C" {
 #include "babelstream.h"
-}
 
 #if defined(FUTHARK_BACKEND_c)
 #define IMPLEMENTATION_STRING "Futhark (sequential)"
