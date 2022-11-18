@@ -101,7 +101,7 @@ The source for each model's implementations are located in `./src/<model>`.
 
 Currently available models are:
 ```
-omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020;acc;raja;tbb;thrust
+omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020;acc;raja;tbb;thrust;futhark
 ```
 
 #### Overriding default flags
