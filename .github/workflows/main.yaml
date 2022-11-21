@@ -168,3 +168,14 @@ jobs:
       - name: Test compile hipsycl @ CMake 3.18
         if: ${{ ! cancelled() }}
         run: ./src/ci-test-compile.sh ./build hipsycl all ${{ env.CMAKE_3_18_BIN }}
+
+  test-futhark:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Prepare Futhark compiler
+        uses: diku-dk/install-futhark@HEAD
+        with:
+          version: 'latest'
+      - run: cmake -Bbuild -H. -DMODEL=futhark -DFUTHARK_BACKEND=multicore
+      - run: cmake --build build
