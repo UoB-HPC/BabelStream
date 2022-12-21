@@ -90,7 +90,7 @@ register_model(acc ACC ACCStream.cpp)
 register_model(raja USE_RAJA RAJAStream.cpp)
 register_model(tbb TBB TBBStream.cpp)
 register_model(thrust THRUST ThrustStream.cu) # Thrust uses cu, even for rocThrust
-
+register_model(vecpar VECPAR VecparStream.cpp)
 
 set(USAGE ON CACHE BOOL "Whether to print all custom flags for the selected model")
 
