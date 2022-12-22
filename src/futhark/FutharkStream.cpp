@@ -7,6 +7,7 @@
 // source code
 
 #include <cstdlib>  // For aligned_alloc
+#include <string>
 #include "FutharkStream.h"
 
 #ifndef ALIGNMENT
@@ -18,6 +19,10 @@ FutharkStream<T>::FutharkStream(const int ARRAY_SIZE, int device)
 {
   this->array_size = ARRAY_SIZE;
   this->cfg = futhark_context_config_new();
+  this->device = "#" + std::to_string(device);
+#if defined(FUTHARK_BACKEND_cuda) || defined(FUTHARK_BACKEND_opencl)
+  futhark_context_config_set_device(cfg, this->device.c_str());
+#endif
   this->ctx = futhark_context_new(cfg);
   this->a = NULL;
   this->b = NULL;

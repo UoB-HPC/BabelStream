@@ -32,6 +32,8 @@ class FutharkStream : public Stream<T>
 protected:
   // Size of arrays
   int array_size;
+  // For device selection.
+  std::string device;
 
   // Futhark stuff
   struct futhark_context_config *cfg;
