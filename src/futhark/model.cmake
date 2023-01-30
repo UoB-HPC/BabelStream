@@ -1,19 +1,31 @@
 # Use
 #
-#   cmake -Bbuild -H. -DMODEL=futhark -DFUTHARK_BACKEND=foo
+#   cmake -Bbuild -H. -DMODEL=futhark -DFUTHARK_BACKEND=foo -DFUTHARK_COMPILER=foo/bar/bin/futhark
 #
 # to use the Futhark backend, where 'foo' must be one of 'multicore',
-# 'c', 'opencl', or 'cuda'.  Defaults to 'multicore'.  Expects that
-# the Futhark compiler is found somewhere on PATH.
+# 'c', 'opencl', or 'cuda'.  Defaults to 'multicore'.
+#
+# Use -DFUTHARK_COMPILER to set the path to the Futhark compiler
+# binary.  Defaults to 'futhark' on the PATH.
 
-set(FUTHARK_BACKEND "multicore" CACHE STRING "Futhark compiler backend")
+register_flag_optional(FUTHARK_BACKEND
+  "Use a specific Futhark backend, possible options are:
+         - c
+         - multicore
+         - opencl
+         - cuda"
+  "multicore")
+
+register_flag_optional(FUTHARK_COMPILER
+  "Absolute path to the Futhark compiler, defaults to the futhark compiler on PATH"
+  "futhark")
 
 macro(setup)
   add_custom_command(
     OUTPUT
     ${CMAKE_CURRENT_BINARY_DIR}/babelstream.c
     ${CMAKE_CURRENT_BINARY_DIR}/babelstream.h
-    COMMAND futhark ${FUTHARK_BACKEND}
+    COMMAND ${FUTHARK_COMPILER} ${FUTHARK_BACKEND}
     --library src/futhark/babelstream.fut
     -o ${CMAKE_CURRENT_BINARY_DIR}/babelstream
     DEPENDS src/futhark/babelstream.fut
