@@ -7,6 +7,7 @@ register_flag_required(SYCL_COMPILER
         "Compile using the specified SYCL compiler implementation
         Supported values are
            ONEAPI-DPCPP - dpc++ that is part of an oneAPI Base Toolkit distribution (https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html)
+           ONEAPI-ICPX  - icpx as a standalone compiler 
            DPCPP        - dpc++ as a standalone compiler (https://github.com/intel/llvm)
            HIPSYCL      - hipSYCL compiler (https://github.com/illuhad/hipSYCL)
            COMPUTECPP   - ComputeCpp compiler (https://developer.codeplay.com/products/computecpp/ce/home)")
@@ -14,6 +15,7 @@ register_flag_required(SYCL_COMPILER
 register_flag_optional(SYCL_COMPILER_DIR
         "Absolute path to the selected SYCL compiler directory, most are packaged differently so set the path according to `SYCL_COMPILER`:
            ONEAPI-DPCPP             - not required but `dpcpp` must be on PATH, load oneAPI as per documentation (i.e `source /opt/intel/oneapi/setvars.sh` first)
+           ONEAPI-ICPX              - `icpx` must be used for OneAPI 2023 and later on releases (i.e `source /opt/intel/oneapi/setvars.sh` first)
            HIPSYCL|DPCPP|COMPUTECPP - set to the root of the binary distribution that contains at least `bin/`, `include/`, and `lib/`"
         "")
 
@@ -65,6 +67,12 @@ macro(setup)
     elseif (${SYCL_COMPILER} STREQUAL "ONEAPI-DPCPP")
         set(CMAKE_CXX_COMPILER dpcpp)
         register_definitions(CL_TARGET_OPENCL_VERSION=220)
+    elseif (${SYCL_COMPILER} STREQUAL "ONEAPI-ICPX")
+        set(CMAKE_CXX_COMPILER icpx)
+        include_directories(${SYCL_COMPILER_DIR}/include/sycl)
+        register_definitions(CL_TARGET_OPENCL_VERSION=220)
+        register_append_cxx_flags(ANY -fsycl)
+        register_append_link_flags(-fsycl)
     else ()
         message(FATAL_ERROR "SYCL_COMPILER=${SYCL_COMPILER} is unsupported")
     endif ()
