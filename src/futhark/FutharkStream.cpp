@@ -10,10 +10,6 @@
 #include <string>
 #include "FutharkStream.h"
 
-#ifndef ALIGNMENT
-#define ALIGNMENT (2*1024*1024) // 2MB
-#endif
-
 template <class T>
 FutharkStream<T>::FutharkStream(const int ARRAY_SIZE, int device)
 {
