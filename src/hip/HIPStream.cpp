@@ -33,17 +33,6 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
     throw std::runtime_error(ss.str());
   }
 
-  // The array size must be divisible by total number of elements
-  // moved per block for the dot kernel
-  if (ARRAY_SIZE % (TBSIZE * dot_elements_per_lane) != 0)
-  {
-    std::stringstream ss;
-    ss << "Array size for the dot kernel must be a multiple of elements operated on per block ("
-       << TBSIZE * dot_elements_per_lane
-       << ").";
-    throw std::runtime_error(ss.str());
-  }
-
   // Set device
   int count;
   hipGetDeviceCount(&count);
@@ -58,7 +47,8 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
 
   array_size = ARRAY_SIZE;
-  dot_num_blocks = array_size / (TBSIZE * dot_elements_per_lane);
+  // Round dot_num_blocks up to next multiple of (TBSIZE * dot_elements_per_lane)
+  dot_num_blocks = (array_size + (TBSIZE * dot_elements_per_lane - 1)) / (TBSIZE * dot_elements_per_lane);
 
   // Allocate the host array for partial sums for dot kernels using hipHostMalloc.
   // This creates an array on the host which is visible to the device. However, it requires
