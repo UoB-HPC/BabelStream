@@ -42,7 +42,6 @@
 
 ## OpenCL
 
-* There are 4 different backend options for OpenCL : AMD,CUDA,INTEL, POCL 
 * No need to specify `amdgpu_target` or `cuda_arch` here since we are using AMD and CUDA as backend respectively.
 
 
@@ -63,4 +62,20 @@
 
 # Example 4:  POCL backend
  $ spack install babelstream%gcc +ocl backend=pocl
+```
+
+## STD
+* Minimum GCC version requirement `10.1.0`
+* NVHPC Offload will be added in the future release 
+
+```shell
+# Example 1:  data 
+ $ spack install babelstream +stddata
+
+# Example 2:  ranges
+ $ spack install babelstream +stdranges
+ 
+# Example 3:  indices
+ $ spack install babelstream +stdindices
+
 ```
