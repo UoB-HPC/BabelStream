@@ -1,5 +1,6 @@
 # Spack Instructions
 
+
 ## Table of contents
 * [OpenMP](#omp)
 * [OpenCL](#ocl)
@@ -103,4 +104,29 @@
 
 # Example 4:  ROCM with GPU target and extra flags
  $ spack install babelstream +rocm amdgpu_target=<gfx701> flags=<xxx>
+```
+
+## CUDA
+
+* The `cuda_arch` value is mandatory here. 
+* If a user provides a value for `mem`, device memory mode will be chosen accordingly
+* If a user provides a value for `flags`, additional CUDA flags will be passed to NVCC
+* In the absence of `mem` and `flags`, the execution will choose **DEFAULT** for device memory mode and no additional flags will be passed
+
+
+| Flag        | Definition                      | 
+|-----------| ----------------------------------|
+| cuda_arch     |- List of supported compute capabilities are provided [here](https://github.com/spack/spack/blob/0f271883831bec6da3fc64c92eb1805c39a9f09a/lib/spack/spack/build_systems/cuda.py#LL19C1-L47C6) <br />- Useful [link](https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/) for matching CUDA gencodes with NVIDIA architectures| 
+|mem| Device memory mode: <br />- **DEFAULT** allocate host and device memory pointers.<br />- **MANAGED** use CUDA Managed Memory.<br />- **PAGEFAULT** shared memory, only host pointers allocated | 
+|flags | Extra flags to pass |
+
+```shell
+# Example 1: CUDA no mem and flags specified
+ $ spack install babelstream +cuda cuda_arch=70
+
+# Example 2: for Nvidia GPU for Volta (sm_70) 
+ $ spack install babelstream +cuda cuda_arch=70 mem=managed
+ 
+# Example 3: CUDA with mem and flags specified
+ $ spack install babelstream +cuda cuda_arch=70 mem=managed flags=xxx 
 ```
