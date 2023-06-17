@@ -190,10 +190,25 @@
 |-----------| ----------------------------------|
 | cuda_arch     |- List of supported compute capabilities are provided [here](https://github.com/spack/spack/blob/0f271883831bec6da3fc64c92eb1805c39a9f09a/lib/spack/spack/build_systems/cuda.py#LL19C1-L47C6) <br />- Useful [link](https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/) for matching CUDA gencodes with NVIDIA architectures| 
 | CPU_ARCH   | This sets the `-tp` (target processor) flag, possible values are: <br /> `px`          - Generic x86 Processor <br /> `bulldozer`   - AMD Bulldozer processor <br /> `piledriver`  - AMD Piledriver processor <br /> `zen`         - AMD Zen architecture (Epyc, Ryzen) <br /> `zen2`        - AMD Zen 2 architecture (Ryzen 2) <br />  `sandybridge` - Intel SandyBridge processor <br /> `haswell`     - Intel Haswell processor <br /> `knl`         - Intel Knights Landing processor <br /> `skylake`     - Intel Skylake Xeon processor <br /> `host`        - Link native version of HPC SDK cpu math library <br /> `native`      - Alias for -tp host | `cpu_arch=skylake` |
+
 ```shell
 # Example 1:  For GPU Run 
  $ spack install babelstream +acc cuda_arch=<70>
 
 # Example 2:  For Multicore CPU Run 
  $ spack install babelstream +acc cpu_arch=<bulldozer>
+```
+
+## RAJA
+* RAJA implementation requires RAJA source folder to be provided because it builds it from the scratch
+
+
+| Flag        | Definition                      | 
+|-----------| ----------------------------------|
+| dir | Download the Raja release from github repository and extract the zip file to a directory you want and target this directory with `dir` flag |
+| backend     | 2 different backend options: <br />- cuda <br />- omp | 
+|offload| Choose offloading platform `offload= [cpu]/[nvidia]` |
+```shell
+# Example 1:  For CPU offload with backend OMP 
+ $ spack install babelstream +raja offload=cpu backend=omp dir=/home/dir/raja
 ```
