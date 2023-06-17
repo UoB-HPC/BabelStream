@@ -208,7 +208,14 @@
 | dir | Download the Raja release from github repository and extract the zip file to a directory you want and target this directory with `dir` flag |
 | backend     | 2 different backend options: <br />- cuda <br />- omp | 
 |offload| Choose offloading platform `offload= [cpu]/[nvidia]` |
+
 ```shell
 # Example 1:  For CPU offload with backend OMP 
  $ spack install babelstream +raja offload=cpu backend=omp dir=/home/dir/raja
+```
+
+## TBB
+```shell
+# Example: 
+ $ spack install babelstream +tbb
 ```
