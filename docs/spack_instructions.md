@@ -122,11 +122,35 @@
 
 ```shell
 # Example 1: CUDA no mem and flags specified
- $ spack install babelstream +cuda cuda_arch=70
+ $ spack install babelstream +cuda cuda_arch=<70>
 
 # Example 2: for Nvidia GPU for Volta (sm_70) 
- $ spack install babelstream +cuda cuda_arch=70 mem=managed
+ $ spack install babelstream +cuda cuda_arch=<70> mem=<managed>
  
 # Example 3: CUDA with mem and flags specified
- $ spack install babelstream +cuda cuda_arch=70 mem=managed flags=xxx 
+ $ spack install babelstream +cuda cuda_arch=<70> mem=<managed> flags=<CUDA_EXTRA_FLAGS> 
+```
+
+## Kokkos
+
+* Kokkos implementation requires kokkos source folder to be provided because it builds it from the scratch
+
+
+| Flag        | Definition                      | 
+|-----------| ----------------------------------|
+| dir | Download the kokkos release from github repository ( https://github.com/kokkos/kokkos ) and extract the zip file to a directory you want and target this directory with `dir` flag |
+| backend     | 2 different backend options: <br />- cuda <br />- omp | 
+| cuda_arch     |- List of supported compute capabilities are provided [here](https://github.com/spack/spack/blob/0f271883831bec6da3fc64c92eb1805c39a9f09a/lib/spack/spack/build_systems/cuda.py#LL19C1-L47C6) <br />- Useful [link](https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/) for matching CUDA gencodes with NVIDIA architectures| 
+
+
+```shell
+# Example 1:  No Backend option specified
+ $ spack install babelstream +kokkos dir=</home/user/Downloads/kokkos-x.x.xx>
+
+# Example 2:  CUDA backend 
+ $ spack install babelstream +kokkos backend=cuda cuda_arch=70 dir=</home/user/Downloads/kokkos-x.x.xx>
+ 
+# Example 3:  OMP backend
+ $ spack install babelstream +kokkos  backend=omp dir=</home/user/Downloads/kokkos-x.x.xx>
+
 ```
