@@ -154,3 +154,30 @@
  $ spack install babelstream +kokkos  backend=omp dir=</home/user/Downloads/kokkos-x.x.xx>
 
 ```
+
+
+## SYCL2020
+* Instructions for installing the intel compilers are provided [here](https://spack.readthedocs.io/en/latest/build_systems/inteloneapipackage.html#building-a-package-with-icx)
+
+| Flag        | Definition                      | 
+|-----------| ----------------------------------|
+| implementation     | 3 different implementation options: <br />- OneAPI-ICPX <br />- OneAPI-DPCPP <br />- Compute-CPP <br />| 
+
+```shell
+# Example 1:  No implementation option specified (build for OneAPI-ICPX)
+ $ spack install babelstream%oneapi +sycl2020
+
+# Example 2:  OneAPI-DPCPP implementation 
+ $ spack install babelstream +sycl2020 implementation=ONEAPI-DPCPP
+```
+
+## SYCL
+
+| Flag        | Definition                      | 
+|-----------| ----------------------------------|
+| implementation     | 2 different implementation options: <br />- OneAPI-DPCPP <br />- Compute-CPP <br />| 
+
+```shell
+# Example 1:  OneAPI-DPCPP implementation 
+ $ spack install babelstream +sycl2020 implementation=ONEAPI-DPCPP
+```
