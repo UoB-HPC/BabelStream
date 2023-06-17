@@ -4,8 +4,7 @@
 * [OpenMP](#omp)
 * [OpenCL](#ocl)
 * [STD](#std)
-* [STD20](#std20)
-* [Hip](#hip)
+* [Hip(ROCM)](#hip)
 * [Cuda](#cuda)
 * [Kokkos](#kokkos)
 * [Sycl](#sycl)
@@ -78,4 +77,30 @@
 # Example 3:  indices
  $ spack install babelstream +stdindices
 
+```
+
+## HIP(ROCM)
+
+*  `amdgpu_target` and `flags` are optional here.
+
+
+| Flag        | Definition                      | 
+|-----------| ----------------------------------|
+|amdgpu_target| List of supported architectures are provided [here](https://github.com/spack/spack/blob/0f271883831bec6da3fc64c92eb1805c39a9f09a/lib/spack/spack/build_systems/rocm.py#LL93C1-L125C19) | 
+|flags | Extra flags to pass |
+
+
+
+```shell
+# Example 1:  ROCM default
+ $ spack install babelstream +rocm
+
+# Example 2:  ROCM with GPU target
+ $ spack install babelstream +rocm amdgpu_target=<gfx701>
+ 
+# Example 3:  ROCM with extra flags option
+ $ spack install babelstream +rocm flags=<xxx>
+
+# Example 4:  ROCM with GPU target and extra flags
+ $ spack install babelstream +rocm amdgpu_target=<gfx701> flags=<xxx>
 ```
