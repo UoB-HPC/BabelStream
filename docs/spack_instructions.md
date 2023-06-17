@@ -219,3 +219,21 @@
 # Example: 
  $ spack install babelstream +tbb
 ```
+
+## THRUST
+
+| Flag        | Definition                      | 
+|-----------| ----------------------------------|
+|implementation| Choose one of the implementation for Thrust. Options are `cuda` and `rocm` | `implementation = [cuda]/[rocm]` |
+|backend| CUDA's Thrust implementation supports the following backends:- CUDA- OMP - TBB |
+| cuda_arch     |- List of supported compute capabilities are provided [here](https://github.com/spack/spack/blob/0f271883831bec6da3fc64c92eb1805c39a9f09a/lib/spack/spack/build_systems/cuda.py#LL19C1-L47C6) <br />- Useful [link](https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/) for matching CUDA gencodes with NVIDIA architectures| 
+|flags | Additional CUDA flags passed to nvcc, this is appended after `CUDA_ARCH` | 
+
+```shell
+# Example1: CUDA implementation
+$ spack install babelstream +thrust implementation=cuda backend=cuda cuda_arch=<70> flags=<option>
+$ spack install babelstream +thrust implementation=cuda backend=omp cuda_arch=<70> flags=<option>
+$ spack install babelstream +thrust implementation=cuda backend=tbb cuda_arch=<70> flags=<option>
+# Example1: ROCM implementation
+*  spack install babelstream +thrust implementation=rocm backend=<option>
+```
