@@ -160,7 +160,7 @@ $ spack install babelstream@<version>%<compiler> +<model> <model specific flags>
 $ cd SPACK_INSTALL_DIRECTORY/opt/spack/system-name/compiler-name/babelstream-version-identifier/bin/
 $ ./<model>-stream
 ```
-More detailed examples are provided in [Spack README file](./docs/spack_instructions.md)
+More detailed examples are provided in [Spack README file](./docs/spack_instructions.md).
 The `MODEL` option selects one implementation of BabelStream to build.
 
 Currently available models are:
