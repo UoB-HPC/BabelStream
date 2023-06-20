@@ -143,7 +143,7 @@ Alternatively, refer to the [CI script](./src/ci-test-compile.sh), which test-co
 
 
 The project supports building with Spack >= 0.19.0, which can be installed without root via the [official GitHub repo](https://github.com/spack/spack).
-The BabelStream Spack Package source code could be accessed from the link [here](https://github.com/spack/spack/tree/develop/var/spack/repos/builtin/packages/babelstream/package.py)
+The BabelStream Spack Package source code could be accessed from the link [here](https://github.com/spack/spack/tree/develop/var/spack/repos/builtin/packages/babelstream/package.py).
 Each BabelStream implementation (programming model) is built as follows:
 
 ```shell
