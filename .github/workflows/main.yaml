@@ -28,7 +28,7 @@ jobs:
         run: ./target/release/rust-stream --arraysize 2048
 
   test-java:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     defaults:
       run:
         working-directory: ./src/java/java-stream
@@ -41,7 +41,7 @@ jobs:
         run: java -jar target/java-stream.jar --arraysize 2048
 
   test-julia:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     defaults:
       run:
         working-directory: ./src/julia/JuliaStream.jl
@@ -70,7 +70,7 @@ jobs:
 
 
   test-cpp:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
 
