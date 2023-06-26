@@ -117,19 +117,20 @@ verify_dir_exists() {
 }
 
 setup_aocc() {
-  echo "Preparing AOCC"
+  #echo "Preparing AOCC"
+  echo "TODO AOCC requires EULA to download"
 
-  local aocc_ver="2.3.0"
-  local tarball="aocc-$aocc_ver.tar.xz"
-  # XXX it's actually XZ compressed, so it should be tar.xz
-  local AOCC_URL="http://developer.amd.com/wordpress/media/files/aocc-compiler-2.3.0.tar"
-  # local AOCC_URL="http://localhost:8000/aocc-compiler-2.3.0.tar"
+  # local aocc_ver="2.3.0"
+  # local tarball="aocc-$aocc_ver.tar.xz"
+  # # XXX it's actually XZ compressed, so it should be tar.xz
+  # local AOCC_URL="http://developer.amd.com/wordpress/media/files/aocc-compiler-2.3.0.tar"
+  # # local AOCC_URL="http://localhost:8000/aocc-compiler-2.3.0.tar"
 
-  get_and_untar "$tarball" "$AOCC_URL"
-  export_var AOCC_CXX "$PWD/aocc-compiler-$aocc_ver/bin/clang++"
-  verify_bin_exists "$AOCC_CXX"
-  "$AOCC_CXX" --version
-  check_size
+  # get_and_untar "$tarball" "$AOCC_URL"
+  # export_var AOCC_CXX "$PWD/aocc-compiler-$aocc_ver/bin/clang++"
+  # verify_bin_exists "$AOCC_CXX"
+  # "$AOCC_CXX" --version
+  # check_size
 }
 
 setup_nvhpc() {

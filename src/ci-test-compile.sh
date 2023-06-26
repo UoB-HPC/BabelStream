@@ -309,13 +309,13 @@ case "$COMPILER" in
 gcc) build_gcc ;;
 clang) build_clang ;;
 nvhpc) build_nvhpc ;;
-aocc) build_aocc ;;
 aomp) build_aomp ;;
 hip) build_hip ;;
 dpcpp) build_dpcpp ;;
 hipsycl) build_hipsycl ;;
 
 # XXX below are local only; licence or very large download required, candidate for local runner
+aocc) build_aocc ;;
 computecpp) build_computecpp ;;
 icpx) build_icpx ;;
 icpc) build_icpc ;;
@@ -324,12 +324,12 @@ all)
   build_gcc
   build_clang
   build_nvhpc
-  build_aocc
   build_aomp
   build_hip
   build_dpcpp
   build_hipsycl
 
+  build_aocc
   build_computecpp
   build_icpx
   build_icpc
