@@ -120,8 +120,7 @@ setup_aocc() {
   echo "Preparing AOCC"
 
   local aocc_ver="4.0.0"
-  local tarball="aocc-$aocc_ver.tar.xz"
-  # XXX it's actually XZ compressed, so it should be tar.xz
+  local tarball="aocc-$aocc_ver.tar"
   local AOCC_URL="http://download.amd.com/developer/eula/aocc-compiler-4.0.0.tar"
   # local AOCC_URL="http://localhost:8000/aocc-compiler-2.3.0.tar"
 
