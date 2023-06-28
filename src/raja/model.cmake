@@ -1,18 +1,19 @@
-
 register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that is supported by CMake detection and RAJA.
          See https://raja.readthedocs.io/en/main/getting_started.html#build-and-install"
         "c++")
 
-register_flag_required(RAJA_IN_TREE
+register_flag_optional(RAJA_IN_TREE
         "Absolute path to the *source* distribution directory of RAJA.
          Make sure to use the release version of RAJA or clone RAJA recursively with submodules.
          Remember to append RAJA specific flags as well, for example:
-
              -DRAJA_IN_TREE=... -DENABLE_OPENMP=ON -DENABLE_CUDA=ON ...
-
          See https://github.com/LLNL/RAJA/blob/08cbbafd2d21589ebf341f7275c229412d0fe903/CMakeLists.txt#L44 for all available options
-")
+" "")
+
+register_flag_optional(RAJA_IN_PACKAGE
+        "Use if Raja is part of a package dependency: 
+        Path to installation" "")
 
 register_flag_optional(TARGET
         "Target offload device, implemented values are CPU, NVIDIA"
@@ -76,16 +77,22 @@ macro(setup)
         register_link_library(RAJA)
         # RAJA's cmake screws with where the binary will end up, resetting it here:
         set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    
+    elseif (EXISTS "${RAJA_IN_PACKAGE}")
+        message(STATUS "Building using packaged Raja at `${RAJA_IN_PACKAGE}`")
+        find_package(RAJA REQUIRED)
+        register_link_library(RAJA)
+    
     else ()
-        message(FATAL_ERROR "`${RAJA_IN_TREE}` does not exist")
+        message(FATAL_ERROR "Neither `${RAJA_IN_TREE}` or `${RAJA_IN_PACKAGE}` exists")
     endif ()
 
 
     if (ENABLE_CUDA)
         # RAJA needs the codebase to be compiled with nvcc, so we tell cmake to treat sources as *.cu
         enable_language(CUDA)
-        set_source_files_properties(RAJAStream.cpp PROPERTIES LANGUAGE CUDA)
-        set_source_files_properties(main.cpp PROPERTIES LANGUAGE CUDA)
+        set_source_files_properties(src/raja/RAJAStream.cpp PROPERTIES LANGUAGE CUDA)
+        set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)
     endif ()
 
 

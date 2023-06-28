@@ -145,7 +145,7 @@ T ThrustStream<T>::dot()
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA || \
     (defined(THRUST_DEVICE_SYSTEM_HIP) && THRUST_DEVICE_SYSTEM_HIP == THRUST_DEVICE_SYSTEM)
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__NVCOMPILER_CUDA__)
 #define IMPL_FN__(fn) cuda ## fn
 #define IMPL_TYPE__(tpe) cuda ## tpe
 #elif defined(__HIP_PLATFORM_HCC__)

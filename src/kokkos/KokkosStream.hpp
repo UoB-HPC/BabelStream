@@ -10,7 +10,6 @@
 #include <stdexcept>
 
 #include <Kokkos_Core.hpp>
-
 #include "Stream.h"
 
 #define IMPLEMENTATION_STRING "Kokkos"

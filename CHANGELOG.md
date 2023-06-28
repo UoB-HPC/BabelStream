@@ -2,8 +2,16 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
+### Added
+- Ability to build Kokkos and RAJA versions against existing packages.
+
+### Changed
+- RAJA CUDA CMake build issues resolved.
 - Fix CUDA memory limit check.
 - Use long double for `check_solution` in case of large problem size.
+- OneAPI DPCPP compiler is deprecated in favour of ICPX, so added new build option to SYCL 2020 version.
+- Updates to the HIP kernels and API usage.
+- Number of thread-blocks in CUDA dot kernel implementation changed to 1024.
 
 ## [v4.0] - 2021-12-22
 
