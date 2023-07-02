@@ -79,7 +79,7 @@ if (USE_TBB)
     FetchContent_Declare(
             TBB
             GIT_REPOSITORY https://github.com/oneapi-src/oneTBB.git
-            GIT_TAG faaf43c4ab22cb4b4267d65d5e218fa58800eea8
+            GIT_TAG v2021.9.0
     )
     # Don't fail builds on waring (TBB has -Wall while not being free of warnings from unused symbols...)
     set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
