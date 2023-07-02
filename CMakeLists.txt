@@ -100,7 +100,7 @@ if (USE_ONEDPL)
     FetchContent_Declare(
             oneDPL
             GIT_REPOSITORY https://github.com/oneapi-src/oneDPL.git
-            GIT_TAG oneDPL-2021.7.0-release
+            GIT_TAG oneDPL-2022.1.0-rc3
     )
     string(TOLOWER ${USE_ONEDPL} ONEDPL_BACKEND)
     # XXX oneDPL looks for omp instead of openmp, which mismatches(!) with ONEDPL_PAR_BACKEND if using find_package
