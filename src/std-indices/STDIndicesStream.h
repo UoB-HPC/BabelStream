@@ -36,7 +36,7 @@ public:
       iterator operator+(const value_type v) const { return iterator(num + v); }
 
       bool operator==(iterator other) const { return num == other.num; }
-      bool operator!=(iterator other) const { return *this != other; }
+      bool operator!=(iterator other) const { return num != other.num; }
       bool operator<(iterator other) const { return num < other.num; }
 
       reference operator*() const { return num;}
