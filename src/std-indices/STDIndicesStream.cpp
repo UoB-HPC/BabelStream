@@ -49,7 +49,8 @@ template <class T>
 void STDIndicesStream<T>::mul()
 {
   //  b[i] = scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), b.begin(), [=, scalar = startScalar](int i) {
+  std::transform(exe_policy, range.begin(), range.end(), b.begin(),
+                 [c = c.data(), scalar = startScalar](int i) {
     return scalar * c[i];
   });
 }
@@ -58,7 +59,8 @@ template <class T>
 void STDIndicesStream<T>::add()
 {
   //  c[i] = a[i] + b[i];
-  std::transform(exe_policy, range.begin(), range.end(), c.begin(), [=](int i) {
+  std::transform(exe_policy, range.begin(), range.end(), c.begin(),
+                 [a = a.data(), b = b.data()](int i) {
     return a[i] + b[i];
   });
 }
@@ -67,7 +69,8 @@ template <class T>
 void STDIndicesStream<T>::triad()
 {
   //  a[i] = b[i] + scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), a.begin(), [=, scalar = startScalar](int i) {
+  std::transform(exe_policy, range.begin(), range.end(), a.begin(),
+                 [b = b.data(), c = c.data(), scalar = startScalar](int i) {
     return b[i] + scalar * c[i];
   });
 }
@@ -79,7 +82,8 @@ void STDIndicesStream<T>::nstream()
   //  Need to do in two stages with C++11 STL.
   //  1: a[i] += b[i]
   //  2: a[i] += scalar * c[i];
-  std::transform(exe_policy, range.begin(), range.end(), a.begin(), [=, scalar = startScalar](int i) {
+  std::transform(exe_policy, range.begin(), range.end(), a.begin(),
+                 [a = a.data(), b = b.data(), c = c.data(), scalar = startScalar](int i) {
     return a[i] + b[i] + scalar * c[i];
   });
 }
