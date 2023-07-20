@@ -44,7 +44,7 @@ endif ()
 
 # setup some defaults flags for everything
 set(DEFAULT_DEBUG_FLAGS -O2 -fno-omit-frame-pointer)
-set(DEFAULT_RELEASE_FLAGS -O3 -march=native)
+set(DEFAULT_RELEASE_FLAGS -O3)
 
 macro(hint_flag FLAG DESCRIPTION)
     if (NOT DEFINED ${FLAG})
