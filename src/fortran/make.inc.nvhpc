@@ -1,0 +1,70 @@
+FC	:= nvfortran
+#FCFLAGS	:= -O3 -Minform=inform -Minfo=all
+FCFLAGS	:= -O3 -Minform=warn
+
+#TARGET=gpu
+TARGET=multicore
+
+NVARCH=$(shell which nvidia-smi > /dev/null && nvidia-smi -q | grep "Product Architecture")
+ifeq ($(findstring Ampere,$(NVARCH)),Ampere)
+    $(info Ampere detected)
+    GPU = cc80
+endif
+ifeq ($(findstring Turing,$(NVARCH)),Turing)
+    $(info Turing detected)
+    GPU = cc75
+endif
+ifeq ($(findstring Volta,$(NVARCH)),Volta)
+    $(info Volta detected)
+    GPU = cc70
+endif
+ifeq ($(findstring Pascal,$(NVARCH)),Pascal)
+    $(info Pascal detected)
+    GPU = cc60,cc61
+endif
+ifeq ($(shell which jetson_clocks > /dev/null  && echo 1),1)
+    $(info Jetson AGX Orin detected)
+    GPU = ccn87,cc86
+    # figure out Xavier later
+    #GPU = cc72
+endif
+ifeq ($(GPU),)
+    $(error Your GPU architecture could not be detected. Set it manually.)
+endif
+GPUFLAG = -gpu=$(GPU)
+
+# MARCH=neoverse-v1,neoverse-n1,zen3
+ARCH=$(shell uname -m)
+ifdef MARCH
+  ifeq ($(ARCH),aarch64)
+    ifeq ($(MARCH),neoverse-n1)
+      FCFLAGS += -tp=$(MARCH)
+    else
+      ifeq ($(MARCH),neoverse-v1)
+        FCFLAGS += -tp=$(MARCH)
+      else
+        FCFLAGS += -tp=native
+      endif
+    endif
+  else
+    FCFLAGS += -tp=$(MARCH)
+  endif
+else
+  FCFLAGS += -tp=native
+endif
+
+# this is to allow apples-to-apples comparison with DC in non-DC GPU impls
+# set exactly one of these!
+#MANAGED = -DUSE_MANAGED -gpu=managed
+#DEVICE  = -DUSE_DEVICE -cuda -gpu=nomanaged
+
+DOCONCURRENT_FLAG   = $(GPUFLAG) -stdpar=$(TARGET) $(DEVICE)
+ARRAY_FLAG          = $(GPUFLAG) -stdpar=$(TARGET) $(MANAGED)
+OPENMP_FLAG         = $(GPUFLAG) -mp=$(TARGET)     $(MANAGED)
+OPENACC_FLAG        = $(GPUFLAG) -acc=$(TARGET)    $(MANAGED)
+CUDA_FLAG           = $(GPUFLAG) -cuda -acc=gpu    $(MANAGED)
+SEQUENTIAL_FLAG     =
+
+ifeq ($(IMPLEMENTATION),OpenMPTaskloop)
+    $(error IMPLEMENTATION=OpenMPTaskloop is not supported by this compiler.)
+endif

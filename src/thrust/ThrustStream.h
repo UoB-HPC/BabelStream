@@ -8,7 +8,11 @@
 
 #include <iostream>
 #include <vector>
+#if defined(MANAGED)
+#include <thrust/universal_vector.h>
+#else
 #include <thrust/device_vector.h>
+#endif
 
 #include "Stream.h"
 
@@ -21,9 +25,15 @@ class ThrustStream : public Stream<T>
     // Size of arrays
     int array_size;
 
+  #if defined(MANAGED)
+    thrust::universtal_vector<T> a;
+    thrust::universtal_vector<T> b;
+    thrust::universtal_vector<T> c;
+  #else
     thrust::device_vector<T> a;
     thrust::device_vector<T> b;
     thrust::device_vector<T> c;
+  #endif
 
   public:
     ThrustStream(const int, int);

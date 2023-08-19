@@ -16,6 +16,8 @@
 **/*.gz
 **/*.a
 
+**/*.swp
+
 **/KokkosCore_Config_*
 
 **/.DS_Store

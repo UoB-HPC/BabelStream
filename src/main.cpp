@@ -487,15 +487,15 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   goldSum = goldA * goldB * ARRAY_SIZE;
 
   // Calculate the average error
-  double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldA); });
+  long double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldA); });
   errA /= a.size();
-  double errB = std::accumulate(b.begin(), b.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldB); });
+  long double errB = std::accumulate(b.begin(), b.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldB); });
   errB /= b.size();
-  double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldC); });
+  long double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldC); });
   errC /= c.size();
-  double errSum = fabs((sum - goldSum)/goldSum);
+  long double errSum = fabs((sum - goldSum)/goldSum);
 
-  double epsi = std::numeric_limits<T>::epsilon() * 100.0;
+  long double epsi = std::numeric_limits<T>::epsilon() * 100.0;
 
   if (errA > epsi)
     std::cerr

@@ -18,6 +18,9 @@ register_flag_optional(BACKEND
         "
         "CUDA")
 
+      register_flag_optional(MANAGED "Enabled managed memory mode."
+        "OFF")
+
 register_flag_optional(CMAKE_CUDA_COMPILER
         "[THRUST_IMPL==CUDA] Path to the CUDA nvcc compiler"
         "")
@@ -34,6 +37,9 @@ register_flag_optional(CUDA_EXTRA_FLAGS
 
 macro(setup)
     set(CMAKE_CXX_STANDARD 14)
+    if (MANAGED)
+      register_definitions(MANAGED)
+    endif ()
 
     if (${THRUST_IMPL} STREQUAL "CUDA")
 
@@ -53,6 +59,9 @@ macro(setup)
         message(STATUS "NVCC flags: ${CMAKE_CUDA_FLAGS} ${CMAKE_CUDA_FLAGS_${BUILD_TYPE}}")
 
 
+        # XXX NVHPC <= 21.9 has cub-config in `Linux_x86_64/21.9/cuda/11.4/include/cub/cmake`
+        # XXX NVHPC >= 22.3 has cub-config in `Linux_x86_64/22.3/cuda/11.6/lib64/cmake/cub/`
+        # same thing for thrust
         if (SDK_DIR)
             find_package(CUB REQUIRED CONFIG PATHS ${SDK_DIR}/cub)
             find_package(Thrust REQUIRED CONFIG PATHS ${SDK_DIR}/thrust)

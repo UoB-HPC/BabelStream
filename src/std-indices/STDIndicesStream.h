@@ -34,6 +34,7 @@ public:
       iterator& operator++() { num++; return *this; }
       iterator operator++(int) { iterator retval = *this; ++(*this); return retval; }
       iterator operator+(const value_type v) const { return iterator(num + v); }
+      iterator operator+=(int x) { iterator retval = *this; this->num+=x; return retval; }
 
       bool operator==(iterator other) const { return num == other.num; }
       bool operator!=(iterator other) const { return *this != other; }
