@@ -222,10 +222,10 @@ void run()
     {
       // MiB = 2^20
       std::cout << std::setprecision(1) << std::fixed
-                << "Array size: " << ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB"
-                << " (=" << ARRAY_SIZE*sizeof(T)*pow(2.0, -30.0) << " GiB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB"
-                << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -30.0) << " GiB)" << std::endl;
+                << "Array size: " << ARRAY_SIZE*sizeof(T)*std::pow(2.0, -20.0) << " MiB"
+                << " (=" << ARRAY_SIZE*sizeof(T)*std::pow(2.0, -30.0) << " GiB)" << std::endl;
+      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*std::pow(2.0, -20.0) << " MiB"
+                << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*std::pow(2.0, -30.0) << " GiB)" << std::endl;
     }
     else
     {
@@ -393,7 +393,7 @@ void run()
           << num_times << csv_separator
           << ARRAY_SIZE << csv_separator
           << sizeof(T) << csv_separator
-          << ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first) << csv_separator
+          << ((mibibytes) ? std::pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first) << csv_separator
           << *minmax.first << csv_separator
           << *minmax.second << csv_separator
           << average
@@ -404,7 +404,7 @@ void run()
         std::cout
           << std::left << std::setw(12) << labels[i]
           << std::left << std::setw(12) << std::setprecision(3) << 
-            ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first)
+            ((mibibytes) ? std::pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first)
           << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
           << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
           << std::left << std::setw(12) << std::setprecision(5) << average
@@ -415,7 +415,7 @@ void run()
   {
     // Display timing results
     double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
-    double bandwidth = ((mibibytes) ? pow(2.0, -30.0) : 1.0E-9) * (total_bytes / timings[0][0]);
+    double bandwidth = ((mibibytes) ? std::pow(2.0, -30.0) : 1.0E-9) * (total_bytes / timings[0][0]);
 
     if (output_as_csv)
     {
@@ -487,13 +487,13 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   goldSum = goldA * goldB * ARRAY_SIZE;
 
   // Calculate the average error
-  long double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldA); });
+  long double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + std::fabs(val - goldA); });
   errA /= a.size();
-  long double errB = std::accumulate(b.begin(), b.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldB); });
+  long double errB = std::accumulate(b.begin(), b.end(), 0.0, [&](double sum, const T val){ return sum + std::fabs(val - goldB); });
   errB /= b.size();
-  long double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldC); });
+  long double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](double sum, const T val){ return sum + std::fabs(val - goldC); });
   errC /= c.size();
-  long double errSum = fabs((sum - goldSum)/goldSum);
+  long double errSum = std::fabs((sum - goldSum)/goldSum);
 
   long double epsi = std::numeric_limits<T>::epsilon() * 100.0;
 
