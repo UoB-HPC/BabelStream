@@ -51,6 +51,12 @@
 #include "OMPStream.h"
 #endif
 
+#if USE_MPI
+#include <mpi.h>
+// MPI parameters
+int rank, procs;
+#endif
+
 // Default size of 2^25
 int ARRAY_SIZE = 33554432;
 unsigned int num_times = 100;
@@ -79,21 +85,54 @@ void parseArguments(int argc, char *argv[]);
 
 int main(int argc, char *argv[])
 {
+#if USE_MPI
+  int provided;
+  int localRank;
+
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+
+  if (provided < MPI_THREAD_FUNNELED)
+    MPI_Abort(MPI_COMM_WORLD, provided);
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &procs);
+
+  // Each rank will run the benchmark on a single device
+  MPI_Comm shared_comm;
+  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0,
+                      MPI_INFO_NULL, &shared_comm);
+  MPI_Comm_rank(shared_comm, &localRank);
+
+  // Set device index to be the local MPI rank
+  deviceIndex = localRank;
+#endif
 
   parseArguments(argc, argv);
 
   if (!output_as_csv)
   {
-    std::cout
-      << "BabelStream" << std::endl
-      << "Version: " << VERSION_STRING << std::endl
-      << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
+#if USE_MPI
+    if (rank == 0)
+#endif
+    {
+      std::cout
+        << "BabelStream" << std::endl
+        << "Version: " << VERSION_STRING << std::endl
+        << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
+#if USE_MPI
+      std::cout << "Number of MPI ranks: " << procs << std::endl;
+#endif
+    }
   }
 
   if (use_float)
     run<float>();
   else
     run<double>(); 
+
+#if USE_MPI
+  MPI_Finalize();
+#endif
 
 }
 
@@ -109,9 +148,15 @@ std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
   // Declare timers
   std::chrono::high_resolution_clock::time_point t1, t2;
 
+#if USE_MPI
+  // Set MPI data type for the dot-product reduction
+  MPI_Datatype MPI_DTYPE = use_float ? MPI_FLOAT : MPI_DOUBLE;
+#endif
+
   // Main loop
   for (unsigned int k = 0; k < num_times; k++)
   {
+
     // Execute Copy
     t1 = std::chrono::high_resolution_clock::now();
     stream->copy();
@@ -137,8 +182,15 @@ std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
     timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
     // Execute Dot
+#if USE_MPI
+    // Synchronize ranks before computing dot-product
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
     t1 = std::chrono::high_resolution_clock::now();
     sum = stream->dot();
+#if USE_MPI
+    MPI_Allreduce(MPI_IN_PLACE, &sum, 1, MPI_DTYPE, MPI_SUM, MPI_COMM_WORLD);
+#endif
     t2 = std::chrono::high_resolution_clock::now();
     timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
 
@@ -201,43 +253,67 @@ void run()
 {
   std::streamsize ss = std::cout.precision();
 
-  if (!output_as_csv)
+#if USE_MPI
+  if (rank == 0)
+#endif
   {
-    if (selection == Benchmark::All)
-      std::cout << "Running kernels " << num_times << " times" << std::endl;
-    else if (selection == Benchmark::Triad)
+    if (!output_as_csv)
     {
-      std::cout << "Running triad " << num_times << " times" << std::endl;
-      std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
+      if (selection == Benchmark::All)
+        std::cout << "Running kernels " << num_times << " times" << std::endl;
+      else if (selection == Benchmark::Triad)
+      {
+        std::cout << "Running triad " << num_times << " times" << std::endl;
+        std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
+      }
+
+      if (sizeof(T) == sizeof(float))
+        std::cout << "Precision: float" << std::endl;
+      else
+        std::cout << "Precision: double" << std::endl;
+
+      if (mibibytes)
+      {
+        // MiB = 2^20
+        std::cout << std::setprecision(1) << std::fixed
+#if USE_MPI
+                  << "Array size (per rank): "
+#else
+                  << "Array size: "
+#endif
+                  << ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB"
+                  << " (=" << ARRAY_SIZE*sizeof(T)*pow(2.0, -30.0) << " GiB)" << std::endl;
+        std::cout <<
+#if USE_MPI
+                  "Total size (per rank): "
+#else
+                  "Total size: "
+#endif
+                  << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB"
+                  << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -30.0) << " GiB)" << std::endl;
+      }
+      else
+      {
+        // MB = 10^6
+        std::cout << std::setprecision(1) << std::fixed
+#if USE_MPI
+                  << "Array size (per rank): "
+#else
+                  << "Array size: "
+#endif
+                  << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
+                  << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
+        std::cout <<
+#if USE_MPI
+                  "Total size (per rank): "
+#else
+                  "Total size: "
+#endif
+                  << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
+                  << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
+      }
+      std::cout.precision(ss);
     }
-
-
-    if (sizeof(T) == sizeof(float))
-      std::cout << "Precision: float" << std::endl;
-    else
-      std::cout << "Precision: double" << std::endl;
-
-
-    if (mibibytes)
-    {
-      // MiB = 2^20
-      std::cout << std::setprecision(1) << std::fixed
-                << "Array size: " << ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB"
-                << " (=" << ARRAY_SIZE*sizeof(T)*pow(2.0, -30.0) << " GiB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -20.0) << " MiB"
-                << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*pow(2.0, -30.0) << " GiB)" << std::endl;
-    }
-    else
-    {
-      // MB = 10^6
-      std::cout << std::setprecision(1) << std::fixed
-                << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-                << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-                << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
-    }
-    std::cout.precision(ss);
-
   }
 
   Stream<T> *stream;
@@ -331,30 +407,34 @@ void run()
   check_solution<T>(num_times, a, b, c, sum);
 
   // Display timing results
-  if (output_as_csv)
+#if USE_MPI
+  if (rank == 0)
+#endif
   {
-    std::cout
-      << "function" << csv_separator
-      << "num_times" << csv_separator
-      << "n_elements" << csv_separator
-      << "sizeof" << csv_separator
-      << ((mibibytes) ? "max_mibytes_per_sec" : "max_mbytes_per_sec") << csv_separator
-      << "min_runtime" << csv_separator
-      << "max_runtime" << csv_separator
-      << "avg_runtime" << std::endl;
+    if (output_as_csv)
+    {
+      std::cout
+        << "function" << csv_separator
+        << "num_times" << csv_separator
+        << "n_elements" << csv_separator
+        << "sizeof" << csv_separator
+        << ((mibibytes) ? "max_mibytes_per_sec" : "max_mbytes_per_sec") << csv_separator
+        << "min_runtime" << csv_separator
+        << "max_runtime" << csv_separator
+        << "avg_runtime" << std::endl;
+    }
+    else
+    {
+      std::cout
+        << std::left << std::setw(12) << "Function"
+        << std::left << std::setw(12) << ((mibibytes) ? "MiBytes/sec" : "MBytes/sec")
+        << std::left << std::setw(12) << "Min (sec)"
+        << std::left << std::setw(12) << "Max"
+        << std::left << std::setw(12) << "Average"
+        << std::endl
+        << std::fixed;
+    }
   }
-  else
-  {
-    std::cout
-      << std::left << std::setw(12) << "Function"
-      << std::left << std::setw(12) << ((mibibytes) ? "MiBytes/sec" : "MBytes/sec")
-      << std::left << std::setw(12) << "Min (sec)"
-      << std::left << std::setw(12) << "Max"
-      << std::left << std::setw(12) << "Average"
-      << std::endl
-      << std::fixed;
-  }
-
 
   if (selection == Benchmark::All || selection == Benchmark::Nstream)
   {
@@ -385,30 +465,47 @@ void run()
       // Calculate average; ignore the first result
       double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
 
+      double min = *minmax.first;
+      double max = *minmax.second;
+
+#if USE_MPI
+      MPI_Datatype MPI_DTYPE = use_float ? MPI_FLOAT : MPI_DOUBLE;
+
+      // Collect global min/max timings
+      MPI_Allreduce(MPI_IN_PLACE, &min, 1, MPI_DTYPE, MPI_MIN, MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE, &max, 1, MPI_DTYPE, MPI_MAX, MPI_COMM_WORLD);
+      sizes[i] *= procs;
+#endif
+
       // Display results
-      if (output_as_csv)
+#if USE_MPI
+      if (rank == 0)
+#endif
       {
-        std::cout
-          << labels[i] << csv_separator
-          << num_times << csv_separator
-          << ARRAY_SIZE << csv_separator
-          << sizeof(T) << csv_separator
-          << ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first) << csv_separator
-          << *minmax.first << csv_separator
-          << *minmax.second << csv_separator
-          << average
-          << std::endl;
-      }
-      else
-      {
-        std::cout
-          << std::left << std::setw(12) << labels[i]
-          << std::left << std::setw(12) << std::setprecision(3) << 
-            ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first)
-          << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
-          << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
-          << std::left << std::setw(12) << std::setprecision(5) << average
-          << std::endl;
+        if (output_as_csv)
+        {
+          std::cout
+            << labels[i] << csv_separator
+            << num_times << csv_separator
+            << ARRAY_SIZE << csv_separator
+            << sizeof(T) << csv_separator
+            << ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (min) << csv_separator
+            << min << csv_separator
+            << max << csv_separator
+            << average
+            << std::endl;
+        }
+        else
+        {
+          std::cout
+            << std::left << std::setw(12) << labels[i]
+            << std::left << std::setw(12) << std::setprecision(3) <<
+              ((mibibytes) ? pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (min)
+            << std::left << std::setw(12) << std::setprecision(5) << min
+            << std::left << std::setw(12) << std::setprecision(5) << max
+            << std::left << std::setw(12) << std::setprecision(5) << average
+            << std::endl;
+        }
       }
     }
   } else if (selection == Benchmark::Triad)
@@ -417,35 +514,40 @@ void run()
     double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
     double bandwidth = ((mibibytes) ? pow(2.0, -30.0) : 1.0E-9) * (total_bytes / timings[0][0]);
 
-    if (output_as_csv)
+#if USE_MPI
+      if (rank == 0)
+#endif
     {
-      std::cout
-        << "function" << csv_separator
-        << "num_times" << csv_separator
-        << "n_elements" << csv_separator
-        << "sizeof" << csv_separator
-        << ((mibibytes) ? "gibytes_per_sec" : "gbytes_per_sec") << csv_separator
-        << "runtime"
-        << std::endl;
-      std::cout
-        << "Triad" << csv_separator
-        << num_times << csv_separator
-        << ARRAY_SIZE << csv_separator
-        << sizeof(T) << csv_separator
-        << bandwidth << csv_separator
-        << timings[0][0]
-        << std::endl;
-    }
-    else
-    {
-      std::cout
-        << "--------------------------------"
-        << std::endl << std::fixed
-        << "Runtime (seconds): " << std::left << std::setprecision(5)
-        << timings[0][0] << std::endl
-        << "Bandwidth (" << ((mibibytes) ? "GiB/s" : "GB/s") << "):  "
-        << std::left << std::setprecision(3)
-        << bandwidth << std::endl;
+      if (output_as_csv)
+      {
+        std::cout
+          << "function" << csv_separator
+          << "num_times" << csv_separator
+          << "n_elements" << csv_separator
+          << "sizeof" << csv_separator
+          << ((mibibytes) ? "gibytes_per_sec" : "gbytes_per_sec") << csv_separator
+          << "runtime"
+          << std::endl;
+        std::cout
+          << "Triad" << csv_separator
+          << num_times << csv_separator
+          << ARRAY_SIZE << csv_separator
+          << sizeof(T) << csv_separator
+          << bandwidth << csv_separator
+          << timings[0][0]
+          << std::endl;
+      }
+      else
+      {
+        std::cout
+          << "--------------------------------"
+          << std::endl << std::fixed
+          << "Runtime (seconds): " << std::left << std::setprecision(5)
+          << timings[0][0] << std::endl
+          << "Bandwidth (" << ((mibibytes) ? "GiB/s" : "GB/s") << "):  "
+          << std::left << std::setprecision(3)
+          << bandwidth << std::endl;
+      }
     }
   }
 
@@ -485,6 +587,10 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 
   // Do the reduction
   goldSum = goldA * goldB * ARRAY_SIZE;
+
+#if USE_MPI
+  goldSum *= (T)procs;
+#endif
 
   // Calculate the average error
   long double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + fabs(val - goldA); });

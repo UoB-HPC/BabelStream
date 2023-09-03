@@ -43,7 +43,8 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
   check_error();
 
   // Print out device information
-  std::cout << "Using HIP device " << getDeviceName(device_index) << std::endl;
+  std::cout << "Using HIP device " << getDeviceName(device_index)
+            << " with index: " << device_index << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
 
   array_size = ARRAY_SIZE;

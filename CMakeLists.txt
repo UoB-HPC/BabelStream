@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 project(BabelStream VERSION 4.0 LANGUAGES CXX)
 
 # uncomment for debugging build issues:
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
+
+option(WITH_MPI "Enable MPI" OFF)
 
 # some nicer defaults for standard C++
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -67,6 +69,10 @@ hint_flag(CXX_EXTRA_LIBRARIES "
         Use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`)")
 hint_flag(CXX_EXTRA_LINKER_FLAGS "
         Append to linker flags (i.e GCC's `-Wl` or equivalent)")
+hint_flag(MPI_CXX_FLAGS "
+	Append MPI flags to common compile flags.")
+hint_flag(MPI_CXX_LINKER_FLAGS "
+	Append linking flags specific to MPI.")
 
 # Honor user's CXX_EXTRA_LINK_FLAGS
 set(CXX_EXTRA_LINK_FLAGS ${CXX_EXTRA_FLAGS} ${CXX_EXTRA_LINK_FLAGS})
@@ -140,10 +146,12 @@ message(STATUS "CXX Flags   : ${CMAKE_CXX_FLAGS_${BUILD_TYPE}} ${ACTUAL_${BUILD_
         Default                  = `${DEFAULT_${BUILD_TYPE}_FLAGS}`
         Override (RELEASE_FLAGS) = `${${BUILD_TYPE}_FLAGS}`
         Extras (CXX_EXTRA_FLAGS) = `${CXX_EXTRA_FLAGS}`")
-message(STATUS "Link Flags  : ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS}")
-message(STATUS "Linker Flags: ${CMAKE_EXE_LINKER_FLAGS} ${CXX_EXTRA_LINKER_FLAGS} ")
-message(STATUS "Defs        : ${IMPL_DEFINITIONS}")
-message(STATUS "Executable  : ${EXE_NAME}")
+message(STATUS "MPI CXX Flags  : ${MPI_CXX_FLAGS}")
+message(STATUS "Link Flags     : ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS}")
+message(STATUS "MPI Link Flags : ${MPI_CXX_LINKER_FLAGS}")
+message(STATUS "Linker Flags   : ${CMAKE_EXE_LINKER_FLAGS} ${CXX_EXTRA_LINKER_FLAGS} ")
+message(STATUS "Defs           : ${IMPL_DEFINITIONS}")
+message(STATUS "Executable     : ${EXE_NAME}")
 
 # below we have all the usual CMake target setup steps
 
@@ -161,6 +169,22 @@ target_compile_options(${EXE_NAME} PUBLIC "$<$<CONFIG:Debug>:${ACTUAL_DEBUG_FLAG
 
 target_link_options(${EXE_NAME} PUBLIC LINKER:${CXX_EXTRA_LINKER_FLAGS})
 target_link_options(${EXE_NAME} PUBLIC ${LINK_FLAGS} ${CXX_EXTRA_LINK_FLAGS})
+
+# If MPI is requested, link relevant libraries
+if (WITH_MPI)
+    add_definitions(-DUSE_MPI)
+    find_package(MPI)
+    if (MPI_FOUND)
+        message(STATUS "MPI requested and found. Linking relevant MPI libraries.")
+        target_link_libraries(${EXE_NAME} PUBLIC MPI::MPI_CXX)
+    elseif (MPI_CXX_FLAGS OR MPI_CXX_LINKER_FLAGS)
+        message(STATUS "MPI requested. Using provided MPI_CXX_FLAGS and MPI_CXX_LINKER_FLAGS.")
+        target_compile_options(${EXE_NAME} PUBLIC ${MPI_CXX_FLAGS})
+        target_link_libraries(${EXE_NAME} PUBLIC ${MPI_CXX_LINKER_FLAGS})
+    else ()
+        message(FATAL_ERROR "MPI requested, but no implementation has been detected. Please specify MPI_CXX_FLAGS and MPI_CXX_LINKER_FLAGS.")
+    endif ()
+endif ()
 
 # some models require the target to be already specified so they can finish their setup here
 # this only happens if the model.cmake definition contains the `setup_target` macro
