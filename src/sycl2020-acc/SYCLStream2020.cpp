@@ -169,7 +169,7 @@ T SYCLStream<T>::dot()
 #if defined(__HIPSYCL__) || defined(__OPENSYCL__)
       sycl::reduction(d_sum. template get_access<sycl::access_mode::read_write>(cgh), sycl::plus<T>()),
 #else
-      sycl::reduction(d_sum, cgh sycl::plus<T>()),
+      sycl::reduction(d_sum, cgh, sycl::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
 #endif
       [=](sycl::id<1> idx, auto& sum)
       {
