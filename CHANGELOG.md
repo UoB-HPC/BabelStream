@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Ability to build Kokkos and RAJA versions against existing packages.
 - Thrust managed memory.
+- New implementation using SYCL2020 USM (sycl2020-acc) and renamed original `sycl2020` to `sycl2020-acc`.
 
 ### Changed
 - RAJA CUDA CMake build issues resolved.
@@ -13,6 +14,8 @@ All notable changes to this project will be documented in this file.
 - OneAPI DPCPP compiler is deprecated in favour of ICPX, so added new build option to SYCL 2020 version.
 - Updates to the HIP kernels and API usage.
 - Number of thread-blocks in CUDA dot kernel implementation changed to 1024.
+- Fix compatibility of `sycl2020` (now `sycl2020-acc`) with hipSYCL. 
+   
 
 ## [v4.0] - 2021-12-22
 

@@ -145,7 +145,8 @@ register_model(hip HIP HIPStream.cpp)
 register_model(cuda CUDA CUDAStream.cu)
 register_model(kokkos KOKKOS KokkosStream.cpp)
 register_model(sycl SYCL SYCLStream.cpp)
-register_model(sycl2020 SYCL2020 SYCLStream2020.cpp)
+register_model(sycl2020-acc SYCL2020 SYCLStream2020.cpp)
+register_model(sycl2020-usm SYCL2020 SYCLStream2020.cpp)
 register_model(acc ACC ACCStream.cpp)
 # defining RAJA collides with the RAJA namespace so USE_RAJA
 register_model(raja USE_RAJA RAJAStream.cpp)
@@ -160,6 +161,12 @@ if (NOT DEFINED MODEL)
     message(FATAL_ERROR "MODEL is unspecified, pick one from the available models")
 else ()
     message(STATUS "Selected model  :  ${MODEL}")
+endif ()
+
+if (MODEL STREQUAL "sycl2020")
+    message(FATAL_ERROR "
+    Model sycl2020 has been renamed to sycl2020-acc, and a new sycl2020-usm model is now available.
+    Please use sycl2020-acc for SYCL2020 style accessors and sycl2020-usm for USM")
 endif ()
 
 # load the $MODEL.cmake file and setup the correct IMPL_* based on $MODEL

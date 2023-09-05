@@ -1,5 +1,5 @@
 
-// Copyright (c) 2015-16 Tom Deakin, Simon McIntosh-Smith,
+// Copyright (c) 2015-23 Tom Deakin, Simon McIntosh-Smith, and Tom Lin
 // University of Bristol HPC
 //
 // For full license terms please see the LICENSE file distributed with this
@@ -16,11 +16,7 @@ void getDeviceList(void);
 
 template <class T>
 SYCLStream<T>::SYCLStream(const size_t ARRAY_SIZE, const int device_index)
-: array_size {ARRAY_SIZE},
-  d_a {ARRAY_SIZE},
-  d_b {ARRAY_SIZE},
-  d_c {ARRAY_SIZE},
-  d_sum {1}
+: array_size {ARRAY_SIZE}
 {
   if (!cached)
     getDeviceList();
@@ -64,6 +60,11 @@ SYCLStream<T>::SYCLStream(const size_t ARRAY_SIZE, const int device_index)
     }
   }});
 
+  a = sycl::malloc_shared<T>(array_size, *queue);
+  b = sycl::malloc_shared<T>(array_size, *queue);
+  c = sycl::malloc_shared<T>(array_size, *queue);
+  sum = sycl::malloc_shared<T>(1, *queue);
+
   // No longer need list of devices
   devices.clear();
   cached = true;
@@ -71,17 +72,22 @@ SYCLStream<T>::SYCLStream(const size_t ARRAY_SIZE, const int device_index)
 
 }
 
+template<class T>
+SYCLStream<T>::~SYCLStream() {
+ sycl::free(a, *queue);
+ sycl::free(b, *queue);
+ sycl::free(c, *queue);
+ sycl::free(sum, *queue);
+}
 
 template <class T>
 void SYCLStream<T>::copy()
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {d_a, cgh, sycl::read_only};
-    sycl::accessor kc {d_c, cgh, sycl::write_only};
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, c = this->c, a = this->a](sycl::id<1> idx)
     {
-      kc[idx] = ka[idx];
+      c[idx] = a[idx];
     });
   });
   queue->wait();
@@ -93,11 +99,9 @@ void SYCLStream<T>::mul()
   const T scalar = startScalar;
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor kb {d_b, cgh, sycl::write_only};
-    sycl::accessor kc {d_c, cgh, sycl::read_only};
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, b = this->b, c = this->c](sycl::id<1> idx)
     {
-      kb[idx] = scalar * kc[idx];
+      b[idx] = scalar * c[idx];
     });
   });
   queue->wait();
@@ -108,12 +112,9 @@ void SYCLStream<T>::add()
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {d_a, cgh, sycl::read_only};
-    sycl::accessor kb {d_b, cgh, sycl::read_only};
-    sycl::accessor kc {d_c, cgh, sycl::write_only};
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, c = this->c, a = this->a, b = this->b](sycl::id<1> idx)
     {
-      kc[idx] = ka[idx] + kb[idx];
+      c[idx] = a[idx] + b[idx];
     });
   });
   queue->wait();
@@ -125,12 +126,9 @@ void SYCLStream<T>::triad()
   const T scalar = startScalar;
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {d_a, cgh, sycl::write_only};
-    sycl::accessor kb {d_b, cgh, sycl::read_only};
-    sycl::accessor kc {d_c, cgh, sycl::read_only};
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
     {
-      ka[idx] = kb[idx] + scalar * kc[idx];
+      a[idx] = b[idx] + scalar * c[idx];
     });
   });
   queue->wait();
@@ -143,12 +141,9 @@ void SYCLStream<T>::nstream()
 
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {d_a, cgh};
-    sycl::accessor kb {d_b, cgh, sycl::read_only};
-    sycl::accessor kc {d_c, cgh, sycl::read_only};
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
     {
-      ka[idx] += kb[idx] + scalar * kc[idx];
+      a[idx] += b[idx] + scalar * c[idx];
     });
   });
   queue->wait();
@@ -157,27 +152,24 @@ void SYCLStream<T>::nstream()
 template <class T>
 T SYCLStream<T>::dot()
 {
-
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {d_a, cgh, sycl::read_only};
-    sycl::accessor kb {d_b, cgh, sycl::read_only};
-
     cgh.parallel_for(sycl::range<1>{array_size},
       // Reduction object, to perform summation - initialises the result to zero
-      sycl::reduction(d_sum, cgh, std::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
-      [=](sycl::id<1> idx, auto& sum)
+      // hipSYCL doesn't sypport the initialize_to_identity property yet
+#if defined(__HIPSYCL__) || defined(__OPENSYCL__)
+      sycl::reduction(sum, sycl::plus<T>()),
+#else
+      sycl::reduction(sum, sycl::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
+#endif
+      [a = this->a, b = this->b](sycl::id<1> idx, auto& sum)
       {
-        sum += ka[idx] * kb[idx];
+        sum += a[idx] * b[idx];
       });
 
   });
-
-  // Get access on the host, and return a copy of the data (single number)
-  // This will block until the result is available, so no need to wait on the queue.
-  sycl::host_accessor result {d_sum, sycl::read_only};
-  return result[0];
-
+  queue->wait();
+  return *sum;
 }
 
 template <class T>
@@ -185,15 +177,11 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    sycl::accessor ka {d_a, cgh, sycl::write_only, sycl::no_init};
-    sycl::accessor kb {d_b, cgh, sycl::write_only, sycl::no_init};
-    sycl::accessor kc {d_c, cgh, sycl::write_only, sycl::no_init};
-
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
     {
-      ka[idx] = initA;
-      kb[idx] = initB;
-      kc[idx] = initC;
+      a[idx] = initA;
+      b[idx] = initB;
+      c[idx] = initC;
     });
   });
 
@@ -201,16 +189,13 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void SYCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
+void SYCLStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
-  sycl::host_accessor _a {d_a, sycl::read_only};
-  sycl::host_accessor _b {d_b, sycl::read_only};
-  sycl::host_accessor _c {d_c, sycl::read_only};
   for (int i = 0; i < array_size; i++)
   {
-    a[i] = _a[i];
-    b[i] = _b[i];
-    c[i] = _c[i];
+    h_a[i] = a[i];
+    h_b[i] = b[i];
+    h_c[i] = c[i];
   }
 }
 
