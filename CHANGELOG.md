@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 ### Added
 - Ability to build Kokkos and RAJA versions against existing packages.
+- Thrust managed memory.
 
 ### Changed
 - RAJA CUDA CMake build issues resolved.
