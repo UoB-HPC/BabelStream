@@ -48,33 +48,37 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
   // Allocate the host array for partial sums for dot kernels
   sums = (T*)malloc(sizeof(T) * DOT_NUM_BLOCKS);
 
+  size_t array_bytes = sizeof(T);
+  array_bytes *= ARRAY_SIZE;
+  size_t total_bytes = array_bytes * 3;
+
   // Check buffers fit on the device
   cudaDeviceProp props;
   cudaGetDeviceProperties(&props, 0);
-  if (props.totalGlobalMem < std::size_t{3}*ARRAY_SIZE*sizeof(T))
+  if (props.totalGlobalMem < total_bytes)
     throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
   // Create device buffers
 #if defined(MANAGED)
-  cudaMallocManaged(&d_a, ARRAY_SIZE*sizeof(T));
+  cudaMallocManaged(&d_a, array_bytes);
   check_error();
-  cudaMallocManaged(&d_b, ARRAY_SIZE*sizeof(T));
+  cudaMallocManaged(&d_b, array_bytes);
   check_error();
-  cudaMallocManaged(&d_c, ARRAY_SIZE*sizeof(T));
+  cudaMallocManaged(&d_c, array_bytes);
   check_error();
   cudaMallocManaged(&d_sum, DOT_NUM_BLOCKS*sizeof(T));
   check_error();
 #elif defined(PAGEFAULT)
-  d_a = (T*)malloc(sizeof(T)*ARRAY_SIZE);
-  d_b = (T*)malloc(sizeof(T)*ARRAY_SIZE);
-  d_c = (T*)malloc(sizeof(T)*ARRAY_SIZE);
+  d_a = (T*)malloc(array_bytes);
+  d_b = (T*)malloc(array_bytes);
+  d_c = (T*)malloc(array_bytes);
   d_sum = (T*)malloc(sizeof(T)*DOT_NUM_BLOCKS);
 #else
-  cudaMalloc(&d_a, ARRAY_SIZE*sizeof(T));
+  cudaMalloc(&d_a, array_bytes);
   check_error();
-  cudaMalloc(&d_b, ARRAY_SIZE*sizeof(T));
+  cudaMalloc(&d_b, array_bytes);
   check_error();
-  cudaMalloc(&d_c, ARRAY_SIZE*sizeof(T));
+  cudaMalloc(&d_c, array_bytes);
   check_error();
   cudaMalloc(&d_sum, DOT_NUM_BLOCKS*sizeof(T));
   check_error();
