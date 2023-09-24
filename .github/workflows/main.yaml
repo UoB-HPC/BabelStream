@@ -17,7 +17,7 @@ jobs:
       run:
         working-directory: ./src/rust/rust-stream
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup project
         run: rustup install nightly
       - name: Compile project
@@ -33,7 +33,7 @@ jobs:
       run:
         working-directory: ./src/java/java-stream
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Test build project
         run: ./mvnw clean package
       - name: Test run
@@ -46,7 +46,7 @@ jobs:
       run:
         working-directory: ./src/julia/JuliaStream.jl
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup project
         run: julia             --project -e 'import Pkg; Pkg.instantiate()'
       - name: Test run PlainStream.jl
@@ -69,38 +69,30 @@ jobs:
         run: julia             --project src/AMDGPUStream.jl      --list
 
 
-  setup-cpp:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Cache compiler
-        # if: ${{ !env.ACT }}
-        id: prepare-compilers
-        uses: actions/cache@v2
-        with:
-          path: ./compilers
-          key: ${{ runner.os }}-${{ hashFiles('./src/ci-prepare-bionic.sh') }}
-
-      - name: Prepare compilers
-        if: steps.prepare-compilers.outputs.cache-hit != 'true'
-        run: source ./src/ci-prepare-bionic.sh ./compilers SETUP false || true
-
   test-cpp:
-    needs: setup-cpp
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@v8
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-android: 'true'
+          remove-codeql: 'true'
+
+      - uses: actions/checkout@v4
 
       - name: Cache compiler
         if: ${{ !env.ACT }}
         id: prepare-compilers
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ./compilers
           key: ${{ runner.os }}-${{ hashFiles('./src/ci-prepare-bionic.sh') }}
 
       - name: Prepare compilers
         if: steps.prepare-compilers.outputs.cache-hit != 'true'
-        run: source ./src/ci-prepare-bionic.sh ./compilers SETUP false || true
+        run: source ./src/ci-prepare-bionic.sh ./compilers SETUP true || true
 
       - name: Setup test environment
         run: source ./src/ci-prepare-bionic.sh ./compilers VARS false || true
