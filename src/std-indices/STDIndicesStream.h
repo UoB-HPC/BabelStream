@@ -77,12 +77,7 @@ class STDIndicesStream : public Stream<T>
     ranged<int> range;
 
     // Device side pointers
-#ifdef USE_VECTOR
-    std::vector<T> a, b, c;
-#else
     T *a, *b, *c;
-#endif
-
 
   public:
     STDIndicesStream(const int, int) noexcept;

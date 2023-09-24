@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif ()
+
 project(BabelStream VERSION 4.0 LANGUAGES CXX)
 
 # uncomment for debugging build issues:
@@ -71,15 +75,19 @@ hint_flag(CXX_EXTRA_LINKER_FLAGS "
 # Honor user's CXX_EXTRA_LINK_FLAGS
 set(CXX_EXTRA_LINK_FLAGS ${CXX_EXTRA_FLAGS} ${CXX_EXTRA_LINK_FLAGS})
 
-option(USE_TBB "Enable oneTBB library for *supported* models. Enabling this on models that
+option(USE_TBB "Enable the oneTBB library for *supported* models. Enabling this on models that
                 don't explicitly link against TBB is a no-op, see description of your selected
                 model on how this is used." OFF)
 
-if (USE_TBB)
+option(FETCH_TBB "Fetch (download) the oneTBB library for *supported* models. This uses CMake's
+                  FetchContent feature. Specify version by setting FETCH_TBB_VERSION" OFF)
+set(FETCH_TBB_VERSION "v2021.10.0" CACHE STRING "Specify version of oneTBB to use if FETCH_TBB is ON")
+
+if (FETCH_TBB)
     FetchContent_Declare(
             TBB
             GIT_REPOSITORY https://github.com/oneapi-src/oneTBB.git
-            GIT_TAG v2021.9.0
+            GIT_TAG "${FETCH_TBB_VERSION}"
     )
     # Don't fail builds on waring (TBB has -Wall while not being free of warnings from unused symbols...)
     set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
@@ -92,15 +100,19 @@ if (USE_TBB)
     endif ()
 endif ()
 
-option(USE_ONEDPL "Enable oneDPL library for *supported* models. Enabling this on models that
+option(USE_ONEDPL "Enable the oneDPL library for *supported* models. Enabling this on models that
                    don't explicitly link against DPL is a no-op, see description of your selected
                    model on how this is used." OFF)
 
-if (USE_ONEDPL)
+option(FETCH_ONEDPL "Fetch (download) the oneDPL library for *supported* models. This uses CMake's
+                  FetchContent feature. Specify version by setting FETCH_ONEDPL_VERSION" OFF)
+set(FETCH_ONEDPL_VERSION "oneDPL-2022.2.0-rc1" CACHE STRING "Specify version of oneTBB to use if FETCH_ONEDPL is ON")
+
+if (FETCH_ONEDPL)
     FetchContent_Declare(
             oneDPL
             GIT_REPOSITORY https://github.com/oneapi-src/oneDPL.git
-            GIT_TAG oneDPL-2022.2.0-rc1
+            GIT_TAG "${FETCH_ONEDPL_VERSION}"
     )
     string(TOLOWER ${USE_ONEDPL} ONEDPL_BACKEND)
     # XXX oneDPL looks for omp instead of openmp, which mismatches(!) with ONEDPL_PAR_BACKEND if using find_package

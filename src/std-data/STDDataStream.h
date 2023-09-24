@@ -22,12 +22,7 @@ class STDDataStream : public Stream<T>
     int array_size;
 
     // Device side pointers
-#ifdef USE_VECTOR
-    std::vector<T> a, b, c;
-#else
     T *a, *b, *c;
-#endif
-
 
   public:
     STDDataStream(const int, int) noexcept;

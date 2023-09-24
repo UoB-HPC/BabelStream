@@ -5,27 +5,16 @@
 // source code
 
 #include "STDRangesStream.hpp"
+#include <ranges>
 
 #ifndef ALIGNMENT
 #define ALIGNMENT (2*1024*1024) // 2MB
 #endif
 
-#ifdef USE_VECTOR
-#define BEGIN(x) (x).begin()
-#define END(x) (x).end()
-#else
-#define BEGIN(x) (x)
-#define END(x) ((x) + array_size)
-#endif
-
 template <class T>
 STDRangesStream<T>::STDRangesStream(const int ARRAY_SIZE, int device)
 noexcept : array_size{ARRAY_SIZE},
-#ifdef USE_VECTOR
-  a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
-#else
   a(alloc_raw<T>(ARRAY_SIZE)), b(alloc_raw<T>(ARRAY_SIZE)), c(alloc_raw<T>(ARRAY_SIZE))
-#endif
 {
     std::cout << "Backing storage typeid: " << typeid(a).name() << std::endl;
 #ifdef USE_ONEDPL
@@ -45,11 +34,9 @@ noexcept : array_size{ARRAY_SIZE},
 
 template<class T>
 STDRangesStream<T>::~STDRangesStream() {
-#ifndef USE_VECTOR
-    dealloc_raw(a);
-    dealloc_raw(b);
-    dealloc_raw(c);
-#endif
+  dealloc_raw(a);
+  dealloc_raw(b);
+  dealloc_raw(c);
 }
 
 template <class T>
@@ -70,9 +57,9 @@ template <class T>
 void STDRangesStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
   // Element-wise copy.
-    std::copy(BEGIN(a), END(a), h_a.begin());
-    std::copy(BEGIN(b), END(b), h_b.begin());
-    std::copy(BEGIN(c), END(c), h_c.begin());
+    std::copy(a, a + array_size, h_a.begin());
+    std::copy(b, b + array_size, h_b.begin());
+    std::copy(c, c + array_size, h_c.begin());
 }
 
 template <class T>
@@ -148,7 +135,7 @@ T STDRangesStream<T>::dot()
   return
     std::transform_reduce(
       exe_policy,
-      BEGIN(a), END(a), BEGIN(b), 0.0);
+      a, a + array_size, b, 0.0);
 }
 
 void listDevices(void)
@@ -168,6 +155,3 @@ std::string getDeviceDriver(const int)
 
 template class STDRangesStream<float>;
 template class STDRangesStream<double>;
-
-#undef BEGIN
-#undef END

@@ -6,22 +6,10 @@
 
 #include "STDDataStream.h"
 
-#ifdef USE_VECTOR
-#define BEGIN(x) (x).begin()
-#define END(x) (x).end()
-#else
-#define BEGIN(x) (x)
-#define END(x) ((x) + array_size)
-#endif
-
 template <class T>
 STDDataStream<T>::STDDataStream(const int ARRAY_SIZE, int device)
   noexcept : array_size{ARRAY_SIZE},
-#ifdef USE_VECTOR
-  a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
-#else
   a(alloc_raw<T>(ARRAY_SIZE)), b(alloc_raw<T>(ARRAY_SIZE)), c(alloc_raw<T>(ARRAY_SIZE))
-#endif
 {
     std::cout << "Backing storage typeid: " << typeid(a).name() << std::endl;
 #ifdef USE_ONEDPL
@@ -41,55 +29,53 @@ STDDataStream<T>::STDDataStream(const int ARRAY_SIZE, int device)
 
 template<class T>
 STDDataStream<T>::~STDDataStream() {
-#ifndef USE_VECTOR
-    dealloc_raw(a);
-    dealloc_raw(b);
-    dealloc_raw(c);
-#endif
+  dealloc_raw(a);
+  dealloc_raw(b);
+  dealloc_raw(c);
 }
 
 template <class T>
 void STDDataStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  std::fill(exe_policy, BEGIN(a), END(a), initA);
-  std::fill(exe_policy, BEGIN(b), END(b), initB);
-  std::fill(exe_policy, BEGIN(c), END(c), initC);
+  std::fill(exe_policy, a, a + array_size, initA);
+  std::fill(exe_policy, b, b + array_size, initB);
+  std::fill(exe_policy, c, c + array_size, initC);
 }
 
 template <class T>
 void STDDataStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
-  std::copy(BEGIN(a), END(a), h_a.begin());
-  std::copy(BEGIN(b), END(b), h_b.begin());
-  std::copy(BEGIN(c), END(c), h_c.begin());
+  std::copy(a, a + array_size, h_a.begin());
+  std::copy(b, b + array_size, h_b.begin());
+  std::copy(c, c + array_size, h_c.begin());
 }
 
 template <class T>
 void STDDataStream<T>::copy()
 {
   // c[i] = a[i]
-  std::copy(exe_policy, BEGIN(a), END(a), BEGIN(c));
+  std::copy(exe_policy, a, a + array_size, c);
 }
 
 template <class T>
 void STDDataStream<T>::mul()
 {
   //  b[i] = scalar * c[i];
-  std::transform(exe_policy, BEGIN(c), END(c), BEGIN(b), [scalar = startScalar](T ci){ return scalar*ci; });
+  std::transform(exe_policy, c, c + array_size, b, [scalar = startScalar](T ci){ return scalar*ci; });
 }
 
 template <class T>
 void STDDataStream<T>::add()
 {
   //  c[i] = a[i] + b[i];
-  std::transform(exe_policy, BEGIN(a), END(a), BEGIN(b), BEGIN(c), std::plus<T>());
+  std::transform(exe_policy, a, a + array_size, b, c, std::plus<T>());
 }
 
 template <class T>
 void STDDataStream<T>::triad()
 {
   //  a[i] = b[i] + scalar * c[i];
-  std::transform(exe_policy, BEGIN(b), END(b), BEGIN(c), BEGIN(a), [scalar = startScalar](T bi, T ci){ return bi+scalar*ci; });
+  std::transform(exe_policy, b, b + array_size, c, a, [scalar = startScalar](T bi, T ci){ return bi+scalar*ci; });
 }
 
 template <class T>
@@ -99,8 +85,8 @@ void STDDataStream<T>::nstream()
   //  Need to do in two stages with C++11 STL.
   //  1: a[i] += b[i]
   //  2: a[i] += scalar * c[i];
-  std::transform(exe_policy, BEGIN(a), END(a), BEGIN(b), BEGIN(a), [](T ai, T bi){ return ai + bi; });
-  std::transform(exe_policy, BEGIN(a), END(a), BEGIN(c), BEGIN(a), [scalar = startScalar](T ai, T ci){ return ai + scalar*ci; });
+  std::transform(exe_policy, a, a + array_size, b, a, [](T ai, T bi){ return ai + bi; });
+  std::transform(exe_policy, a, a + array_size, c, a, [scalar = startScalar](T ai, T ci){ return ai + scalar*ci; });
 }
    
 
@@ -108,7 +94,7 @@ template <class T>
 T STDDataStream<T>::dot()
 {
   // sum = 0; sum += a[i]*b[i]; return sum;
-  return std::transform_reduce(exe_policy, BEGIN(a), END(a), BEGIN(b), 0.0);
+  return std::transform_reduce(exe_policy, a, a + array_size, b, 0.0);
 }
 
 void listDevices(void)
@@ -127,6 +113,3 @@ std::string getDeviceDriver(const int)
 }
 template class STDDataStream<float>;
 template class STDDataStream<double>;
-
-#undef BEGIN
-#undef END

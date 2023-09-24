@@ -3,10 +3,6 @@ register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that is supported by CMake detection and supports C++20 Ranges"
         "c++")
 
-register_flag_optional(USE_VECTOR
-        "Whether to use std::vector<T> for storage or use aligned_alloc. C++ vectors are *zero* initialised where as aligned_alloc is uninitialised before first use."
-        "OFF")
-
 register_flag_optional(USE_TBB
         "No-op if ONE_TBB_DIR is set. Link against an in-tree oneTBB via FetchContent_Declare, see top level CMakeLists.txt for details."
         "OFF")
@@ -32,15 +28,19 @@ macro(setup)
     set(CMAKE_CXX_STANDARD_REQUIRED OFF)
     unset(CMAKE_CXX_STANDARD) # drop any existing standard we have set by default
     # and append our own:
-    register_append_cxx_flags(ANY -std=c++2a)
-    if (USE_VECTOR)
-        register_definitions(USE_VECTOR)
-    endif ()
+    register_append_cxx_flags(ANY -std=c++20)
     if (USE_TBB)
         register_link_library(TBB::tbb)
     endif ()
     if (USE_ONEDPL)
         register_definitions(USE_ONEDPL)
         register_link_library(oneDPL)
+    endif ()
+endmacro()
+
+macro(setup_target NAME)
+    if (USE_ONEDPL)
+        target_compile_features(${NAME} INTERFACE cxx_std_20)
+        target_compile_features(oneDPL INTERFACE cxx_std_20)
     endif ()
 endmacro()

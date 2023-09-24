@@ -8,8 +8,6 @@ register_flag_optional(RAJA_IN_TREE
          Make sure to use the release version of RAJA or clone RAJA recursively with submodules.
          Remember to append RAJA specific flags as well, for example:
              -DRAJA_IN_TREE=... -DENABLE_OPENMP=ON -DENABLE_CUDA=ON ...
-         For RAJA >= v2022.03.0, remember to use the RAJA prefixed CMake options:
-             -DRAJA_IN_TREE=... -DRAJA_ENABLE_OPENMP=ON -DRAJA_ENABLE_CUDA=ON ...
          See https://github.com/LLNL/RAJA/blob/08cbbafd2d21589ebf341f7275c229412d0fe903/CMakeLists.txt#L44 for all available options
 " "")
 
