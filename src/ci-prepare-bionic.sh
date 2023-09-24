@@ -260,7 +260,11 @@ setup_clang_gcc() {
 }
 
 setup_rocm() {
-  sudo apt-get install -y rocm-dev rocthrust-dev
+  if [ "$SETUP" = true ]; then
+    sudo apt-get install -y rocm-dev rocthrust-dev
+  else
+    echo "Skipping apt setup for ROCm"
+  fi
   export_var ROCM_PATH "/opt/rocm"
   export_var PATH "$ROCM_PATH/bin:$PATH" # ROCm needs this for many of their libraries' CMake build to work
   export_var HIP_CXX "$ROCM_PATH/bin/hipcc"
