@@ -75,7 +75,7 @@ jobs:
       - name: Maximize build space
         uses: easimon/maximize-build-space@v8
         with:
-          root-reserve-mb: 512
+          root-reserve-mb: 2048
           swap-size-mb: 1024
           remove-android: 'true'
           remove-codeql: 'true'
