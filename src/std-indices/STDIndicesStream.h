@@ -37,7 +37,7 @@ public:
       iterator operator+=(int x) { iterator retval = *this; this->num+=x; return retval; }
 
       bool operator==(iterator other) const { return num == other.num; }
-      bool operator!=(iterator other) const { return *this != other; }
+      bool operator!=(iterator other) const { return num != other.num; }
       bool operator<(iterator other) const { return num < other.num; }
 
       reference operator*() const { return num;}
