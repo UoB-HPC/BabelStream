@@ -28,7 +28,7 @@ public:
       using value_type = N;
       using pointer = const N*;
       using reference = const N&;
-      using iterator_category = std::random_access_iterator_tag;
+      using iterator_category = std::forward_iterator_tag;
       explicit iterator(N _num = 0) : num(_num) {}
 
       iterator& operator++() { num++; return *this; }
