@@ -1,6 +1,6 @@
 # BabelStream
 
-<img src="https://github.com/UoB-HPC/BabelStream/blob/gh-pages/img/BabelStreamlogo.png?raw=true" alt="logo" height="300" align="right" />
+<img src="babelstream.png?raw=true" alt="logo" height="300" align="right" />
 
 [![CI](https://github.com/UoB-HPC/BabelStream/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/UoB-HPC/BabelStream/actions/workflows/main.yaml)
 
