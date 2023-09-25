@@ -13,13 +13,7 @@
 
 #include "Stream.h"
 
-#if defined(PAGEFAULT)
-  #define IMPLEMENTATION_STRING "CUDA - Page Fault"
-#elif defined(MANAGED)
-  #define IMPLEMENTATION_STRING "CUDA - Managed Memory"
-#else
-  #define IMPLEMENTATION_STRING "CUDA"
-#endif
+#define IMPLEMENTATION_STRING "CUDA"
 
 #define TBSIZE 1024
 #define DOT_NUM_BLOCKS 1024

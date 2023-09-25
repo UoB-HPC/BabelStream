@@ -42,7 +42,13 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
   // Print out device information
   std::cout << "Using CUDA device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
-
+#if defined(MANAGED)
+  std::cout << "Memory: MANAGED" << std::endl;
+#elif defined(PAGEFAULT)
+  std::cout << "Memory: PAGEFAULT" << std::endl;
+#else
+  std::cout << "Memory: DEFAULT" << std::endl;
+#endif
   array_size = ARRAY_SIZE;
 
   // Allocate the host array for partial sums for dot kernels
