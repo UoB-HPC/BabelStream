@@ -15,6 +15,8 @@ All notable changes to this project will be documented in this file.
 - Updates to the HIP kernels and API usage.
 - Number of thread-blocks in CUDA dot kernel implementation changed to 1024.
 - Fix compatibility of `sycl2020` (now `sycl2020-acc`) with hipSYCL. 
+- Bumped Julia compat to 1.9
+- Bumped Rust to 1.74.0-nightly (13e6f24b9 2023-09-23)
    
 
 ## [v4.0] - 2021-12-22
