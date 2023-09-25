@@ -45,10 +45,21 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
   // Print out device information
   std::cout << "Using HIP device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+#if defined(MANAGED)
+    std::cout << "Memory: MANAGED" << std::endl;
+#elif defined(PAGEFAULT)
+    std::cout << "Memory: PAGEFAULT" << std::endl;
+#else
+    std::cout << "Memory: DEFAULT" << std::endl;
+#endif
 
   array_size = ARRAY_SIZE;
   // Round dot_num_blocks up to next multiple of (TBSIZE * dot_elements_per_lane)
   dot_num_blocks = (array_size + (TBSIZE * dot_elements_per_lane - 1)) / (TBSIZE * dot_elements_per_lane);
+
+  size_t array_bytes = sizeof(T);
+  array_bytes *= ARRAY_SIZE;
+  size_t total_bytes = array_bytes * 3;
 
   // Allocate the host array for partial sums for dot kernels using hipHostMalloc.
   // This creates an array on the host which is visible to the device. However, it requires
@@ -63,13 +74,26 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
   if (props.totalGlobalMem < std::size_t{3}*ARRAY_SIZE*sizeof(T))
     throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
-  // Create device buffers
-  hipMalloc(&d_a, ARRAY_SIZE*sizeof(T));
+ // Create device buffers
+#if defined(MANAGED)
+  hipMallocManaged(&d_a, array_bytes);
   check_error();
-  hipMalloc(&d_b, ARRAY_SIZE*sizeof(T));
+  hipMallocManaged(&d_b, array_bytes);
   check_error();
-  hipMalloc(&d_c, ARRAY_SIZE*sizeof(T));
+  hipMallocManaged(&d_c, array_bytes);
   check_error();
+#elif defined(PAGEFAULT)
+  d_a = (T*)malloc(array_bytes);
+  d_b = (T*)malloc(array_bytes);
+  d_c = (T*)malloc(array_bytes);
+#else
+  hipMalloc(&d_a, array_bytes);
+  check_error();
+  hipMalloc(&d_b, array_bytes);
+  check_error();
+  hipMalloc(&d_c, array_bytes);
+  check_error();
+#endif
 }
 
 
@@ -109,13 +133,24 @@ void HIPStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void HIPStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
+
   // Copy device memory to host
+#if defined(PAGEFAULT) || defined(MANAGED)
+    hipDeviceSynchronize();
+  for (int i = 0; i < array_size; i++)
+  {
+    a[i] = d_a[i];
+    b[i] = d_b[i];
+    c[i] = d_c[i];
+  }
+#else
   hipMemcpy(a.data(), d_a, a.size()*sizeof(T), hipMemcpyDeviceToHost);
   check_error();
   hipMemcpy(b.data(), d_b, b.size()*sizeof(T), hipMemcpyDeviceToHost);
   check_error();
   hipMemcpy(c.data(), d_c, c.size()*sizeof(T), hipMemcpyDeviceToHost);
   check_error();
+#endif
 }
 
 template <typename T>

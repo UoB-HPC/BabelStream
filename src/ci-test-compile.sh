@@ -289,6 +289,8 @@ build_hip() {
   local name="hip_build"
 
   run_build $name "${HIP_CXX:?}" hip "-DCMAKE_CXX_COMPILER=${HIP_CXX:?}"
+  run_build $name "${HIP_CXX:?}" hip "-DCMAKE_CXX_COMPILER=${HIP_CXX:?} -DMEM=MANAGED"
+  run_build $name "${HIP_CXX:?}" hip "-DCMAKE_CXX_COMPILER=${HIP_CXX:?} -DMEM=PAGEFAULT"
 
   run_build $name "${GCC_CXX:?}" thrust "-DCMAKE_CXX_COMPILER=${HIP_CXX:?} -DSDK_DIR=$ROCM_PATH -DTHRUST_IMPL=ROCM"
 }

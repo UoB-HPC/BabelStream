@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Ability to build Kokkos and RAJA versions against existing packages.
 - Thrust managed memory.
+- HIP managed memory.
 - New implementation using SYCL2020 USM (sycl2020-acc) and renamed original `sycl2020` to `sycl2020-acc`.
 
 ### Changed
