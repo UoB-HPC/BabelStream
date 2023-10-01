@@ -23,6 +23,10 @@ register_flag_optional(USE_TBB
         "Link against an in-tree oneTBB via FetchContent_Declare, see top level CMakeLists.txt for details."
         "OFF")
 
+register_flag_optional(USE_LLVM_OMPT
+        "Use LLVM's PTSL offload"
+        "OFF")
+
 register_flag_optional(USE_ONEDPL
         "Link oneDPL which implements C++17 executor policies (via execution_policy_tag) for different backends.
 
@@ -43,6 +47,14 @@ macro(setup)
         register_append_cxx_flags(ANY ${NVHPC_FLAGS})
         register_append_link_flags(${NVHPC_FLAGS})
     endif ()
+
+    if(USE_LLVM_OMPT)
+        register_definitions(USE_LLVM_OMPT)
+#        find_package(OpenMP REQUIRED)
+#        register_link_library(OpenMP::OpenMP_CXX)
+        # TODO target flags
+    endif ()
+
     if (USE_TBB)
         register_link_library(TBB::tbb)
     endif ()

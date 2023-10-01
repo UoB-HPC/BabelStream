@@ -38,6 +38,21 @@ static constexpr auto exe_policy = dpl::execution::par_unseq;
 
 #endif
 
+#elif defined(USE_LLVM_OMPT)
+
+#include <algorithm>
+#include <execution>
+#include <numeric>
+#include <omp.h>
+
+inline auto && exe_policy = std::execution::par_unseq;
+
+template<typename T>
+T *alloc_raw(size_t size) { return (T *) omp_alloc(size * sizeof(T), llvm_omp_target_shared_mem_alloc); }
+
+template<typename T>
+void dealloc_raw(T *ptr) { omp_free(ptr, llvm_omp_target_shared_mem_alloc); }
+
 #else
 
 // Normal C++17 PSTL
