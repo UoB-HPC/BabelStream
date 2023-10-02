@@ -14,7 +14,7 @@
 
 #include <sycl/sycl.hpp>
 
-#define IMPLEMENTATION_STRING "SYCL 2020"
+#define IMPLEMENTATION_STRING "SYCL2020 USM"
 
 template <class T>
 class SYCLStream : public Stream<T>
@@ -28,15 +28,15 @@ class SYCLStream : public Stream<T>
     std::unique_ptr<sycl::queue> queue;
 
     // Buffers
-    sycl::buffer<T> d_a;
-    sycl::buffer<T> d_b;
-    sycl::buffer<T> d_c;
-    sycl::buffer<T> d_sum;
+    T *a{};
+    T *b{};
+    T *c{};
+    T *sum{};
 
   public:
 
     SYCLStream(const size_t, const int);
-    ~SYCLStream() = default;
+    ~SYCLStream();
 
     virtual void copy() override;
     virtual void add() override;

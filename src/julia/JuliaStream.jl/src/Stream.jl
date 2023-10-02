@@ -220,10 +220,10 @@ function main()
   end
 
   function mk_row(xs::Vector{Float64}, name::String, total_bytes::Int)
-    tail = Base.rest(xs)
-    min = Iterators.minimum(tail)
-    max = Iterators.maximum(tail)
-    avg = Iterators.sum(tail) / Iterators.length(tail)
+    tail = Iterators.rest(xs)
+    min = Base.minimum(tail)
+    max = Base.maximum(tail)
+    avg = Base.sum(tail) / Base.length(tail)
     mbps = mega_scale * total_bytes / min
     if config.csv
       return [

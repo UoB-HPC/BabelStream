@@ -10,7 +10,7 @@ register_flag_optional(KOKKOS_IN_TREE
          See https://github.com/kokkos/kokkos/blob/master/BUILD.md for all available options" "")
 
 register_flag_optional(KOKKOS_IN_PACKAGE
-        "Absolute path to package R-Path containing Kokkos libs. 
+        "Absolute path to package R-Path containing Kokkos libs.
          Use this instead of KOKKOS_IN_TREE if Kokkos is from a package manager like Spack." "")
 
 # compiler vendor and arch specific flags
@@ -30,7 +30,7 @@ macro(setup)
         message(STATUS "Build using packaged Kokkos at `${KOKKOS_IN_PACKAGE}`")
         set (Kokkos_DIR "${KOKKOS_IN_PACKAGE}/lib64/cmake/Kokkos")
         find_package(Kokkos REQUIRED)
-        register_link_library(Kokkos::kokkos) 
+        register_link_library(Kokkos::kokkos)
     else()
         message(FATAL_ERROR "Neither `KOKKOS_IN_TREE`, or `KOKKOS_IN_PACKAGE` was set!")
     endif ()

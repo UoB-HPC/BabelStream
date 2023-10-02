@@ -120,9 +120,20 @@ run_build() {
 # CLANG_OMP_OFFLOAD_NVIDIA=false
 ###
 
+NV_ARCH_CC="70"
 AMD_ARCH="gfx_903"
-NV_ARCH="sm_70"
+NV_ARCH="sm_${NV_ARCH_CC}"
 NV_ARCH_CCXY="cuda${NVHPC_CUDA_VER:?},cc80"
+
+check_cmake_ver(){
+  local current=$("$CMAKE_BIN" --version | head -n 1 | cut -d ' ' -f3)
+  local required=$1
+  if [ "$(printf '%s\n' "$required" "$current" | sort -V | head -n1)" = "$required" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
 
 build_gcc() {
   local name="gcc_build"
@@ -135,49 +146,61 @@ build_gcc() {
     "./$BUILD_DIR/omp_$name/omp-stream" -s 1048576 -n 10
   fi
 
-  # some distributions like Ubuntu bionic implements std par with TBB, so conditionally link it here
-  run_build $name "${GCC_CXX:?}" std-data "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
-  run_build $name "${GCC_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
-  run_build $name "${GCC_CXX:?}" std-ranges "$cxx -DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"
+  for use_onedpl in OFF OPENMP TBB; do
+    case "$use_onedpl" in
+      OFF) dpl_conditional_flags="-DCXX_EXTRA_LIBRARIES=${GCC_STD_PAR_LIB:-}"  ;;
+      *)   dpl_conditional_flags="-DFETCH_ONEDPL=ON -DFETCH_TBB=ON -DUSE_TBB=ON -DCXX_EXTRA_FLAGS=-D_GLIBCXX_USE_TBB_PAR_BACKEND=0" ;;
+    esac
+    # some distributions like Ubuntu bionic implements std par with TBB, so conditionally link it here
+    run_build $name "${GCC_CXX:?}" std-data    "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl"
+    run_build $name "${GCC_CXX:?}" std-indices "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl"
+    run_build $name "${GCC_CXX:?}" std-ranges  "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl"
+  done
 
   run_build $name "${GCC_CXX:?}" tbb "$cxx -DONE_TBB_DIR=$TBB_LIB"
   run_build $name "${GCC_CXX:?}" tbb "$cxx" # build TBB again with the system TBB
+  run_build $name "${GCC_CXX:?}" tbb "$cxx -DUSE_VECTOR=ON" # build with vectors
 
   if [ "${GCC_OMP_OFFLOAD_AMD:-false}" != "false" ]; then
-    run_build "amd_$name" "${GCC_CXX:?}" acc "$cxx -DCXX_EXTRA_FLAGS=-foffload=amdgcn-amdhsa"
+    run_build "amd_$name" "${GCC_CXX:?}" acc "$cxx -DCXX_EXTRA_FLAGS=-foffload=amdgcn-amdhsa;-fno-stack-protector;-fcf-protection=none"
     run_build "amd_$name" "${GCC_CXX:?}" omp "$cxx -DOFFLOAD=AMD:$AMD_ARCH"
   fi
 
   if [ "${GCC_OMP_OFFLOAD_NVIDIA:-false}" != "false" ]; then
-    run_build "nvidia_$name" "${GCC_CXX:?}" acc "$cxx -DCXX_EXTRA_FLAGS=-foffload=nvptx-none"
+    run_build "nvidia_$name" "${GCC_CXX:?}" acc "$cxx -DCXX_EXTRA_FLAGS=-foffload=nvptx-none;-fno-stack-protector;-fcf-protection=none"
     run_build "nvidia_$name" "${GCC_CXX:?}" omp "$cxx -DOFFLOAD=NVIDIA:$NV_ARCH"
   fi
 
   run_build $name "${GCC_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH"
   run_build $name "${GCC_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DMEM=MANAGED"
   run_build $name "${GCC_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DMEM=PAGEFAULT"
-  #  run_build $name "${CC_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_CUDA=ON"
-  run_build "cuda_$name" "${GCC_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
+  if check_cmake_ver "3.16.0"; then
+    #  run_build $name "${CC_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_CUDA=ON"
+    run_build "cuda_$name" "${GCC_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
+  else
+    echo "Skipping Kokkos models due to CMake version requirement"
+  fi
   run_build $name "${GCC_CXX:?}" ocl "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
-  run_build $name "${GCC_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?}"
+  if check_cmake_ver "3.20.0"; then
+    run_build $name "${GCC_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?} -DENABLE_OPENMP=ON"
+  else
+    echo "Skipping RAJA models due to CMake version requirement"
+  fi
 
-#  FIXME fails due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100102
-#  FIXME we also got https://github.com/NVIDIA/nccl/issues/494
+  if check_cmake_ver "3.20.0"; then
+   run_build "cuda_$name" "${GCC_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?} \
+     -DENABLE_CUDA=ON \
+     -DTARGET=NVIDIA \
+     -DCUDA_TOOLKIT_ROOT_DIR=${NVHPC_CUDA_DIR:?} \
+     -DCUDA_ARCH=$NV_ARCH"
+  else
+    echo "Skipping RAJA models due to CMake version requirement"
+  fi
 
-#  run_build "cuda_$name" "${GCC_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?} \
-#  -DENABLE_CUDA=ON \
-#  -DTARGET=NVIDIA \
-#  -DCUDA_TOOLKIT_ROOT_DIR=${NVHPC_CUDA_DIR:?} \
-#  -DCUDA_ARCH=$NV_ARCH"
-
-
-  # CMake >= 3.15 only due to Nvidia's Thrust CMake requirements
-  local current=$("$CMAKE_BIN" --version | head -n 1 | cut -d ' ' -f3)
-  local required="3.15.0"
-  if [ "$(printf '%s\n' "$required" "$current" | sort -V | head -n1)" = "$required" ]; then
-    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=CUDA"
-    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=OMP"
-    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=CPP"
+  if check_cmake_ver "3.18.0"; then # CMake >= 3.15 only due to Nvidia's Thrust CMake requirements
+    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH_CC -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=CUDA"
+#    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=OMP" # FIXME
+    run_build $name "${GCC_CXX:?}" thrust "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH_CC -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=CPP"
 
     # FIXME CUDA Thrust + TBB throws the following error:
     #    /usr/lib/gcc/x86_64-linux-gnu/9/include/avx512fintrin.h(9146): error: identifier "__builtin_ia32_rndscaless_round" is undefined
@@ -189,7 +212,7 @@ build_gcc() {
 
     #    run_build $name "${GCC_CXX:?}" THRUST "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DSDK_DIR=$NVHPC_CUDA_DIR/lib64/cmake -DTHRUST_IMPL=CUDA -DBACKEND=TBB"
   else
-    echo "CMake version ${current} < ${required}, skipping Thrust models"
+    echo "Skipping Thrust models due to CMake version requirement"
   fi
 
 }
@@ -207,28 +230,39 @@ build_clang() {
     run_build "nvidia_$name" "${GCC_CXX:?}" omp "$cxx -DOFFLOAD=NVIDIA:$NV_ARCH"
   fi
 
+  if check_cmake_ver "3.20.0"; then
+    run_build $name "${CLANG_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?} -DENABLE_OPENMP=ON"
+  else
+    echo "Skipping RAJA models due to CMake version requirement"
+  fi
   run_build $name "${CLANG_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH"
   run_build $name "${CLANG_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DMEM=MANAGED"
   run_build $name "${CLANG_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DMEM=PAGEFAULT"
-  run_build $name "${CLANG_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
+  if check_cmake_ver "3.16.0"; then
+    run_build $name "${CLANG_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
+  else
+    echo "Skipping Kokkos models due to CMake version requirement"
+  fi
   run_build $name "${CLANG_CXX:?}" ocl "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
-  run_build $name "${CLANG_CXX:?}" std-data "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
-  run_build $name "${CLANG_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
-  # run_build $name "${LANG_CXX:?}" std20 "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" # not yet supported
-  run_build $name "${CLANG_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?}"
-  run_build $name "${CLANG_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH"
-  run_build $name "${CLANG_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DMEM=MANAGED"
-  run_build $name "${CLANG_CXX:?}" cuda "$cxx -DCMAKE_CUDA_COMPILER=${NVHPC_NVCC:?} -DCUDA_ARCH=$NV_ARCH -DMEM=PAGEFAULT"
-  run_build $name "${CLANG_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
-  run_build $name "${CLANG_CXX:?}" ocl "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
-  run_build $name "${CLANG_CXX:?}" std-data "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
-  run_build $name "${CLANG_CXX:?}" std-indices "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}"
-  # run_build $name "${LANG_CXX:?}" std20 "$cxx -DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" # not yet supported
+
+  for use_onedpl in OFF OPENMP TBB; do
+    case "$use_onedpl" in
+      OFF) dpl_conditional_flags="-DCXX_EXTRA_LIBRARIES=${CLANG_STD_PAR_LIB:-}" ;;
+      *)   dpl_conditional_flags="-DFETCH_ONEDPL=ON -DFETCH_TBB=ON -DUSE_TBB=ON -DCXX_EXTRA_FLAGS=-D_GLIBCXX_USE_TBB_PAR_BACKEND=0"  ;;
+    esac
+    run_build $name "${CLANG_CXX:?}" std-data     "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl"
+    run_build $name "${CLANG_CXX:?}" std-indices  "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl"
+    # run_build $name "${CLANG_CXX:?}" std-ranges "$cxx $dpl_conditional_flags -DUSE_ONEDPL=$use_onedpl" # not yet supported
+  done
 
   run_build $name "${CLANG_CXX:?}" tbb "$cxx -DONE_TBB_DIR=$TBB_LIB"
   run_build $name "${CLANG_CXX:?}" tbb "$cxx" # build TBB again with the system TBB
-
-  run_build $name "${CLANG_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?}"
+  run_build $name "${CLANG_CXX:?}" tbb "$cxx -DUSE_VECTOR=ON" # build with vectors
+  if check_cmake_ver "3.20.0"; then
+    run_build $name "${CLANG_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?} -DENABLE_OPENMP=ON"
+  else
+    echo "Skipping RAJA models due to CMake version requirement"
+  fi
   # no clang /w RAJA+cuda because it needs nvcc which needs gcc
 }
 
@@ -237,6 +271,7 @@ build_nvhpc() {
   local cxx="-DCMAKE_CXX_COMPILER=${NVHPC_NVCXX:?}"
   run_build $name "${NVHPC_NVCXX:?}" std-data "$cxx -DNVHPC_OFFLOAD=$NV_ARCH_CCXY"
   run_build $name "${NVHPC_NVCXX:?}" std-indices "$cxx -DNVHPC_OFFLOAD=$NV_ARCH_CCXY"
+
   run_build $name "${NVHPC_NVCXX:?}" acc "$cxx -DTARGET_DEVICE=gpu -DTARGET_PROCESSOR=px -DCUDA_ARCH=$NV_ARCH_CCXY"
   run_build $name "${NVHPC_NVCXX:?}" acc "$cxx -DTARGET_DEVICE=multicore -DTARGET_PROCESSOR=zen"
 }
@@ -254,6 +289,8 @@ build_hip() {
   local name="hip_build"
 
   run_build $name "${HIP_CXX:?}" hip "-DCMAKE_CXX_COMPILER=${HIP_CXX:?}"
+  run_build $name "${HIP_CXX:?}" hip "-DCMAKE_CXX_COMPILER=${HIP_CXX:?} -DMEM=MANAGED"
+  run_build $name "${HIP_CXX:?}" hip "-DCMAKE_CXX_COMPILER=${HIP_CXX:?} -DMEM=PAGEFAULT"
 
   run_build $name "${GCC_CXX:?}" thrust "-DCMAKE_CXX_COMPILER=${HIP_CXX:?} -DSDK_DIR=$ROCM_PATH -DTHRUST_IMPL=ROCM"
 }
@@ -275,15 +312,18 @@ build_icpc() {
   local cxx="-DCMAKE_CXX_COMPILER=${ICPC_CXX:?}"
   run_build $name "${ICPC_CXX:?}" omp "$cxx"
   run_build $name "${ICPC_CXX:?}" ocl "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
-  run_build $name "${ICPC_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?}"
-  run_build $name "${ICPC_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
-}
+  if check_cmake_ver "3.20.0"; then
+    run_build $name "${ICPC_CXX:?}" raja "$cxx -DRAJA_IN_TREE=${RAJA_SRC:?} -DENABLE_OPENMP=ON"
+  else
+    echo "Skipping RAJA models due to CMake version requirement"
+  fi
 
-build_computecpp() {
-  run_build computecpp_build "compute++" sycl "-DCMAKE_CXX_COMPILER=${GCC_CXX:?} \
-  -DSYCL_COMPILER=COMPUTECPP \
-  -DSYCL_COMPILER_DIR=${COMPUTECPP_DIR:?} \
-  -DOpenCL_LIBRARY=${OCL_LIB:?}"
+  if check_cmake_ver "3.16.0"; then
+    run_build $name "${ICPC_CXX:?}" kokkos "$cxx -DKOKKOS_IN_TREE=${KOKKOS_SRC:?} -DKokkos_ENABLE_OPENMP=ON"
+  else
+    echo "Skipping Kokkos models due to CMake version requirement"
+  fi
+
 }
 
 build_dpcpp() {

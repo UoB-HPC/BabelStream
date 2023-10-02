@@ -60,4 +60,5 @@ macro(setup)
         register_definitions(USE_ONEDPL)
         register_link_library(oneDPL)
     endif ()
+
 endmacro()

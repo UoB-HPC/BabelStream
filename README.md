@@ -1,6 +1,6 @@
 # BabelStream
 
-<img src="https://github.com/UoB-HPC/BabelStream/blob/gh-pages/img/BabelStreamlogo.png?raw=true" alt="logo" height="300" align="right" />
+<img src="babelstream.png?raw=true" alt="logo" height="300" align="right" />
 
 [![CI](https://github.com/UoB-HPC/BabelStream/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/UoB-HPC/BabelStream/actions/workflows/main.yaml)
 
@@ -18,6 +18,7 @@ This code was previously called GPU-STREAM.
 - [How is this different to STREAM?](#how-is-this-different-to-stream)
 - [Building](#building)
     - [CMake](#cmake)
+    - [Spack](#spack)
     - [GNU Make (removed)](#gnu-make)
 - [Results](#results)
 - [Contributing](#contributing)
@@ -37,7 +38,7 @@ BabelStream is currently implemented in the following parallel programming model
 - C++ Parallel STL
 - Kokkos
 - RAJA
-- SYCL and SYCL 2020
+- SYCL and SYCL2020 (USM and accessors)
 - TBB
 - Thrust (via CUDA or HIP)
 
@@ -137,6 +138,35 @@ For example:
 Alternatively, refer to the [CI script](./src/ci-test-compile.sh), which test-compiles most of the models, and see which flags are used there.
 
 *It is recommended that you delete the `build` directory when you change any of the build flags.*
+
+### Spack
+
+
+The project supports building with Spack >= 0.19.0, which can be installed without root via the [official GitHub repo](https://github.com/spack/spack).
+The BabelStream Spack Package source code could be accessed from the link [here](https://github.com/spack/spack/tree/develop/var/spack/repos/builtin/packages/babelstream/package.py).
+Each BabelStream implementation (programming model) is built as follows:
+
+```shell
+
+# Spack package installation starts with `spack install babelstream` for all programming models
+# The programming model wish to be build needs to be specified with `+` option
+# The model specific flags needs to be specified after defining model
+$ spack install babelstream@<version>%<compiler> +<model> <model specific flags>
+
+
+# The executables will be generated in:
+# SPACK_INSTALL_DIRECTORY/opt/spack/system-name/compiler-name/babelstream-version-identifier/bin/
+# this address will be printed at the end of generation which could be easily copied
+$ cd SPACK_INSTALL_DIRECTORY/opt/spack/system-name/compiler-name/babelstream-version-identifier/bin/
+$ ./<model>-stream
+```
+More detailed examples are provided in [Spack README file](./docs/spack_instructions.md).
+The `MODEL` variant selects one implementation of BabelStream to build.
+
+Currently available models are:
+```
+omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020-acc;sycl2020-usm;acc;raja;tbb;thrust
+```
 
 ### GNU Make
 

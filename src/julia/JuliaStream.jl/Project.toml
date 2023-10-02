@@ -16,4 +16,4 @@ ROCKernels = "7eb9e9f0-4bd3-4c4c-8bef-26bd9629d9b9"
 oneAPI = "8f75cd03-7ff8-4ecb-9b8f-daf728133b1b"
 
 [compat]
-julia = "1.6"
+julia = "1.9"

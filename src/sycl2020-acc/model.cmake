@@ -6,22 +6,18 @@ register_flag_optional(CMAKE_CXX_COMPILER
 register_flag_required(SYCL_COMPILER
         "Compile using the specified SYCL compiler implementation
         Supported values are
-           ONEAPI-DPCPP - dpc++ that is part of an oneAPI Base Toolkit distribution (https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html)
-           ONEAPI-ICPX  - icpx as a standalone compiler 
+           ONEAPI-ICPX  - icpx as a standalone compiler
+           ONEAPI-Clang - oneAPI's Clang driver (enabled via `source /opt/intel/oneapi/setvars.sh  --include-intel-llvm`)
            DPCPP        - dpc++ as a standalone compiler (https://github.com/intel/llvm)
            HIPSYCL      - hipSYCL compiler (https://github.com/illuhad/hipSYCL)
            COMPUTECPP   - ComputeCpp compiler (https://developer.codeplay.com/products/computecpp/ce/home)")
 
 register_flag_optional(SYCL_COMPILER_DIR
         "Absolute path to the selected SYCL compiler directory, most are packaged differently so set the path according to `SYCL_COMPILER`:
-           ONEAPI-DPCPP             - not required but `dpcpp` must be on PATH, load oneAPI as per documentation (i.e `source /opt/intel/oneapi/setvars.sh` first)
            ONEAPI-ICPX              - `icpx` must be used for OneAPI 2023 and later on releases (i.e `source /opt/intel/oneapi/setvars.sh` first)
+           ONEAPI-Clang             - set to the directory that contains the Intel clang++ binary.
            HIPSYCL|DPCPP|COMPUTECPP - set to the root of the binary distribution that contains at least `bin/`, `include/`, and `lib/`"
         "")
-
-register_flag_optional(OpenCL_LIBRARY
-        "[ComputeCpp only] Path to OpenCL library, usually called libOpenCL.so"
-        "${OpenCL_LIBRARY}")
 
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)
@@ -49,7 +45,8 @@ macro(setup)
         list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
         set(ComputeCpp_DIR ${SYCL_COMPILER_DIR})
 
-        setup_opencl_header_includes()
+        # don't point to the CL dir as the imports already have the CL prefix
+        set(OpenCL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}")
 
         register_definitions(CL_TARGET_OPENCL_VERSION=220 _GLIBCXX_USE_CXX11_ABI=0)
         # ComputeCpp needs OpenCL
@@ -61,16 +58,16 @@ macro(setup)
     elseif (${SYCL_COMPILER} STREQUAL "DPCPP")
         set(CMAKE_CXX_COMPILER ${SYCL_COMPILER_DIR}/bin/clang++)
         include_directories(${SYCL_COMPILER_DIR}/include/sycl)
-        register_definitions(CL_TARGET_OPENCL_VERSION=220)
         register_append_cxx_flags(ANY -fsycl)
         register_append_link_flags(-fsycl)
-    elseif (${SYCL_COMPILER} STREQUAL "ONEAPI-DPCPP")
-        set(CMAKE_CXX_COMPILER dpcpp)
-        register_definitions(CL_TARGET_OPENCL_VERSION=220)
     elseif (${SYCL_COMPILER} STREQUAL "ONEAPI-ICPX")
         set(CMAKE_CXX_COMPILER icpx)
-        include_directories(${SYCL_COMPILER_DIR}/include/sycl)
-        register_definitions(CL_TARGET_OPENCL_VERSION=220)
+        set(CMAKE_C_COMPILER icx)
+        register_append_cxx_flags(ANY -fsycl)
+        register_append_link_flags(-fsycl)
+    elseif (${SYCL_COMPILER} STREQUAL "ONEAPI-Clang")
+        set(CMAKE_CXX_COMPILER clang++)
+        set(CMAKE_C_COMPILER clang)
         register_append_cxx_flags(ANY -fsycl)
         register_append_link_flags(-fsycl)
     else ()

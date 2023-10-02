@@ -83,6 +83,8 @@ get() {
     if [ ! -f "$name" ] || [ "$FORCE_DOWNLOAD" = true ]; then
       echo "$name not found, downloading..."
       wget -q --show-progress --progress=bar:force:noscroll "$pkg_url" -O "$name"
+    else
+      echo "$name found, skipping download..."
     fi
   fi
 }
@@ -92,13 +94,15 @@ get_and_untar() {
   local pkg_url="$2"
   if [ "$SETUP" = true ]; then
     if [ ! -f "$name" ] || [ "$FORCE_DOWNLOAD" = true ]; then
-      echo "$name not found, downloading..."
+      echo "$name not found, downloading ($pkg_url)..."
       wget -q --show-progress --progress=bar:force:noscroll "$pkg_url" -O "$name"
     fi
     echo "Preparing to extract $name ..."
     tar -xf "$name"
     echo "$name extracted, deleting archive ..."
     rm -f "$name" # delete for space
+  else
+    echo "Skipping setup for $name ($pkg_url)..."
   fi
 }
 
@@ -119,10 +123,10 @@ verify_dir_exists() {
 setup_aocc() {
   echo "Preparing AOCC"
 
-  local aocc_ver="2.3.0"
+  local aocc_ver="4.0.0"
   local tarball="aocc-$aocc_ver.tar.xz"
   # XXX it's actually XZ compressed, so it should be tar.xz
-  local AOCC_URL="http://developer.amd.com/wordpress/media/files/aocc-compiler-2.3.0.tar"
+  local AOCC_URL="https://download.amd.com/developer/eula/aocc-compiler/aocc-compiler-${aocc_ver}.tar"
   # local AOCC_URL="http://localhost:8000/aocc-compiler-2.3.0.tar"
 
   get_and_untar "$tarball" "$AOCC_URL"
@@ -133,10 +137,10 @@ setup_aocc() {
 }
 
 setup_nvhpc() {
- echo "Preparing Nvidia HPC SDK"
-  local nvhpc_ver="22.3"
-  local nvhpc_release="2022_223"
-  local cuda_ver="11.6"
+  echo "Preparing Nvidia HPC SDK"
+  local nvhpc_ver="23.1" # TODO FIXME > 23.1 has a bug with -A
+  local nvhpc_release="2023_231"
+  local cuda_ver="12.0"
 
   local tarball="nvhpc_$nvhpc_ver.tar.gz"
 
@@ -145,7 +149,7 @@ setup_nvhpc() {
 
   local sdk_dir="$PWD/nvhpc_${nvhpc_release}_Linux_x86_64_cuda_$cuda_ver/install_components/Linux_x86_64/$nvhpc_ver"
   local bin_dir="$sdk_dir/compilers/bin"
-  "$bin_dir/makelocalrc" "$bin_dir" -x
+  "$bin_dir/makelocalrc" -d "$bin_dir" -x -gpp g++-12 -gcc gcc-12 -g77 gfortran-12
 
   export_var NVHPC_SDK_DIR "$sdk_dir"
   export_var NVHPC_CUDA_DIR "$sdk_dir/cuda/$cuda_ver"
@@ -166,7 +170,8 @@ setup_nvhpc() {
 
 setup_aomp() {
   echo "Preparing AOMP"
-  local AOMP_URL="https://github.com/ROCm-Developer-Tools/aomp/releases/download/rel_11.12-0/aomp_Ubuntu1804_11.12-0_amd64.deb"
+  local aomp_ver="18.0-0"
+  local AOMP_URL="https://github.com/ROCm-Developer-Tools/aomp/releases/download/rel_${aomp_ver}/aomp_Ubuntu2204_${aomp_ver}_amd64.deb"
   # local AOMP_URL="http://0.0.0.0:8000/aomp_Ubuntu1804_11.12-0_amd64.deb"
   get_and_install_deb "aomp" "aomp" "$AOMP_URL"
 
@@ -189,8 +194,9 @@ setup_oclcpu() {
 
 setup_kokkos() {
   echo "Preparing Kokkos"
-  local kokkos_ver="3.3.01"
+  local kokkos_ver="4.1.00"
   local tarball="kokkos-$kokkos_ver.tar.gz"
+
 
   local url="https://github.com/kokkos/kokkos/archive/$kokkos_ver.tar.gz"
   # local url="http://localhost:8000/$kokkos_ver.tar.gz"
@@ -203,10 +209,10 @@ setup_kokkos() {
 
 setup_raja() {
   echo "Preparing RAJA"
-  local raja_ver="0.13.0"
+  local raja_ver="2023.06.1"
   local tarball="raja-$raja_ver.tar.gz"
 
-  local url="https://github.com/LLNL/RAJA/releases/download/v0.13.0/RAJA-v$raja_ver.tar.gz"
+  local url="https://github.com/LLNL/RAJA/releases/download/v$raja_ver/RAJA-v$raja_ver.tar.gz"
   # local url="http://localhost:8000/RAJA-v$raja_ver.tar.gz"
 
   get_and_untar "$tarball" "$url"
@@ -217,7 +223,7 @@ setup_raja() {
 
 setup_tbb() {
   echo "Preparing TBB"
-  local tbb_ver="2021.2.0"
+  local tbb_ver="2021.9.0"
   local tarball="oneapi-tbb-$tbb_ver-lin.tgz"
 
   local url="https://github.com/oneapi-src/oneTBB/releases/download/v$tbb_ver/oneapi-tbb-$tbb_ver-lin.tgz"
@@ -231,9 +237,9 @@ setup_tbb() {
 
 setup_clang_gcc() {
 
-  sudo apt-get install -y -qq gcc-10-offload-nvptx gcc-10-offload-amdgcn libtbb2 libtbb-dev g++-10 clang libomp-dev
+  sudo apt-get install -y -qq gcc-12-offload-nvptx gcc-12-offload-amdgcn libtbb2 libtbb-dev g++-12 clang libomp-dev libc6
 
-  export_var GCC_CXX "$(which g++-10)"
+  export_var GCC_CXX "$(which g++-12)"
   verify_bin_exists "$GCC_CXX"
   "$GCC_CXX" --version
 
@@ -254,7 +260,11 @@ setup_clang_gcc() {
 }
 
 setup_rocm() {
-  sudo apt-get install -y -qq rocm-dev rocthrust-dev
+  if [ "$SETUP" = true ]; then
+    sudo apt-get install -y rocm-dev rocthrust-dev
+  else
+    echo "Skipping apt setup for ROCm"
+  fi
   export_var ROCM_PATH "/opt/rocm"
   export_var PATH "$ROCM_PATH/bin:$PATH" # ROCm needs this for many of their libraries' CMake build to work
   export_var HIP_CXX "$ROCM_PATH/bin/hipcc"
@@ -265,7 +275,7 @@ setup_rocm() {
 
 setup_dpcpp() {
 
-  local nightly="20210106"
+  local nightly="20230615"
   local tarball="dpcpp-$nightly.tar.gz"
 
   local url="https://github.com/intel/llvm/releases/download/sycl-nightly/$nightly/dpcpp-compiler.tar.gz"
@@ -282,22 +292,22 @@ setup_dpcpp() {
 setup_hipsycl() {
 
   sudo apt-get install -y -qq libboost-fiber-dev libboost-context-dev
-  local hipsycl_ver="0.9.0"
+  local hipsycl_ver="0.9.1"
   local tarball="v$hipsycl_ver.tar.gz"
   local install_dir="$PWD/hipsycl_dist_$hipsycl_ver"
 
-  local url="https://github.com/illuhad/hipSYCL/archive/v$hipsycl_ver.tar.gz"
-  # local url="http://localhost:8000/hipSYCL-$hipsycl_ver.tar.gz"
+  local url="https://github.com/AdaptiveCpp/AdaptiveCpp/archive/v$hipsycl_ver.tar.gz"
+  # local url="http://localhost:8000/AdaptiveCpp-$hipsycl_ver.tar.gz"
 
   get_and_untar "$tarball" "$url"
 
   if [ "$SETUP" = true ]; then
-    local src="$PWD/hipSYCL-$hipsycl_ver"
+    local src="$PWD/AdaptiveCpp-$hipsycl_ver"
     rm -rf "$src/build"
     rm -rf "$install_dir"
     cmake "-B$src/build" "-H$src" \
-      -DCMAKE_C_COMPILER="$(which gcc-10)" \
-      -DCMAKE_CXX_COMPILER="$(which g++-10)" \
+      -DCMAKE_C_COMPILER="$(which gcc-12)" \
+      -DCMAKE_CXX_COMPILER="$(which g++-12)" \
       -DCMAKE_INSTALL_PREFIX="$install_dir" \
       -DWITH_ROCM_BACKEND=OFF \
       -DWITH_CUDA_BACKEND=OFF \
@@ -312,25 +322,20 @@ setup_hipsycl() {
   check_size
 }
 
-setup_computecpp() {
-  echo "TODO ComputeCpp requires registration+login to download"
-}
-
 if [ "${GITHUB_ACTIONS:-false}" = true ]; then
   echo "Running in GitHub Actions, defaulting to special export"
   TERM=xterm
   export TERM=xterm
-
   # drop the lock in case we got one from a failed run
-  rm /var/lib/dpkg/lock-frontend || true
-  rm /var/cache/apt/archives/lock || true
+  rm -rf /var/lib/dpkg/lock-frontend || true
+  rm -rf /var/cache/apt/archives/lock || true
 
-  wget -q -O - "https://repo.radeon.com/rocm/rocm.gpg.key" | sudo apt-key add -
-  echo "deb http://archive.ubuntu.com/ubuntu focal main universe" | sudo tee -a /etc/apt/sources.list
-  echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/4.5 ubuntu main' | sudo tee /etc/apt/sources.list.d/rocm.list
-
+  mkdir --parents --mode=0755 /etc/apt/keyrings
+  wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
+  echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/5.7 jammy main' | sudo tee /etc/apt/sources.list.d/rocm.list
+  echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' | sudo tee /etc/apt/preferences.d/rocm-pin-600
   sudo apt-get update -qq
-  sudo apt-get install -y -qq cmake
+  sudo apt-get install cmake gcc g++ libelf-dev libdrm-amdgpu1 libnuma-dev
 
   if [ "$SETUP" = true ]; then
     echo "Deleting extra packages for space in 2 seconds..."
@@ -340,6 +345,7 @@ if [ "${GITHUB_ACTIONS:-false}" = true ]; then
     sudo apt-get autoremove -y
     check_size
   fi
+  sudo apt-get upgrade -qq
 else
   echo "Running locally, defaulting to standard export"
 fi
@@ -368,6 +374,18 @@ setup_cmake() {
   verify_bin_exists "$CMAKE_3_18_BIN"
   "$CMAKE_3_18_BIN" --version
 
+  get "cmake-3.20.sh" "$cmake_release/v3.20.4/cmake-3.20.4-linux-x86_64.sh"
+  chmod +x "./cmake-3.20.sh" && "./cmake-3.20.sh" --skip-license --include-subdir
+  export_var CMAKE_3_20_BIN "$PWD/cmake-3.20.4-linux-x86_64/bin/cmake"
+  verify_bin_exists "$CMAKE_3_20_BIN"
+  "$CMAKE_3_20_BIN" --version
+
+  get "cmake-3.24.sh" "$cmake_release/v3.24.4/cmake-3.24.4-linux-x86_64.sh"
+  chmod +x "./cmake-3.24.sh" && "./cmake-3.24.sh" --skip-license --include-subdir
+  export_var CMAKE_3_24_BIN "$PWD/cmake-3.24.4-linux-x86_64/bin/cmake"
+  verify_bin_exists "$CMAKE_3_24_BIN"
+  "$CMAKE_3_24_BIN" --version
+
   check_size
 
 }
@@ -385,6 +403,10 @@ if [ "$PARALLEL" = true ]; then
   setup_tbb &
   wait
 else
+  # these need apt
+  setup_clang_gcc
+  setup_rocm
+  setup_hipsycl
   setup_cmake
   setup_aocc
   setup_oclcpu
@@ -394,10 +416,6 @@ else
   setup_kokkos
   setup_raja
   setup_tbb
-  # these need apt
-  setup_clang_gcc
-  setup_rocm
-  setup_hipsycl
 fi
 
 echo "Done!"

@@ -19,9 +19,6 @@ register_flag_optional(SYCL_COMPILER_DIR
            HIPSYCL|DPCPP|COMPUTECPP - set to the root of the binary distribution that contains at least `bin/`, `include/`, and `lib/`"
         "")
 
-register_flag_optional(OpenCL_LIBRARY
-        "[ComputeCpp only] Path to OpenCL library, usually called libOpenCL.so"
-        "${OpenCL_LIBRARY}")
 
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)

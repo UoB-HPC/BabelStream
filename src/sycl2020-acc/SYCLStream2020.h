@@ -7,47 +7,48 @@
 
 #pragma once
 
-#include <iostream>
-#include <stdexcept>
 #include <sstream>
+#include <memory>
 
 #include "Stream.h"
 
-#define IMPLEMENTATION_STRING "CUDA"
+#include <sycl/sycl.hpp>
 
-#define TBSIZE 1024
-#define DOT_NUM_BLOCKS 1024
+#define IMPLEMENTATION_STRING "SYCL2020 accessors"
 
 template <class T>
-class CUDAStream : public Stream<T>
+class SYCLStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    size_t array_size;
 
-    // Host array for partial sums for dot kernel
-    T *sums;
+    // SYCL objects
+    // Queue is a pointer because we allow device selection
+    std::unique_ptr<sycl::queue> queue;
 
-    // Device side pointers to arrays
-    T *d_a;
-    T *d_b;
-    T *d_c;
-    T *d_sum;
-
+    // Buffers
+    sycl::buffer<T> d_a;
+    sycl::buffer<T> d_b;
+    sycl::buffer<T> d_c;
+    sycl::buffer<T> d_sum;
 
   public:
 
-    CUDAStream(const int, const int);
-    ~CUDAStream();
+    SYCLStream(const size_t, const int);
+    ~SYCLStream() = default;
 
     virtual void copy() override;
     virtual void add() override;
     virtual void mul() override;
     virtual void triad() override;
     virtual void nstream() override;
-    virtual T dot() override;
+    virtual T    dot() override;
 
     virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
 
 };
+
+// Populate the devices list
+void getDeviceList(void);
