@@ -3,6 +3,10 @@ register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that is supported by CMake detection"
         "c++")
 
+register_flag_optional(ONE_TBB_DIR
+        "Absolute path to oneTBB (with header `onetbb/tbb.h`) distribution, the directory should contain at least `include/` and `lib/.
+         If unspecified, the system TBB (with header `tbb/tbb.h`) will be used via CMake's find_package(TBB)." 
+        "")
 register_flag_optional(NVHPC_OFFLOAD
         "Enable offloading support (via the non-standard `-stdpar`) for the new NVHPC SDK.
          The values are Nvidia architectures in ccXY format will be passed in via `-gpu=` (e.g `cc70`)
@@ -43,7 +47,7 @@ macro(setup)
         register_append_cxx_flags(ANY ${NVHPC_FLAGS})
         register_append_link_flags(${NVHPC_FLAGS})
     endif ()
-        if(ONE_TBB_DIR)
+    if(ONE_TBB_DIR)
         set(TBB_ROOT "${ONE_TBB_DIR}") # see https://github.com/Kitware/VTK/blob/0a31a9a3c1531ae238ac96a372fec4be42282863/CMake/FindTBB.cmake#L34
         # docs on Intel's website refers to TBB_DIR which is not correct
     endif()
