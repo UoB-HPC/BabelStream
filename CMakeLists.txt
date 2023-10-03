@@ -4,7 +4,7 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif ()
 
-project(BabelStream VERSION 4.0 LANGUAGES CXX)
+project(BabelStream VERSION 4.0 LANGUAGES CXX C)
 
 # uncomment for debugging build issues:
 #set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -162,6 +162,7 @@ register_model(acc ACC ACCStream.cpp)
 register_model(raja USE_RAJA RAJAStream.cpp)
 register_model(tbb TBB TBBStream.cpp)
 register_model(thrust THRUST ThrustStream.cu) # Thrust uses cu, even for rocThrust
+register_model(futhark FUTHARK FutharkStream.cpp)
 
 
 set(USAGE ON CACHE BOOL "Whether to print all custom flags for the selected model")
