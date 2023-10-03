@@ -1,4 +1,4 @@
-// Copyright (c) 2015-16 Tom Deakin, Simon McIntosh-Smith,
+// Copyright (c) 2015-23 Tom Deakin, Simon McIntosh-Smith, Wei-Chen (Tom) Lin
 // University of Bristol HPC
 //
 // For full license terms please see the LICENSE file distributed with this
@@ -14,9 +14,9 @@ KokkosStream<T>::KokkosStream(
 {
   Kokkos::initialize();
 
-  d_a = new Kokkos::View<T*>("d_a", ARRAY_SIZE);
-  d_b = new Kokkos::View<T*>("d_b", ARRAY_SIZE);
-  d_c = new Kokkos::View<T*>("d_c", ARRAY_SIZE);
+  d_a = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_a"), ARRAY_SIZE);
+  d_b = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_b"), ARRAY_SIZE);
+  d_c = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_c"), ARRAY_SIZE);
   hm_a = new typename Kokkos::View<T*>::HostMirror();
   hm_b = new typename Kokkos::View<T*>::HostMirror();
   hm_c = new typename Kokkos::View<T*>::HostMirror();

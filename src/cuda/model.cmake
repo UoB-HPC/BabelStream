@@ -29,7 +29,7 @@ macro(setup)
     endif()
 
     enable_language(CUDA)
-    register_definitions(MEM=${MEM})
+    register_definitions(${MEM})
 
     # add -forward-unknown-to-host-compiler for compatibility reasons
     set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler -arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})

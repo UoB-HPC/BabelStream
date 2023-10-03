@@ -40,10 +40,15 @@ class TBBStream : public Stream<T>
     tbb_partitioner partitioner;
     tbb::blocked_range<size_t> range;
     // Device side pointers
-    std::vector<T> a;
-    std::vector<T> b;
-    std::vector<T> c;
- 
+#ifdef USE_VECTOR
+    std::vector<T> a, b, c;
+#else
+    size_t array_size;
+    T *a, *b, *c;
+#endif
+
+
+
   public:
     TBBStream(const int, int);
     ~TBBStream() = default;

@@ -18,6 +18,9 @@ register_flag_optional(BACKEND
         "
         "CUDA")
 
+      register_flag_optional(MANAGED "Enabled managed memory mode."
+        "OFF")
+
 register_flag_optional(CMAKE_CUDA_COMPILER
         "[THRUST_IMPL==CUDA] Path to the CUDA nvcc compiler"
         "")
@@ -34,17 +37,21 @@ register_flag_optional(CUDA_EXTRA_FLAGS
 
 macro(setup)
     set(CMAKE_CXX_STANDARD 14)
+    if (MANAGED)
+      register_definitions(MANAGED)
+    endif ()
 
     if (${THRUST_IMPL} STREQUAL "CUDA")
 
         # see CUDA.cmake, we're only adding a few Thrust related libraries here
 
         if (POLICY CMP0104)
-            cmake_policy(SET CMP0104 OLD)
+            cmake_policy(SET CMP0104 NEW)
         endif ()
 
+        set(CMAKE_CUDA_ARCHITECTURES  ${CUDA_ARCH})
         # add -forward-unknown-to-host-compiler for compatibility reasons
-        set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "--expt-extended-lambda -forward-unknown-to-host-compiler -arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
+        set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "--expt-extended-lambda " ${CUDA_EXTRA_FLAGS})
         enable_language(CUDA)
         # CMake defaults to -O2 for CUDA at Release, let's wipe that and use the global RELEASE_FLAG
         # appended later
@@ -57,6 +64,7 @@ macro(setup)
         # XXX NVHPC >= 22.3 has cub-config in `Linux_x86_64/22.3/cuda/11.6/lib64/cmake/cub/`
         # same thing for thrust
         if (SDK_DIR)
+            list(APPEND CMAKE_PREFIX_PATH ${SDK_DIR})
             find_package(CUB REQUIRED CONFIG PATHS ${SDK_DIR}/cub)
             find_package(Thrust REQUIRED CONFIG PATHS ${SDK_DIR}/thrust)
         else ()
@@ -67,9 +75,11 @@ macro(setup)
         message(STATUS "Using Thrust backend: ${BACKEND}")
 
         # this creates the interface that we can link to
-        thrust_create_target(Thrust HOST CPP DEVICE ${BACKEND})
+        thrust_create_target(Thrust${BACKEND}
+                HOST CPP
+                DEVICE ${BACKEND})
 
-        register_link_library(Thrust)
+        register_link_library(Thrust${BACKEND})
     elseif (${THRUST_IMPL} STREQUAL "ROCM")
         if (SDK_DIR)
             find_package(rocprim REQUIRED CONFIG PATHS ${SDK_DIR}/rocprim)

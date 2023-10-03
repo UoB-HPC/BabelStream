@@ -164,8 +164,13 @@ T SYCLStream<T>::dot()
     sycl::accessor kb {d_b, cgh, sycl::read_only};
 
     cgh.parallel_for(sycl::range<1>{array_size},
-      // Reduction object, to perform summation - initialises the result to zero
-      sycl::reduction(d_sum, cgh, std::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
+       // Reduction object, to perform summation - initialises the result to zero
+       // hipSYCL doesn't sypport the initialize_to_identity property yet
+#if defined(__HIPSYCL__) || defined(__OPENSYCL__)
+      sycl::reduction(d_sum. template get_access<sycl::access_mode::read_write>(cgh), sycl::plus<T>()),
+#else
+      sycl::reduction(d_sum, cgh, sycl::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
+#endif
       [=](sycl::id<1> idx, auto& sum)
       {
         sum += ka[idx] * kb[idx];
