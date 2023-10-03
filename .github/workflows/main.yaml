@@ -228,9 +228,9 @@ jobs:
         run: ./src/ci-test-compile.sh ./build hipsycl all ${{ env.CMAKE_3_24_BIN }}
 
   test-futhark:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Prepare Futhark compiler
         uses: diku-dk/install-futhark@HEAD
         with:
