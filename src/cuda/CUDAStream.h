@@ -16,7 +16,6 @@
 #define IMPLEMENTATION_STRING "CUDA"
 
 #define TBSIZE 1024
-#define DOT_NUM_BLOCKS 1024
 
 template <class T>
 class CUDAStream : public Stream<T>
@@ -34,6 +33,8 @@ class CUDAStream : public Stream<T>
     T *d_c;
     T *d_sum;
 
+    // Number of blocks for dot kernel
+    int dot_num_blocks;
 
   public:
 

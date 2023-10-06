@@ -51,16 +51,22 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
 #endif
   array_size = ARRAY_SIZE;
 
+
+  // Query device for sensible dot kernel block count
+  cudaDeviceProp props;
+  cudaGetDeviceProperties(&props, device_index);
+  check_error();
+  dot_num_blocks = props.multiProcessorCount * 4;
+
   // Allocate the host array for partial sums for dot kernels
-  sums = (T*)malloc(sizeof(T) * DOT_NUM_BLOCKS);
+  sums = (T*)malloc(sizeof(T) * dot_num_blocks);
 
   size_t array_bytes = sizeof(T);
   array_bytes *= ARRAY_SIZE;
-  size_t total_bytes = array_bytes * 3;
+  size_t total_bytes = array_bytes * 4;
+  std::cout << "Reduction kernel config: " << dot_num_blocks << " groups of (fixed) size " << TBSIZE << std::endl;
 
   // Check buffers fit on the device
-  cudaDeviceProp props;
-  cudaGetDeviceProperties(&props, 0);
   if (props.totalGlobalMem < total_bytes)
     throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
@@ -72,13 +78,13 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
   check_error();
   cudaMallocManaged(&d_c, array_bytes);
   check_error();
-  cudaMallocManaged(&d_sum, DOT_NUM_BLOCKS*sizeof(T));
+  cudaMallocManaged(&d_sum, dot_num_blocks*sizeof(T));
   check_error();
 #elif defined(PAGEFAULT)
   d_a = (T*)malloc(array_bytes);
   d_b = (T*)malloc(array_bytes);
   d_c = (T*)malloc(array_bytes);
-  d_sum = (T*)malloc(sizeof(T)*DOT_NUM_BLOCKS);
+  d_sum = (T*)malloc(sizeof(T)*dot_num_blocks);
 #else
   cudaMalloc(&d_a, array_bytes);
   check_error();
@@ -86,7 +92,7 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
   check_error();
   cudaMalloc(&d_c, array_bytes);
   check_error();
-  cudaMalloc(&d_sum, DOT_NUM_BLOCKS*sizeof(T));
+  cudaMalloc(&d_sum, dot_num_blocks*sizeof(T));
   check_error();
 #endif
 }
@@ -267,19 +273,19 @@ __global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
 template <class T>
 T CUDAStream<T>::dot()
 {
-  dot_kernel<<<DOT_NUM_BLOCKS, TBSIZE>>>(d_a, d_b, d_sum, array_size);
+  dot_kernel<<<dot_num_blocks, TBSIZE>>>(d_a, d_b, d_sum, array_size);
   check_error();
 
 #if defined(MANAGED) || defined(PAGEFAULT)
   cudaDeviceSynchronize();
   check_error();
 #else
-  cudaMemcpy(sums, d_sum, DOT_NUM_BLOCKS*sizeof(T), cudaMemcpyDeviceToHost);
+  cudaMemcpy(sums, d_sum, dot_num_blocks*sizeof(T), cudaMemcpyDeviceToHost);
   check_error();
 #endif
 
   T sum = 0.0;
-  for (int i = 0; i < DOT_NUM_BLOCKS; i++)
+  for (int i = 0; i < dot_num_blocks; i++)
   {
 #if defined(MANAGED) || defined(PAGEFAULT)
     sum += d_sum[i];
