@@ -260,7 +260,7 @@ T OCLStream<T>::dot()
   );
   cl::copy(queue, d_sum, sums.begin(), sums.end());
 
-  T sum = 0.0;
+  T sum{};
   for (T val : sums)
     sum += val;
 

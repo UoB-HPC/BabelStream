@@ -220,7 +220,7 @@ void OMPStream<T>::nstream()
 template <class T>
 T OMPStream<T>::dot()
 {
-  T sum = 0.0;
+  T sum{};
 
 #ifdef OMP_TARGET_GPU
   int array_size = this->array_size;

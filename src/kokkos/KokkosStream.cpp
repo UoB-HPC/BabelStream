@@ -140,7 +140,7 @@ T KokkosStream<T>::dot()
   Kokkos::View<T*> a(*d_a);
   Kokkos::View<T*> b(*d_b);
 
-  T sum = 0.0;
+  T sum{};
 
   Kokkos::parallel_reduce(array_size, KOKKOS_LAMBDA (const long index, T &tmp)
   {
