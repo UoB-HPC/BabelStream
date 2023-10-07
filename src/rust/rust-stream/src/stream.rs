@@ -132,6 +132,18 @@ pub trait RustStream<T: Default> {
   fn nstream(&mut self);
   fn dot(&mut self) -> T;
 
+  fn run_init_arrays(&mut self) -> Duration {
+    timed(|| {
+      self.init_arrays();
+    })
+  }
+
+  fn run_read_arrays(&mut self) -> Duration {
+    timed(|| {
+      self.read_arrays();
+    })
+  }
+
   fn run_all(&mut self, n: usize) -> (AllTiming<Vec<Duration>>, T) {
     let mut timings: AllTiming<Vec<Duration>> = AllTiming {
       copy: vec![Duration::default(); n],
