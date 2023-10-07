@@ -309,7 +309,7 @@ void run()
   stream->init_arrays(startA, startB, startC);
 
   // Result of the Dot kernel, if used.
-  T sum = 0.0;
+  T sum{};
 
   std::vector<std::vector<double>> timings;
 
@@ -467,7 +467,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   T goldA = startA;
   T goldB = startB;
   T goldC = startC;
-  T goldSum = 0.0;
+  T goldSum{};
 
   const T scalar = startScalar;
 
@@ -493,11 +493,11 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   goldSum = goldA * goldB * ARRAY_SIZE;
 
   // Calculate the average error
-  long double errA = std::accumulate(a.begin(), a.end(), 0.0, [&](double sum, const T val){ return sum + std::fabs(val - goldA); });
+  long double errA = std::accumulate(a.begin(), a.end(), T{}, [&](double sum, const T val){ return sum + std::fabs(val - goldA); });
   errA /= a.size();
-  long double errB = std::accumulate(b.begin(), b.end(), 0.0, [&](double sum, const T val){ return sum + std::fabs(val - goldB); });
+  long double errB = std::accumulate(b.begin(), b.end(), T{}, [&](double sum, const T val){ return sum + std::fabs(val - goldB); });
   errB /= b.size();
-  long double errC = std::accumulate(c.begin(), c.end(), 0.0, [&](double sum, const T val){ return sum + std::fabs(val - goldC); });
+  long double errC = std::accumulate(c.begin(), c.end(), T{}, [&](double sum, const T val){ return sum + std::fabs(val - goldC); });
   errC /= c.size();
   long double errSum = std::fabs((sum - goldSum)/goldSum);
 

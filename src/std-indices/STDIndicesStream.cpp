@@ -105,7 +105,7 @@ template <class T>
 T STDIndicesStream<T>::dot()
 {
   // sum = 0; sum += a[i]*b[i]; return sum;
-  return std::transform_reduce(exe_policy, a, a + array_size, b, 0.0);
+  return std::transform_reduce(exe_policy, a, a + array_size, b, T{});
 }
 
 void listDevices(void)

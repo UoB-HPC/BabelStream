@@ -244,7 +244,7 @@ __global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
   const size_t local_i = threadIdx.x;
   size_t i = blockDim.x * blockIdx.x + local_i;
 
-  tb_sum[local_i] = 0.0;
+  tb_sum[local_i] = {};
   for (; i < array_size; i += blockDim.x*gridDim.x)
     tb_sum[local_i] += a[i] * b[i];
 
@@ -269,7 +269,7 @@ T HIPStream<T>::dot()
   hipDeviceSynchronize();
   check_error();
 
-  T sum = 0.0;
+  T sum{};
   for (int i = 0; i < dot_num_blocks; i++)
     sum += sums[i];
 
