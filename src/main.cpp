@@ -306,7 +306,9 @@ void run()
 
 #endif
 
+  auto init1 = std::chrono::high_resolution_clock::now();
   stream->init_arrays(startA, startB, startC);
+  auto init2 = std::chrono::high_resolution_clock::now();
 
   // Result of the Dot kernel, if used.
   T sum{};
@@ -333,7 +335,54 @@ void run()
   std::vector<T> c(ARRAY_SIZE);
 
 
+  auto read1 = std::chrono::high_resolution_clock::now();
   stream->read_arrays(a, b, c);
+  auto read2 = std::chrono::high_resolution_clock::now();
+
+  auto initElapsedS = std::chrono::duration_cast<std::chrono::duration<double>>(read2 - read1).count();
+  auto readElapsedS = std::chrono::duration_cast<std::chrono::duration<double>>(init2 - init1).count();
+  auto initBWps = ((mibibytes ? std::pow(2.0, -20.0) : 1.0E-6) * (3 * sizeof(T) * ARRAY_SIZE)) / initElapsedS;
+  auto readBWps = ((mibibytes ? std::pow(2.0, -20.0) : 1.0E-6) * (3 * sizeof(T) * ARRAY_SIZE)) / readElapsedS;
+
+  if (output_as_csv)
+  {
+    std::cout
+      << "phase" << csv_separator
+      << "n_elements" << csv_separator
+      << "sizeof" << csv_separator
+      << ((mibibytes) ? "max_mibytes_per_sec" : "max_mbytes_per_sec") << csv_separator
+      << "runtime" << std::endl;
+    std::cout
+      << "Init" << csv_separator
+      << ARRAY_SIZE << csv_separator
+      << sizeof(T) << csv_separator
+      << initBWps << csv_separator
+      << initElapsedS << std::endl;
+    std::cout
+      << "Read" << csv_separator
+      << ARRAY_SIZE << csv_separator
+      << sizeof(T) << csv_separator
+      << readBWps << csv_separator
+      << readElapsedS << std::endl;
+  }
+  else
+  {
+    std::cout << "Init: "
+      << std::setw(7)
+      << initElapsedS
+      << " s (="
+      << initBWps
+      << (mibibytes ? " MiBytes/sec" : " MBytes/sec")
+      << ")" << std::endl;
+    std::cout << "Read: "
+      << std::setw(7)
+      << readElapsedS
+      << " s (="
+      << readBWps
+      << (mibibytes ? " MiBytes/sec" : " MBytes/sec")
+      << ")" << std::endl;
+  }
+
   check_solution<T>(num_times, a, b, c, sum);
 
   // Display timing results

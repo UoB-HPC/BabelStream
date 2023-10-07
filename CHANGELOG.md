@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 - Thrust managed memory.
 - HIP managed memory.
 - New implementation using SYCL2020 USM (sycl2020-acc) and renamed original `sycl2020` to `sycl2020-acc`.
+- Data initialisation and read-back timing for all models, including Java, Scala, Julia, and Rust
+- Add support for the latest Aparapi (3.0.0) and TornadoVM (0.15.x) for Java   
 
 ### Changed
 - RAJA CUDA CMake build issues resolved.
@@ -17,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - Number of thread-blocks in CUDA dot kernel implementation changed to 1024.
 - Fix compatibility of `sycl2020` (now `sycl2020-acc`) with hipSYCL. 
 - Bumped Julia compat to 1.9
+- Bumped Scala to 3.3.1
 - Bumped Rust to 1.74.0-nightly (13e6f24b9 2023-09-23)
    
 

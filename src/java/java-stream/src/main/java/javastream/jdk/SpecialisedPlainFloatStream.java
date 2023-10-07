@@ -78,7 +78,7 @@ final class SpecialisedPlainFloatStream extends JavaStream<Float> {
   }
 
   @Override
-  public Data<Float> data() {
+  public Data<Float> readArrays() {
     return new Data<>(boxed(a), boxed(b), boxed(c));
   }
 }
