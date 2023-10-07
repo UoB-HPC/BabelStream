@@ -78,7 +78,7 @@ final class SpecialisedPlainDoubleStream extends JavaStream<Double> {
   }
 
   @Override
-  public Data<Double> data() {
+  public Data<Double> readArrays() {
     return new Data<>(boxed(a), boxed(b), boxed(c));
   }
 }

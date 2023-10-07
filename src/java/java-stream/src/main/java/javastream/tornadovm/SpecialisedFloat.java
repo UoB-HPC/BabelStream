@@ -2,8 +2,11 @@ package javastream.tornadovm;
 
 import java.util.Arrays;
 import javastream.Main.Config;
+import uk.ac.manchester.tornado.api.TaskGraph;
+import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.annotations.Reduce;
+import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 
 final class SpecialisedFloat extends GenericTornadoVMStream<Float> {
 
@@ -49,7 +52,7 @@ final class SpecialisedFloat extends GenericTornadoVMStream<Float> {
   private final float[] a, b, c;
   private final float[] dotSum;
 
-  @SuppressWarnings({"PrimitiveArrayArgumentToVarargsMethod", "DuplicatedCode"})
+  @SuppressWarnings({"DuplicatedCode"})
   SpecialisedFloat(Config<Float> config) {
     super(config);
     final int size = config.options.arraysize;
@@ -58,12 +61,43 @@ final class SpecialisedFloat extends GenericTornadoVMStream<Float> {
     b = new float[size];
     c = new float[size];
     dotSum = new float[1];
-    this.copyTask = mkSchedule().task("", SpecialisedFloat::copy, size, a, c);
-    this.mulTask = mkSchedule().task("", SpecialisedFloat::mul, size, b, c, scalar);
-    this.addTask = mkSchedule().task("", SpecialisedFloat::add, size, a, b, c);
-    this.triadTask = mkSchedule().task("", SpecialisedFloat::triad, size, a, b, c, scalar);
-    this.nstreamTask = mkSchedule().task("", SpecialisedFloat::nstream, size, a, b, c, scalar);
-    this.dotTask = mkSchedule().task("", SpecialisedFloat::dot_, a, b, dotSum).streamOut(dotSum);
+    this.copyTask =
+        new TornadoExecutionPlan(
+            new TaskGraph("copy")
+                .task("copy", SpecialisedFloat::copy, size, a, c)
+                .transferToDevice(DataTransferMode.FIRST_EXECUTION, a, c)
+                .snapshot());
+    this.mulTask =
+        new TornadoExecutionPlan(
+            new TaskGraph("mul")
+                .task("mul", SpecialisedFloat::mul, size, b, c, scalar)
+                .transferToDevice(DataTransferMode.FIRST_EXECUTION, b, c)
+                .snapshot());
+    this.addTask =
+        new TornadoExecutionPlan(
+            new TaskGraph("add")
+                .task("add", SpecialisedFloat::add, size, a, b, c)
+                .transferToDevice(DataTransferMode.FIRST_EXECUTION, a, b, c)
+                .snapshot());
+    this.triadTask =
+        new TornadoExecutionPlan(
+            new TaskGraph("triad")
+                .task("triad", SpecialisedFloat::triad, size, a, b, c, scalar)
+                .transferToDevice(DataTransferMode.FIRST_EXECUTION, a, b, c)
+                .snapshot());
+    this.nstreamTask =
+        new TornadoExecutionPlan(
+            new TaskGraph("nstream")
+                .task("nstream", SpecialisedFloat::nstream, size, a, b, c, scalar)
+                .transferToDevice(DataTransferMode.FIRST_EXECUTION, a, b, c)
+                .snapshot());
+    this.dotTask =
+        new TornadoExecutionPlan(
+            new TaskGraph("dot")
+                .task("dot", SpecialisedFloat::dot_, a, b, dotSum)
+                .transferToDevice(DataTransferMode.FIRST_EXECUTION, a, b)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, new Object[] {dotSum})
+                .snapshot());
   }
 
   @Override
@@ -72,7 +106,7 @@ final class SpecialisedFloat extends GenericTornadoVMStream<Float> {
     Arrays.fill(a, config.initA);
     Arrays.fill(b, config.initB);
     Arrays.fill(c, config.initC);
-    TornadoVMStreams.xferToDevice(device, a, b, c);
+    TornadoVMStreams.allocAndXferToDevice(device, a, b, c);
   }
 
   @Override
@@ -81,7 +115,7 @@ final class SpecialisedFloat extends GenericTornadoVMStream<Float> {
   }
 
   @Override
-  public Data<Float> data() {
+  public Data<Float> readArrays() {
     TornadoVMStreams.xferFromDevice(device, a, b, c);
     return new Data<>(boxed(a), boxed(b), boxed(c));
   }

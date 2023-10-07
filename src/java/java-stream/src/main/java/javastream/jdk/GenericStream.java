@@ -80,7 +80,7 @@ final class GenericStream<T extends Number> extends JavaStream<T> {
   }
 
   @Override
-  public Data<T> data() {
+  public Data<T> readArrays() {
     return new Data<>(a, b, c);
   }
 }
