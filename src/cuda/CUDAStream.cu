@@ -253,7 +253,7 @@ __global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
   int i = blockDim.x * blockIdx.x + threadIdx.x;
   const size_t local_i = threadIdx.x;
 
-  tb_sum[local_i] = 0.0;
+  tb_sum[local_i] = {};
   for (; i < array_size; i += blockDim.x*gridDim.x)
     tb_sum[local_i] += a[i] * b[i];
 
