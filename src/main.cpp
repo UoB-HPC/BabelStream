@@ -15,7 +15,7 @@
 #include <iomanip>
 #include <cstring>
 
-#define VERSION_STRING "4.0"
+#define VERSION_STRING "5.0"
 
 #include "Stream.h"
 

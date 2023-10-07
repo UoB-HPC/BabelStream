@@ -18,7 +18,7 @@ else
     COMPILER=gcc
 endif
 
-FCFLAGS += -DVERSION_STRING="4.0"
+FCFLAGS += -DVERSION_STRING="5.0"
 #FCFLAGS += -DUSE_INT32
 
 ifeq ($(IMPLEMENTATION),DoConcurrent)

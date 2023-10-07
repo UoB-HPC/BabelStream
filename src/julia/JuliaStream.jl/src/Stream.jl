@@ -164,7 +164,7 @@ end
 
 const DefaultInit = (0.1, 0.2, 0.0)
 const DefaultScalar = 0.4
-const Version = "4.0"
+const Version = "5.0"
 
 function main()
 

@@ -110,7 +110,7 @@ given DoubleFractional: Fractional[Double] with
 
 object App:
 
-  final val Version: String = "4.0"
+  final val Version: String = "5.0"
 
   case class Config[@specialized(Double, Float) A](
       options: Options,

@@ -7,7 +7,7 @@
 
     <artifactId>java-stream</artifactId>
     <groupId>javastream</groupId>
-    <version>4.0</version>
+    <version>5.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

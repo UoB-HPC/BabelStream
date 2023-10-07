@@ -1,6 +1,6 @@
 [package]
 name = "rust-stream"
-version = "4.0.0"
+version = "5.0.0"
 authors = ["Wei-Chen Lin <wl14928@bristol.ac.uk>"]
 edition = "2018"
 

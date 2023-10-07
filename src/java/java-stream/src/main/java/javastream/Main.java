@@ -382,7 +382,7 @@ public class Main {
     }
   }
 
-  private static final String VERSION = "4.0";
+  private static final String VERSION = "5.0";
 
   private static final float START_SCALAR = 0.4f;
   private static final float START_A = 0.1f;
