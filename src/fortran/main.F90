@@ -496,6 +496,7 @@ program BabelStream
     real(kind=REAL64), allocatable :: timings(:,:)
     real(kind=REAL64), allocatable :: h_A(:), h_B(:), h_C(:)
     real(kind=REAL64) :: summ
+    real(kind=REAL64) :: init_tic, init_toc, read_tic, read_toc
 
     call parseArguments()
 
@@ -541,8 +542,16 @@ program BabelStream
 
     call alloc(array_size)
 
+    init_tic = get_wtime()
     call init_arrays(startA, startB, startC)
+    init_toc = get_wtime()
     summ = 0.0d0
+
+    if (.not.csv) then
+      write(*,'(a6,f9.1,a4,f9.1,a3,a9)') 'Init: ',init_toc-init_tic, 's (=', &
+        (3.0d0 * element_size * array_size * scaling) / (init_toc-init_tic),  TRIM(label), 'ytes/sec)'
+    end if
+
 
     timings = -1.0d0
     if (selection.eq.1) then
@@ -559,7 +568,15 @@ program BabelStream
       stop 1
     endif
 
+    read_tic = get_wtime()
     call read_arrays(h_A, h_B, h_C)
+    read_toc = get_wtime()
+
+    if (.not.csv) then
+      write(*,'(a6,f9.1,a4,f9.1,a3,a9)') 'Read: ',read_toc-read_tic, 's (=', &
+        (3.0d0 * element_size * array_size * scaling) / (read_toc-read_tic),  TRIM(label), 'ytes/sec)'
+    end if
+
     call check_solution(h_A, h_B, h_C, summ)
 
     block
