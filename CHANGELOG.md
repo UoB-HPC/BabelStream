@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [v5.0] - 2023-10-12
 ### Added
 - Ability to build Kokkos and RAJA versions against existing packages.
 - Thrust managed memory.
