@@ -2,8 +2,32 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
+### Added
+- Ability to build Kokkos and RAJA versions against existing packages.
+- Thrust managed memory.
+- HIP managed memory.
+- New implementation using SYCL2020 USM (sycl2020-acc) and renamed original `sycl2020` to `sycl2020-acc`.
+- New implementation in Fortran
+- New implementation in [Futhark](https://futhark-lang.org/)
+- Data initialisation and read-back timing for all models, including Java, Scala, Julia, and Rust
+- Add support for the latest Aparapi (3.0.0) and TornadoVM (0.15.x) for Java
+- JuliaStream.jl published to registry (pending #113)
+
 ### Changed
+- Fix std-data/std-indices compatibility with oneDPL, NVHPC, and AdaptiveCpp (a.k.a. hipSYCL).
 - RAJA CUDA CMake build issues resolved.
+- Kokkos build updates (CXX version upgraded to C++17).
+- Fix CUDA memory limit check.
+- Fix CUDA CMake options for `-DMEM` and `-DCMAKE_CUDA_FLAGS`.
+- Use long double for `check_solution` in case of large problem size.
+- OneAPI DPCPP compiler is deprecated in favour of ICPX, so added new build option to SYCL 2020 version.
+- Updates to the HIP kernels and API usage.
+- Number of thread-blocks in CUDA dot kernel implementation changed to 1024.
+- Fix compatibility of `sycl2020` (now `sycl2020-acc`) with AdaptiveCpp. 
+- Bumped Julia compat to 1.9
+- Bumped Scala to 3.3.1
+- Bumped Rust to 1.74.0-nightly (13e6f24b9 2023-09-23)
+- Upgrade CI to Ubuntu 22.04
 
 ## [v4.0] - 2021-12-22
 

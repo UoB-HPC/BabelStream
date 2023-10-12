@@ -5,10 +5,10 @@
 // source code
 
 #pragma once
+#include "dpl_shim.h"
 
 #include <iostream>
-#include <vector>
-
+#include <stdexcept>
 #include "Stream.h"
 
 #define IMPLEMENTATION_STRING "STD C++ ranges"
@@ -21,13 +21,11 @@ class STDRangesStream : public Stream<T>
     int array_size;
 
     // Device side pointers
-    std::vector<T> a;
-    std::vector<T> b;
-    std::vector<T> c;
+    T *a, *b, *c;
 
   public:
-    STDRangesStream(const int, int);
-    ~STDRangesStream() = default;
+    STDRangesStream(const int, int) noexcept;
+    ~STDRangesStream();
 
     virtual void copy() override;
     virtual void add() override;

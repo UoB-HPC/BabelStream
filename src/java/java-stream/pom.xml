@@ -7,12 +7,12 @@
 
     <artifactId>java-stream</artifactId>
     <groupId>javastream</groupId>
-    <version>4.0</version>
+    <version>5.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <junit.version>5.7.2</junit.version>
+        <junit.version>5.9.2</junit.version>
     </properties>
 
     <repositories>
@@ -27,19 +27,19 @@
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
-            <version>1.81</version>
+            <version>1.82</version>
         </dependency>
 
         <dependency>
             <groupId>tornado</groupId>
             <artifactId>tornado-api</artifactId>
-            <version>0.9</version>
+            <version>0.15.1</version>
         </dependency>
 
         <dependency>
             <groupId>com.aparapi</groupId>
             <artifactId>aparapi</artifactId>
-            <version>2.0.0</version>
+            <version>3.0.0</version>
             <exclusions>
                 <!-- don't pull in the entire Scala ecosystem! -->
                 <exclusion>

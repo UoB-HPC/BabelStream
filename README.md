@@ -38,9 +38,10 @@ BabelStream is currently implemented in the following parallel programming model
 - C++ Parallel STL
 - Kokkos
 - RAJA
-- SYCL and SYCL 2020
+- SYCL and SYCL2020 (USM and accessors)
 - TBB
 - Thrust (via CUDA or HIP)
+- Futhark
 
 This project also contains implementations in alternative languages with different build systems:
 * Julia - [JuliaStream.jl](./src/julia/JuliaStream.jl)
@@ -101,7 +102,7 @@ The source for each model's implementations are located in `./src/<model>`.
 
 Currently available models are:
 ```
-omp;ocl;std;std20;hip;cuda;kokkos;sycl;sycl2020;acc;raja;tbb;thrust
+omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020;acc;raja;tbb;thrust;futhark
 ```
 
 #### Overriding default flags
@@ -165,7 +166,7 @@ The `MODEL` variant selects one implementation of BabelStream to build.
 
 Currently available models are:
 ```
-omp;ocl;std;std20;hip;cuda;kokkos;sycl;sycl2020;acc;raja;tbb;thrust
+omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020-acc;sycl2020-usm;acc;raja;tbb;thrust
 ```
 
 ### GNU Make

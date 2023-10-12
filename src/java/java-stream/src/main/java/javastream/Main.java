@@ -128,6 +128,40 @@ public class Main {
     }
   }
 
+  @SuppressWarnings("unchecked")
+  static void showInit(
+      int totalBytes, double megaScale, Options opt, Duration init, Duration read) {
+    List<Entry<String, Double>> setup =
+        Arrays.asList(
+            new SimpleImmutableEntry<>("Init", durationToSeconds(init)),
+            new SimpleImmutableEntry<>("Read", durationToSeconds(read)));
+    if (opt.csv) {
+      tabulateCsv(
+          true,
+          setup.stream()
+              .map(
+                  x ->
+                      Arrays.asList(
+                          new SimpleImmutableEntry<>("function", x.getKey()),
+                          new SimpleImmutableEntry<>("n_elements", opt.arraysize + ""),
+                          new SimpleImmutableEntry<>("sizeof", totalBytes + ""),
+                          new SimpleImmutableEntry<>(
+                              "max_m" + (opt.mibibytes ? "i" : "") + "bytes_per_sec",
+                              ((megaScale * (double) totalBytes / x.getValue())) + ""),
+                          new SimpleImmutableEntry<>("runtime", x.getValue() + "")))
+              .toArray(List[]::new));
+    } else {
+      for (Entry<String, Double> e : setup) {
+        System.out.printf(
+            "%s: %.5f s (%.5f M%sBytes/sec)%n",
+            e.getKey(),
+            e.getValue(),
+            megaScale * (double) totalBytes / e.getValue(),
+            opt.mibibytes ? "i" : "");
+      }
+    }
+  }
+
   static <T extends Number> boolean run(
       String name, Config<T> config, Function<Config<T>, JavaStream<T>> mkStream) {
 
@@ -183,35 +217,46 @@ public class Main {
 
     JavaStream<T> stream = mkStream.apply(config);
 
-    stream.initArrays();
-
+    Duration init = stream.runInitArrays();
     final boolean ok;
     switch (config.benchmark) {
       case ALL:
-        Entry<Timings<Duration>, T> results = stream.runAll(opt.numtimes);
-        ok = checkSolutions(stream.data(), config, Optional.of(results.getValue()));
-        Timings<Duration> timings = results.getKey();
-        tabulateCsv(
-            opt.csv,
-            mkCsvRow(timings.copy, "Copy", 2 * arrayBytes, megaScale, opt),
-            mkCsvRow(timings.mul, "Mul", 2 * arrayBytes, megaScale, opt),
-            mkCsvRow(timings.add, "Add", 3 * arrayBytes, megaScale, opt),
-            mkCsvRow(timings.triad, "Triad", 3 * arrayBytes, megaScale, opt),
-            mkCsvRow(timings.dot, "Dot", 2 * arrayBytes, megaScale, opt));
-        break;
+        {
+          Entry<Timings<Duration>, T> results = stream.runAll(opt.numtimes);
+          SimpleImmutableEntry<Duration, Data<T>> read = stream.runReadArrays();
+          showInit(totalBytes, megaScale, opt, init, read.getKey());
+          ok = checkSolutions(read.getValue(), config, Optional.of(results.getValue()));
+          Timings<Duration> timings = results.getKey();
+          tabulateCsv(
+              opt.csv,
+              mkCsvRow(timings.copy, "Copy", 2 * arrayBytes, megaScale, opt),
+              mkCsvRow(timings.mul, "Mul", 2 * arrayBytes, megaScale, opt),
+              mkCsvRow(timings.add, "Add", 3 * arrayBytes, megaScale, opt),
+              mkCsvRow(timings.triad, "Triad", 3 * arrayBytes, megaScale, opt),
+              mkCsvRow(timings.dot, "Dot", 2 * arrayBytes, megaScale, opt));
+          break;
+        }
       case NSTREAM:
-        List<Duration> nstreamResults = stream.runNStream(opt.numtimes);
-        ok = checkSolutions(stream.data(), config, Optional.empty());
-        tabulateCsv(opt.csv, mkCsvRow(nstreamResults, "Nstream", 4 * arrayBytes, megaScale, opt));
-        break;
+        {
+          List<Duration> nstreamResults = stream.runNStream(opt.numtimes);
+          SimpleImmutableEntry<Duration, Data<T>> read = stream.runReadArrays();
+          showInit(totalBytes, megaScale, opt, init, read.getKey());
+          ok = checkSolutions(read.getValue(), config, Optional.empty());
+          tabulateCsv(opt.csv, mkCsvRow(nstreamResults, "Nstream", 4 * arrayBytes, megaScale, opt));
+          break;
+        }
       case TRIAD:
-        Duration triadResult = stream.runTriad(opt.numtimes);
-        ok = checkSolutions(stream.data(), config, Optional.empty());
-        int triadTotalBytes = 3 * arrayBytes * opt.numtimes;
-        double bandwidth = megaScale * (triadTotalBytes / durationToSeconds(triadResult));
-        System.out.printf("Runtime (seconds): %.5f", durationToSeconds(triadResult));
-        System.out.printf("Bandwidth (%s/s): %.3f ", gigaSuffix, bandwidth);
-        break;
+        {
+          Duration triadResult = stream.runTriad(opt.numtimes);
+          SimpleImmutableEntry<Duration, Data<T>> read = stream.runReadArrays();
+          showInit(totalBytes, megaScale, opt, init, read.getKey());
+          ok = checkSolutions(read.getValue(), config, Optional.empty());
+          int triadTotalBytes = 3 * arrayBytes * opt.numtimes;
+          double bandwidth = megaScale * (triadTotalBytes / durationToSeconds(triadResult));
+          System.out.printf("Runtime (seconds): %.5f", durationToSeconds(triadResult));
+          System.out.printf("Bandwidth (%s/s): %.3f ", gigaSuffix, bandwidth);
+          break;
+        }
       default:
         throw new AssertionError();
     }
@@ -337,7 +382,7 @@ public class Main {
     }
   }
 
-  private static final String VERSION = "4.0";
+  private static final String VERSION = "5.0";
 
   private static final float START_SCALAR = 0.4f;
   private static final float START_A = 0.1f;

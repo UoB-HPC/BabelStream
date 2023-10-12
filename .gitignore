@@ -10,12 +10,18 @@ sycl-stream
 hip-stream
 tbb-stream
 
+src/fortran/BabelStream
+src/fortran/BabelStream.*
+
 *.o
 *.bc
 *.sycl
 *.tar
 *.gz
 *.a
+*.mod
+*.cub
+*.ptx
 
 KokkosCore_config.*
 

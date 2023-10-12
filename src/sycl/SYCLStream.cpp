@@ -191,7 +191,7 @@ T SYCLStream<T>::dot()
       size_t li = item.get_local_id(0);
       size_t global_size = item.get_global_range()[0];
 
-      wg_sum[li] = 0.0;
+      wg_sum[li] = {};
       for (; i < N; i += global_size)
         wg_sum[li] += ka[i] * kb[i];
 
@@ -208,7 +208,7 @@ T SYCLStream<T>::dot()
     });
   });
 
-  T sum = 0.0;
+  T sum{};
   auto h_sum = d_sum->template get_access<access::mode::read>();
   for (int i = 0; i < dot_num_groups; i++)
   {

@@ -174,7 +174,7 @@ where StreamData<T, D, A>: RustStream<T> {
     );
   }
 
-  stream.init_arrays();
+  let init = stream.run_init_arrays();
 
   let tabulate = |xs: &Vec<Duration>, name: &str, t_size: usize| -> Vec<(&str, String)> {
     let tail = &xs[1..]; // tail only
@@ -235,10 +235,47 @@ where StreamData<T, D, A>: RustStream<T> {
     };
   };
 
+  let show_setup = |init: Duration, read: Duration| {
+    let setup = vec![
+      ("Init", init.as_secs_f64(), 3 * array_bytes),
+      ("Read", read.as_secs_f64(), 3 * array_bytes),
+    ];
+    if option.csv {
+      tabulate_all(
+        setup
+          .iter()
+          .map(|(name, elapsed, t_size)| {
+            vec![
+              ("phase", name.to_string()),
+              ("n_elements", option.arraysize.to_string()),
+              ("sizeof", t_size.to_string()),
+              (
+                if option.mibibytes { "max_mibytes_per_sec" } else { "max_mbytes_per_sec" },
+                (mega_scale * (*t_size as f64) / elapsed).to_string(),
+              ),
+              ("runtime", elapsed.to_string()),
+            ]
+          })
+          .collect::<Vec<_>>(),
+      );
+    } else {
+      for (name, elapsed, t_size) in setup {
+        println!(
+          "{}: {:.5} s (={:.5} {})",
+          name,
+          elapsed,
+          mega_scale * (t_size as f64) / elapsed,
+          if option.mibibytes { "MiBytes/sec" } else { "MBytes/sec" }
+        );
+      }
+    }
+  };
+
   let solutions_correct = match benchmark {
     Benchmark::All => {
       let (results, sum) = stream.run_all(option.numtimes);
-      stream.read_arrays();
+      let read = stream.run_read_arrays();
+      show_setup(init, read);
       let correct = check_solution(benchmark, option.numtimes, &stream, Some(sum));
       tabulate_all(vec![
         tabulate(&results.copy, "Copy", 2 * array_bytes),
@@ -251,14 +288,16 @@ where StreamData<T, D, A>: RustStream<T> {
     }
     Benchmark::NStream => {
       let results = stream.run_nstream(option.numtimes);
-      stream.read_arrays();
+      let read = stream.run_read_arrays();
+      show_setup(init, read);
       let correct = check_solution(benchmark, option.numtimes, &stream, None);
       tabulate_all(vec![tabulate(&results, "Nstream", 4 * array_bytes)]);
       correct
     }
     Benchmark::Triad => {
       let results = stream.run_triad(option.numtimes);
-      stream.read_arrays();
+      let read = stream.run_read_arrays();
+      show_setup(init, read);
       let correct = check_solution(benchmark, option.numtimes, &stream, None);
       let total_bytes = 3 * array_bytes * option.numtimes;
       let bandwidth = giga_scale * (total_bytes as f64 / results.as_secs_f64());

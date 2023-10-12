@@ -149,7 +149,7 @@ void ACCStream<T>::nstream()
 template <class T>
 T ACCStream<T>::dot()
 {
-  T sum = 0.0;
+  T sum{};
 
   int array_size = this->array_size;
   T * restrict a = this->a;

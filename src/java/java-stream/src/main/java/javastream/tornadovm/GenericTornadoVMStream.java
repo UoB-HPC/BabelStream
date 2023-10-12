@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javastream.JavaStream;
 import javastream.Main.Config;
-import uk.ac.manchester.tornado.api.TaskSchedule;
-import uk.ac.manchester.tornado.api.TornadoRuntimeCI;
+import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
+import uk.ac.manchester.tornado.api.TornadoRuntimeInterface;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
 
@@ -13,18 +13,18 @@ abstract class GenericTornadoVMStream<T> extends JavaStream<T> {
 
   protected final TornadoDevice device;
 
-  protected TaskSchedule copyTask;
-  protected TaskSchedule mulTask;
-  protected TaskSchedule addTask;
-  protected TaskSchedule triadTask;
-  protected TaskSchedule nstreamTask;
-  protected TaskSchedule dotTask;
+  protected TornadoExecutionPlan copyTask;
+  protected TornadoExecutionPlan mulTask;
+  protected TornadoExecutionPlan addTask;
+  protected TornadoExecutionPlan triadTask;
+  protected TornadoExecutionPlan nstreamTask;
+  protected TornadoExecutionPlan dotTask;
 
   GenericTornadoVMStream(Config<T> config) {
     super(config);
 
     try {
-      TornadoRuntimeCI runtime = TornadoRuntime.getTornadoRuntime();
+      TornadoRuntimeInterface runtime = TornadoRuntime.getTornadoRuntime();
       List<TornadoDevice> devices = TornadoVMStreams.enumerateDevices(runtime);
       device = devices.get(config.options.device);
 
@@ -42,10 +42,6 @@ abstract class GenericTornadoVMStream<T> extends JavaStream<T> {
     }
   }
 
-  protected static TaskSchedule mkSchedule() {
-    return new TaskSchedule("");
-  }
-
   @Override
   public List<String> listDevices() {
     return TornadoVMStreams.enumerateDevices(TornadoRuntime.getTornadoRuntime()).stream()
@@ -55,12 +51,12 @@ abstract class GenericTornadoVMStream<T> extends JavaStream<T> {
 
   @Override
   public void initArrays() {
-    this.copyTask.warmup();
-    this.mulTask.warmup();
-    this.addTask.warmup();
-    this.triadTask.warmup();
-    this.nstreamTask.warmup();
-    this.dotTask.warmup();
+    this.copyTask.withWarmUp();
+    this.mulTask.withWarmUp();
+    this.addTask.withWarmUp();
+    this.triadTask.withWarmUp();
+    this.nstreamTask.withWarmUp();
+    this.dotTask.withWarmUp();
   }
 
   @Override

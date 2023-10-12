@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
-project(BabelStream VERSION 4.0 LANGUAGES CXX)
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif ()
+
+project(BabelStream VERSION 5.0 LANGUAGES CXX C)
 
 # uncomment for debugging build issues:
 #set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -27,8 +31,6 @@ endmacro()
 # the final executable name
 set(EXE_NAME babelstream)
 
-# select default build type
-set(CMAKE_BUILD_TYPE "Release")
 # for chrono and some basic CXX features, models can overwrite this if required
 set(CMAKE_CXX_STANDARD 11)
 
@@ -71,6 +73,75 @@ hint_flag(CXX_EXTRA_LINKER_FLAGS "
 # Honor user's CXX_EXTRA_LINK_FLAGS
 set(CXX_EXTRA_LINK_FLAGS ${CXX_EXTRA_FLAGS} ${CXX_EXTRA_LINK_FLAGS})
 
+option(USE_TBB "Enable the oneTBB library for *supported* models. Enabling this on models that
+                don't explicitly link against TBB is a no-op, see description of your selected
+                model on how this is used." OFF)
+
+option(FETCH_TBB "Fetch (download) the oneTBB library for *supported* models. This uses CMake's
+                  FetchContent feature. Specify version by setting FETCH_TBB_VERSION" OFF)
+set(FETCH_TBB_VERSION "v2021.10.0" CACHE STRING "Specify version of oneTBB to use if FETCH_TBB is ON")
+
+if (FETCH_TBB)
+    FetchContent_Declare(
+            TBB
+            GIT_REPOSITORY https://github.com/oneapi-src/oneTBB.git
+            GIT_TAG "${FETCH_TBB_VERSION}"
+    )
+    # Don't fail builds on waring (TBB has -Wall while not being free of warnings from unused symbols...)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+    set(TBB_STRICT OFF)
+    # Not using FetchContent_MakeAvailable (CMake>= 3.14) because we need EXCLUDE_FROM_ALL
+    FetchContent_GetProperties(TBB)
+    if (NOT TBB_POPULATED)
+        FetchContent_Populate(TBB)
+        add_subdirectory(${tbb_SOURCE_DIR} ${tbb_BINARY_DIR} EXCLUDE_FROM_ALL)
+    endif ()
+endif ()
+
+option(USE_ONEDPL "Enable the oneDPL library for *supported* models. Enabling this on models that
+                   don't explicitly link against DPL is a no-op, see description of your selected
+                   model on how this is used." OFF)
+
+option(FETCH_ONEDPL "Fetch (download) the oneDPL library for *supported* models. This uses CMake's
+                  FetchContent feature. Specify version by setting FETCH_ONEDPL_VERSION" OFF)
+set(FETCH_ONEDPL_VERSION "oneDPL-2022.2.0-rc1" CACHE STRING "Specify version of oneTBB to use if FETCH_ONEDPL is ON")
+
+if (FETCH_ONEDPL)
+    FetchContent_Declare(
+            oneDPL
+            GIT_REPOSITORY https://github.com/oneapi-src/oneDPL.git
+            GIT_TAG "${FETCH_ONEDPL_VERSION}"
+    )
+    string(TOLOWER ${USE_ONEDPL} ONEDPL_BACKEND)
+    # XXX oneDPL looks for omp instead of openmp, which mismatches(!) with ONEDPL_PAR_BACKEND if using find_package
+    if (ONEDPL_BACKEND STREQUAL "openmp")
+        set(ONEDPL_BACKEND omp)
+    endif ()
+    # Not using FetchContent_MakeAvailable (CMake>= 3.14) because we need EXCLUDE_FROM_ALL
+    FetchContent_GetProperties(oneDPL)
+    if (NOT oneDPL_POPULATED)
+        FetchContent_Populate(oneDPL)
+        if (USE_TBB)
+            macro(find_package NAME)
+                if ("${NAME}" STREQUAL "TBB")
+                    message(STATUS "Discarding oneDPL's call to find_package(${NAME} ${ARGN})")
+                else ()
+                    _find_package(${NAME} ${ARGN})
+                endif ()
+            endmacro()
+        endif ()
+        add_subdirectory(${onedpl_SOURCE_DIR} ${onedpl_BINARY_DIR} EXCLUDE_FROM_ALL)
+
+        # Fixup oneDPL's omission on setting DPCPP definitions.
+        # We do this after the creation of the oneDPL target.
+        if (ONEDPL_BACKEND MATCHES "^(dpcpp|dpcpp_only)$")
+            target_compile_definitions(oneDPL INTERFACE ONEDPL_USE_DPCPP_BACKEND=1)
+        endif ()
+
+    endif ()
+endif ()
+
+
 # include our macros
 include(cmake/register_models.cmake)
 
@@ -84,12 +155,14 @@ register_model(hip HIP HIPStream.cpp)
 register_model(cuda CUDA CUDAStream.cu)
 register_model(kokkos KOKKOS KokkosStream.cpp)
 register_model(sycl SYCL SYCLStream.cpp)
-register_model(sycl2020 SYCL2020 SYCLStream2020.cpp)
+register_model(sycl2020-acc SYCL2020 SYCLStream2020.cpp)
+register_model(sycl2020-usm SYCL2020 SYCLStream2020.cpp)
 register_model(acc ACC ACCStream.cpp)
 # defining RAJA collides with the RAJA namespace so USE_RAJA
 register_model(raja USE_RAJA RAJAStream.cpp)
 register_model(tbb TBB TBBStream.cpp)
 register_model(thrust THRUST ThrustStream.cu) # Thrust uses cu, even for rocThrust
+register_model(futhark FUTHARK FutharkStream.cpp)
 
 
 set(USAGE ON CACHE BOOL "Whether to print all custom flags for the selected model")
@@ -99,6 +172,12 @@ if (NOT DEFINED MODEL)
     message(FATAL_ERROR "MODEL is unspecified, pick one from the available models")
 else ()
     message(STATUS "Selected model  :  ${MODEL}")
+endif ()
+
+if (MODEL STREQUAL "sycl2020")
+    message(FATAL_ERROR "
+    Model sycl2020 has been renamed to sycl2020-acc, and a new sycl2020-usm model is now available.
+    Please use sycl2020-acc for SYCL2020 style accessors and sycl2020-usm for USM")
 endif ()
 
 # load the $MODEL.cmake file and setup the correct IMPL_* based on $MODEL
@@ -151,6 +230,7 @@ include_directories(src)
 add_executable(${EXE_NAME} ${IMPL_SOURCES} src/main.cpp)
 target_link_libraries(${EXE_NAME} PUBLIC ${LINK_LIBRARIES})
 target_compile_definitions(${EXE_NAME} PUBLIC ${IMPL_DEFINITIONS})
+target_include_directories(${EXE_NAME} PUBLIC ${IMPL_DIRECTORIES})
 
 if (CXX_EXTRA_LIBRARIES)
     target_link_libraries(${EXE_NAME} PUBLIC ${CXX_EXTRA_LIBRARIES})

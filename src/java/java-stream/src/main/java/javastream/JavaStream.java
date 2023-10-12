@@ -56,7 +56,7 @@ public abstract class JavaStream<T> {
 
   protected abstract T dot();
 
-  protected abstract Data<T> data();
+  protected abstract Data<T> readArrays();
 
   public static class EnumeratedStream<T> extends JavaStream<T> {
 
@@ -113,8 +113,8 @@ public abstract class JavaStream<T> {
     }
 
     @Override
-    public Data<T> data() {
-      return actual.data();
+    public Data<T> readArrays() {
+      return actual.readArrays();
     }
   }
 
@@ -138,6 +138,14 @@ public abstract class JavaStream<T> {
     f.run();
     long end = System.nanoTime();
     return Duration.ofNanos(end - start);
+  }
+
+  final Duration runInitArrays() {
+    return timed(this::initArrays);
+  }
+
+  final SimpleImmutableEntry<Duration, Data<T>> runReadArrays() {
+    return timed(this::readArrays);
   }
 
   final SimpleImmutableEntry<Timings<Duration>, T> runAll(int times) {

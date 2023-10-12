@@ -13,16 +13,9 @@
 
 #include "Stream.h"
 
-#if defined(PAGEFAULT)
-  #define IMPLEMENTATION_STRING "CUDA - Page Fault"
-#elif defined(MANAGED)
-  #define IMPLEMENTATION_STRING "CUDA - Managed Memory"
-#else
-  #define IMPLEMENTATION_STRING "CUDA"
-#endif
+#define IMPLEMENTATION_STRING "CUDA"
 
 #define TBSIZE 1024
-#define DOT_NUM_BLOCKS 256
 
 template <class T>
 class CUDAStream : public Stream<T>
@@ -40,6 +33,8 @@ class CUDAStream : public Stream<T>
     T *d_c;
     T *d_sum;
 
+    // Number of blocks for dot kernel
+    int dot_num_blocks;
 
   public:
 

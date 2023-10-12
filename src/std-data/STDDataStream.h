@@ -5,6 +5,7 @@
 // source code
 
 #pragma once
+#include "dpl_shim.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -21,14 +22,11 @@ class STDDataStream : public Stream<T>
     int array_size;
 
     // Device side pointers
-    std::vector<T> a;
-    std::vector<T> b;
-    std::vector<T> c;
-
+    T *a, *b, *c;
 
   public:
     STDDataStream(const int, int) noexcept;
-    ~STDDataStream() = default;
+    ~STDDataStream();
 
     virtual void copy() override;
     virtual void add() override;

@@ -122,7 +122,7 @@ public final class AparapiStreams {
     }
 
     @Override
-    public Data<T> data() {
+    public Data<T> readArrays() {
       return kernels.syncAndDispose();
     }
   }

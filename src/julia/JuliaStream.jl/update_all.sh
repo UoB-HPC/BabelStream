@@ -3,5 +3,6 @@
 
 for BACKEND in  "." "AMDGPU" "CUDA" "oneAPI" "Threaded" "KernelAbstractions" 
 do
-  julia --project="$BACKEND" -e 'import Pkg; Pkg.resolve(); Pkg.instantiate(); Pkg.update(); Pkg.gc();' 
+  echo "Updating subproject $BACKEND"
+  julia --project="$BACKEND" -e 'import Pkg;  Pkg.resolve(); Pkg.instantiate(); Pkg.update(); Pkg.gc();'
 done

@@ -14,6 +14,7 @@ transparent trait ScalaStream[@specialized(Float, Double) A]:
   def config: Config[A]
 
   def initArrays(): Unit
+  def readArrays(): Unit = ()
   def copy(): Unit
   def mul(): Unit
   def add(): Unit
@@ -27,6 +28,8 @@ transparent trait ScalaStream[@specialized(Float, Double) A]:
     val end   = System.nanoTime()
     FiniteDuration(end - start, TimeUnit.NANOSECONDS) -> r
 
+  inline def runInitArrays(): FiniteDuration = timed(initArrays())._1
+  inline def runReadArrays(): FiniteDuration = timed(readArrays())._1
   inline def runAll(times: Int)(using Fractional[A]): (Timings[Vector[FiniteDuration]], A) =
     val copy  = ArrayBuffer.fill[FiniteDuration](times)(Duration.Zero)
     val mul   = ArrayBuffer.fill[FiniteDuration](times)(Duration.Zero)
@@ -62,7 +65,6 @@ transparent trait ScalaStream[@specialized(Float, Double) A]:
 
   def data(): Data[A]
 
-
 trait Fractional[@specialized(Double, Float) A]:
   def toFractional(f: Float): A
   def toFractional(f: Double): A
@@ -77,13 +79,13 @@ trait Fractional[@specialized(Double, Float) A]:
   extension (x: Int) inline def fractional    = toFractional(x.toFloat)
   extension (x: Long) inline def fractional   = toFractional(x.toDouble)
   extension (x: A)
-    inline def +(y: A)  = add(x, y)
-    inline def -(y: A)  = sub(x, y)
-    inline def *(y: A)  = mul(x, y)
-    inline def /(y: A)  = div(x, y)
-    inline def >(y: A)  = compare(x, y) > 0
-    inline def <(y: A)  = compare(x, y) < 0
-    inline def abs_     = abs(x)
+    inline def +(y: A) = add(x, y)
+    inline def -(y: A) = sub(x, y)
+    inline def *(y: A) = mul(x, y)
+    inline def /(y: A) = div(x, y)
+    inline def >(y: A) = compare(x, y) > 0
+    inline def <(y: A) = compare(x, y) < 0
+    inline def abs_    = abs(x)
 end Fractional
 
 given FloatFractional: Fractional[Float] with
@@ -108,7 +110,7 @@ given DoubleFractional: Fractional[Double] with
 
 object App:
 
-  final val Version: String = "4.0"
+  final val Version: String = "5.0"
 
   case class Config[@specialized(Double, Float) A](
       options: Options,
@@ -204,7 +206,7 @@ object App:
     validateXs("c", vec.c, goldC)
 
     dotSum.foreach { sum =>
-      val goldSum = (goldA * goldB) * (config.options.arraysize).fractional
+      val goldSum = (goldA * goldB) * config.options.arraysize.fractional
       val error   = ((sum - goldSum) / goldSum).abs_
       if error > 1.fractional / 100000000.fractional then
         Console.err.println(
@@ -238,10 +240,10 @@ object App:
       )
 
       println(s"Running ${config.benchmark match {
-        case Benchmark.All     => "kernels"
-        case Benchmark.Triad   => "triad"
-        case Benchmark.NStream => "nstream"
-      }} ${opt.numtimes} times")
+          case Benchmark.All     => "kernels"
+          case Benchmark.Triad   => "triad"
+          case Benchmark.NStream => "nstream"
+        }} ${opt.numtimes} times")
 
       if config.benchmark == Benchmark.Triad then println(s"Number of elements: ${opt.arraysize}")
 
@@ -288,11 +290,38 @@ object App:
         println(header.map(_._1.padTo(padding, ' ')).mkString(sep))
         println(rows.map(_.map(_._2.padTo(padding, ' ')).mkString(sep)).mkString("\n"))
 
+    def showInit(init: FiniteDuration, read: FiniteDuration): Unit = {
+      val setup =
+        Vector(("Init", init.seconds, 3 * arrayBytes), ("Read", read.seconds, 3 * arrayBytes))
+      if opt.csv then
+        tabulate(
+          setup.map((name, elapsed, totalBytes) =>
+            Vector(
+              "phase"      -> name,
+              "n_elements" -> opt.arraysize.toString,
+              "sizeof"     -> arrayBytes.toString,
+              s"max_m${if opt.mibibytes then "i" else ""}bytes_per_sec" ->
+                (megaScale * totalBytes.toDouble / elapsed).toString,
+              "runtime" -> elapsed.toString
+            )
+          ): _*
+        )
+      else
+        for (name, elapsed, totalBytes) <- setup do
+          println(
+            f"$name: $elapsed%.5f s (=${megaScale * totalBytes.toDouble / elapsed}%.5f M${
+                if opt.mibibytes then "i" else ""
+              }Bytes/sec)"
+          )
+    }
+
     val stream = mkStream(config)
-    stream.initArrays()
+    val init   = stream.runInitArrays()
     config.benchmark match
       case Benchmark.All =>
         val (results, sum) = stream.runAll(opt.numtimes)
+        val read           = stream.runReadArrays()
+        showInit(init, read)
         validate(stream.data(), config, Some(sum))
         tabulate(
           mkRow(results.copy, "Copy", 2 * arrayBytes),
@@ -303,10 +332,14 @@ object App:
         )
       case Benchmark.NStream =>
         val result = stream.runNStream(opt.numtimes)
+        val read   = stream.runReadArrays()
+        showInit(init, read)
         validate(stream.data(), config)
         tabulate(mkRow(result, "Nstream", 4 * arrayBytes))
       case Benchmark.Triad =>
-        val results    = stream.runTriad(opt.numtimes)
+        val results = stream.runTriad(opt.numtimes)
+        val read    = stream.runReadArrays()
+        showInit(init, read)
         val totalBytes = 3 * arrayBytes * opt.numtimes
         val bandwidth  = megaScale * (totalBytes / results.seconds)
         println(f"Runtime (seconds): ${results.seconds}%.5f")

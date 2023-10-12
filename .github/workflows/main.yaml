@@ -12,12 +12,12 @@ on:
 jobs:
 
   test-rust:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     defaults:
       run:
         working-directory: ./src/rust/rust-stream
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup project
         run: rustup install nightly
       - name: Compile project
@@ -28,12 +28,12 @@ jobs:
         run: ./target/release/rust-stream --arraysize 2048
 
   test-java:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     defaults:
       run:
         working-directory: ./src/java/java-stream
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Test build project
         run: ./mvnw clean package
       - name: Test run
@@ -41,12 +41,12 @@ jobs:
         run: java -jar target/java-stream.jar --arraysize 2048
 
   test-julia:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     defaults:
       run:
         working-directory: ./src/julia/JuliaStream.jl
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup project
         run: julia             --project -e 'import Pkg; Pkg.instantiate()'
       - name: Test run PlainStream.jl
@@ -70,14 +70,22 @@ jobs:
 
 
   test-cpp:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@v8
+        with:
+          root-reserve-mb: 8192
+          swap-size-mb: 512
+          remove-android: 'true'
+          remove-codeql: 'true'
+
+      - uses: actions/checkout@v4
 
       - name: Cache compiler
         if: ${{ !env.ACT }}
         id: prepare-compilers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ./compilers
           key: ${{ runner.os }}-${{ hashFiles('./src/ci-prepare-bionic.sh') }}
@@ -90,9 +98,9 @@ jobs:
         run: source ./src/ci-prepare-bionic.sh ./compilers VARS false || true
 
         # Enable tmate debugging of manually-triggered workflows if the input option was provided
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
+      #      - name: Setup tmate session
+      #        uses: mxschmitt/action-tmate@v3
+      #        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
 
       - name: Test compile gcc     @ CMake 3.13
         if: ${{ ! cancelled() }}
@@ -168,3 +176,64 @@ jobs:
       - name: Test compile hipsycl @ CMake 3.18
         if: ${{ ! cancelled() }}
         run: ./src/ci-test-compile.sh ./build hipsycl all ${{ env.CMAKE_3_18_BIN }}
+
+      - name: Test compile gcc     @ CMake 3.20
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build gcc all ${{ env.CMAKE_3_20_BIN }}
+      - name: Test compile clang   @ CMake 3.20
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build clang all ${{ env.CMAKE_3_20_BIN }}
+      - name: Test compile nvhpc   @ CMake 3.20
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build nvhpc all ${{ env.CMAKE_3_20_BIN }}
+      - name: Test compile aocc    @ CMake 3.20
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build aocc all ${{ env.CMAKE_3_20_BIN }}
+      - name: Test compile aomp    @ CMake 3.20
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build aomp all ${{ env.CMAKE_3_20_BIN }}
+      - name: Test compile hip     @ CMake 3.20
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build hip all ${{ env.CMAKE_3_20_BIN }}
+      - name: Test compile dpcpp   @ CMake 3.20
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build dpcpp all ${{ env.CMAKE_3_20_BIN }}
+      - name: Test compile hipsycl @ CMake 3.20
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build hipsycl all ${{ env.CMAKE_3_20_BIN }}
+
+      - name: Test compile gcc     @ CMake 3.24
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build gcc all ${{ env.CMAKE_3_24_BIN }}
+      - name: Test compile clang   @ CMake 3.24
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build clang all ${{ env.CMAKE_3_24_BIN }}
+      - name: Test compile nvhpc   @ CMake 3.24
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build nvhpc all ${{ env.CMAKE_3_24_BIN }}
+      - name: Test compile aocc    @ CMake 3.24
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build aocc all ${{ env.CMAKE_3_24_BIN }}
+      - name: Test compile aomp    @ CMake 3.24
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build aomp all ${{ env.CMAKE_3_24_BIN }}
+      - name: Test compile hip     @ CMake 3.24
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build hip all ${{ env.CMAKE_3_24_BIN }}
+      - name: Test compile dpcpp   @ CMake 3.24
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build dpcpp all ${{ env.CMAKE_3_24_BIN }}
+      - name: Test compile hipsycl @ CMake 3.24
+        if: ${{ ! cancelled() }}
+        run: ./src/ci-test-compile.sh ./build hipsycl all ${{ env.CMAKE_3_24_BIN }}
+
+  test-futhark:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Futhark compiler
+        uses: diku-dk/install-futhark@HEAD
+        with:
+          version: 'latest'
+      - run: cmake -Bbuild -H. -DMODEL=futhark -DFUTHARK_BACKEND=multicore
+      - run: cmake --build build
