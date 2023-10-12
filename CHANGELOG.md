@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 - Thrust managed memory.
 - HIP managed memory.
 - New implementation using SYCL2020 USM (sycl2020-acc) and renamed original `sycl2020` to `sycl2020-acc`.
+- New implementation in Fortran
 - New implementation in [Futhark](https://futhark-lang.org/)
 - Data initialisation and read-back timing for all models, including Java, Scala, Julia, and Rust
 - Add support for the latest Aparapi (3.0.0) and TornadoVM (0.15.x) for Java
