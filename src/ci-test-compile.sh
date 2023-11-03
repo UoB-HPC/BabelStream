@@ -105,7 +105,6 @@ run_build() {
 # # AMD needs this rocm_path thing exported...
 # export ROCM_PATH="/opt/rocm-4.5.0"
 # HIP_CXX="/opt/rocm-4.5.0/bin/hipcc"
-# COMPUTECPP_DIR="/home/tom/Downloads/ComputeCpp-CE-2.7.0-x86_64-linux-gnu/"
 # DPCPP_DIR="/home/tom/Downloads/dpcpp_compiler"
 # HIPSYCL_DIR="/opt/hipsycl/cff515c/"
 #
@@ -356,7 +355,6 @@ dpcpp) build_dpcpp ;;
 hipsycl) build_hipsycl ;;
 
 # XXX below are local only; licence or very large download required, candidate for local runner
-computecpp) build_computecpp ;;
 icpx) build_icpx ;;
 icpc) build_icpc ;;
 
@@ -370,7 +368,6 @@ all)
   build_dpcpp
   build_hipsycl
 
-  build_computecpp
   build_icpx
   build_icpc
 
