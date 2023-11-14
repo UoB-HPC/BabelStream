@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-22.04
     defaults:
       run:
-        working-directory: ./src/julia/JuliaStream.jl
+        working-directory: ./src/julia/BabelStream.jl
     steps:
       - uses: actions/checkout@v4
       - name: Setup project
