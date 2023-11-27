@@ -243,7 +243,7 @@ function main()
     else
       return [
         ("Function", name),
-        ("M$(config.mibibytes ? "i" : "")Bytes/sec", round(mbps; digits = 3)),
+        ("M$(config.mibibytes ? "i" : "")Bytes/sec", @sprintf "%.3f" mbps),
         ("Min (sec)", round(min; digits = 5)),
         ("Max", round(max; digits = 5)),
         ("Average", round(avg; digits = 5)),
