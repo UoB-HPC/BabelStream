@@ -44,7 +44,7 @@ BabelStream is currently implemented in the following parallel programming model
 - Futhark
 
 This project also contains implementations in alternative languages with different build systems:
-* Julia - [JuliaStream.jl](./src/julia/JuliaStream.jl)
+* Julia - [BabelStream.jl](./src/julia/BabelStream.jl)
 * Java - [java-stream](./src/java/java-stream)
 * Scala - [scala-stream](./src/scala/scala-stream)
 * Rust - [rust-stream](./src/rust/rust-stream)
@@ -102,7 +102,7 @@ The source for each model's implementations are located in `./src/<model>`.
 
 Currently available models are:
 ```
-omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020;acc;raja;tbb;thrust;futhark
+omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020-acc;sycl2020-usm;acc;raja;tbb;thrust;futhark
 ```
 
 #### Overriding default flags

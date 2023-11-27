@@ -1,4 +1,4 @@
-name = "JuliaStream"
+name = "BabelStream"
 uuid = "1bdcc9b7-f5ed-4705-bc7b-be1b748ec681"
 authors = ["Wei-Chen Lin <wl14928@bristol.ac.uk>"]
 version = "4.0"
@@ -16,4 +16,14 @@ ROCKernels = "7eb9e9f0-4bd3-4c4c-8bef-26bd9629d9b9"
 oneAPI = "8f75cd03-7ff8-4ecb-9b8f-daf728133b1b"
 
 [compat]
+AMDGPU = "0.4.8"
+ArgParse = "1.1.4"
+CUDA = "4.0.1"
+CUDAKernels = "0.4.7"
+Distributed = "1"
+ExprTools = "0.1.10"
+KernelAbstractions = "0.8.6"
+Parameters = "0.12.3"
+ROCKernels = "0.3.5"
+oneAPI = "1.0.2"
 julia = "1.9"
