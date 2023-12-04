@@ -44,7 +44,7 @@ BabelStream is currently implemented in the following parallel programming model
 - Futhark
 
 This project also contains implementations in alternative languages with different build systems:
-* Julia - [BabelStream.jl](./src/julia/BabelStream.jl)
+* Julia - [JuliaStream.jl](./src/julia/JuliaStream.jl)
 * Java - [java-stream](./src/java/java-stream)
 * Scala - [scala-stream](./src/scala/scala-stream)
 * Rust - [rust-stream](./src/rust/rust-stream)
