@@ -9,6 +9,9 @@
 
 #include <iostream>
 
+#include "sycl_ext_enqueue_functions.h"
+namespace syclex = sycl::ext::oneapi::experimental;
+
 // Cache list of devices
 bool cached = false;
 std::vector<sycl::device> devices;
@@ -83,9 +86,9 @@ SYCLStream<T>::~SYCLStream() {
 template <class T>
 void SYCLStream<T>::copy()
 {
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, c = this->c, a = this->a](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=, c = this->c, a = this->a](sycl::id<1> idx)
     {
       c[idx] = a[idx];
     });
@@ -97,9 +100,9 @@ template <class T>
 void SYCLStream<T>::mul()
 {
   const T scalar = startScalar;
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, b = this->b, c = this->c](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=, b = this->b, c = this->c](sycl::id<1> idx)
     {
       b[idx] = scalar * c[idx];
     });
@@ -110,9 +113,9 @@ void SYCLStream<T>::mul()
 template <class T>
 void SYCLStream<T>::add()
 {
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, c = this->c, a = this->a, b = this->b](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=, c = this->c, a = this->a, b = this->b](sycl::id<1> idx)
     {
       c[idx] = a[idx] + b[idx];
     });
@@ -124,9 +127,9 @@ template <class T>
 void SYCLStream<T>::triad()
 {
   const T scalar = startScalar;
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
     {
       a[idx] = b[idx] + scalar * c[idx];
     });
@@ -139,9 +142,9 @@ void SYCLStream<T>::nstream()
 {
   const T scalar = startScalar;
 
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
     {
       a[idx] += b[idx] + scalar * c[idx];
     });
@@ -152,20 +155,21 @@ void SYCLStream<T>::nstream()
 template <class T>
 T SYCLStream<T>::dot()
 {
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size},
-      // Reduction object, to perform summation - initialises the result to zero
-      // hipSYCL doesn't sypport the initialize_to_identity property yet
-#if defined(__HIPSYCL__) || defined(__OPENSYCL__)
-      sycl::reduction(sum, sycl::plus<T>()),
-#else
-      sycl::reduction(sum, sycl::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
-#endif
+    syclex::parallel_for(cgh, sycl::range<1>{array_size},
       [a = this->a, b = this->b](sycl::id<1> idx, auto& sum)
       {
         sum += a[idx] * b[idx];
-      });
+      },
+      // Reduction object, to perform summation - initialises the result to zero
+      // hipSYCL doesn't sypport the initialize_to_identity property yet
+#if defined(__HIPSYCL__) || defined(__OPENSYCL__)
+      sycl::reduction(sum, sycl::plus<T>())
+#else
+      sycl::reduction(sum, sycl::plus<T>(), sycl::property::reduction::initialize_to_identity{})
+#endif
+      );
 
   });
   queue->wait();
@@ -175,9 +179,9 @@ T SYCLStream<T>::dot()
 template <class T>
 void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
     {
       a[idx] = initA;
       b[idx] = initB;

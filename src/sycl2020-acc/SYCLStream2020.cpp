@@ -9,6 +9,9 @@
 
 #include <iostream>
 
+#include "sycl_ext_enqueue_functions.h"
+namespace syclex = sycl::ext::oneapi::experimental;
+
 // Cache list of devices
 bool cached = false;
 std::vector<sycl::device> devices;
@@ -75,11 +78,11 @@ SYCLStream<T>::SYCLStream(const size_t ARRAY_SIZE, const int device_index)
 template <class T>
 void SYCLStream<T>::copy()
 {
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
     sycl::accessor ka {d_a, cgh, sycl::read_only};
     sycl::accessor kc {d_c, cgh, sycl::write_only};
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       kc[idx] = ka[idx];
     });
@@ -91,11 +94,11 @@ template <class T>
 void SYCLStream<T>::mul()
 {
   const T scalar = startScalar;
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
     sycl::accessor kb {d_b, cgh, sycl::write_only};
     sycl::accessor kc {d_c, cgh, sycl::read_only};
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       kb[idx] = scalar * kc[idx];
     });
@@ -106,12 +109,12 @@ void SYCLStream<T>::mul()
 template <class T>
 void SYCLStream<T>::add()
 {
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
     sycl::accessor ka {d_a, cgh, sycl::read_only};
     sycl::accessor kb {d_b, cgh, sycl::read_only};
     sycl::accessor kc {d_c, cgh, sycl::write_only};
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       kc[idx] = ka[idx] + kb[idx];
     });
@@ -123,12 +126,12 @@ template <class T>
 void SYCLStream<T>::triad()
 {
   const T scalar = startScalar;
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
     sycl::accessor ka {d_a, cgh, sycl::write_only};
     sycl::accessor kb {d_b, cgh, sycl::read_only};
     sycl::accessor kc {d_c, cgh, sycl::read_only};
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       ka[idx] = kb[idx] + scalar * kc[idx];
     });
@@ -141,12 +144,12 @@ void SYCLStream<T>::nstream()
 {
   const T scalar = startScalar;
 
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
     sycl::accessor ka {d_a, cgh};
     sycl::accessor kb {d_b, cgh, sycl::read_only};
     sycl::accessor kc {d_c, cgh, sycl::read_only};
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       ka[idx] += kb[idx] + scalar * kc[idx];
     });
@@ -158,24 +161,23 @@ template <class T>
 T SYCLStream<T>::dot()
 {
 
-  queue->submit([&](sycl::handler &cgh)
-  {
+  syclex::submit(*queue, [&](sycl::handler &cgh) {
     sycl::accessor ka {d_a, cgh, sycl::read_only};
     sycl::accessor kb {d_b, cgh, sycl::read_only};
 
-    cgh.parallel_for(sycl::range<1>{array_size},
+    syclex::parallel_for(
+       cgh, sycl::range<1>{array_size},
+       [=](sycl::id<1> idx, auto &sum) {
+         sum += ka[idx] * kb[idx];
+       },
        // Reduction object, to perform summation - initialises the result to zero
        // hipSYCL doesn't sypport the initialize_to_identity property yet
 #if defined(__HIPSYCL__) || defined(__OPENSYCL__)
-      sycl::reduction(d_sum. template get_access<sycl::access_mode::read_write>(cgh), sycl::plus<T>()),
+        sycl::reduction(d_sum.template get_access<sycl::access_mode::read_write>(cgh), sycl::plus<T>())
 #else
-      sycl::reduction(d_sum, cgh, sycl::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
+        sycl::reduction(d_sum, cgh, sycl::plus<T>(), sycl::property::reduction::initialize_to_identity{})
 #endif
-      [=](sycl::id<1> idx, auto& sum)
-      {
-        sum += ka[idx] * kb[idx];
-      });
-
+    );
   });
 
   // Get access on the host, and return a copy of the data (single number)
@@ -188,13 +190,13 @@ T SYCLStream<T>::dot()
 template <class T>
 void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  queue->submit([&](sycl::handler &cgh)
+  syclex::submit(*queue, [&](sycl::handler &cgh)
   {
     sycl::accessor ka {d_a, cgh, sycl::write_only, sycl::no_init};
     sycl::accessor kb {d_b, cgh, sycl::write_only, sycl::no_init};
     sycl::accessor kc {d_c, cgh, sycl::write_only, sycl::no_init};
 
-    cgh.parallel_for(sycl::range<1>{array_size}, [=](sycl::id<1> idx)
+    syclex::parallel_for(cgh, sycl::range<1>{array_size}, [=](sycl::id<1> idx)
     {
       ka[idx] = initA;
       kb[idx] = initB;
