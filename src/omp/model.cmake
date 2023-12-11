@@ -165,6 +165,7 @@ macro(setup)
             list(APPEND OMP_FLAGS ${OMP_FLAGS_OFFLOAD_${OFFLOAD_VENDOR}})
 
         elseif (LEN EQUAL 2)
+            register_definitions(OMP_TARGET_GPU)
             #  offload with <vendor:arch> tuple
             list(GET OFFLOAD_TUPLE 0 OFFLOAD_VENDOR)
             list(GET OFFLOAD_TUPLE 1 OFFLOAD_ARCH)
