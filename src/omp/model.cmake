@@ -51,7 +51,7 @@ set(OMP_FLAGS_OFFLOAD_INTEL
 set(OMP_FLAGS_OFFLOAD_GNU_NVIDIA
         -foffload=nvptx-none)
 set(OMP_FLAGS_OFFLOAD_GNU_AMD
-        -foffload=amdgcn-amdhsa)
+        -foffload=amdgcn-amdhsa -fcf-protection=none)
 set(OMP_FLAGS_OFFLOAD_CLANG_NVIDIA
         -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda -Xopenmp-target=nvptx64-nvidia-cuda)
 set(OMP_FLAGS_OFFLOAD_CLANG_AMD
