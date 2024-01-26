@@ -12,7 +12,7 @@ KokkosStream<T>::KokkosStream(
         const int ARRAY_SIZE, const int device_index)
     : array_size(ARRAY_SIZE)
 {
-  Kokkos::initialize();
+  Kokkos::initialize(Kokkos::InitializationSettings().set_device_id(device_index));
 
   d_a = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_a"), ARRAY_SIZE);
   d_b = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_b"), ARRAY_SIZE);

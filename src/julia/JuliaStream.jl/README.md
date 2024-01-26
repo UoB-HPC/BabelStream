@@ -1,4 +1,4 @@
-BabelStream.jl
+JuliaStream.jl
 ==============
 
 This is an implementation of BabelStream in Julia which contains the following variants:
@@ -35,7 +35,7 @@ A set of reduced dependency projects are available for the following backend and
 With Julia on path, run your selected benchmark with:
 
 ```shell
-> cd BabelStream.jl
+> cd JuliaStream.jl
 > julia --project=<BACKEND> -e 'import Pkg; Pkg.instantiate()' # only required on first run
 > julia --project=<BACKEND> src/<IMPL>Stream.jl
 ```
@@ -43,7 +43,7 @@ With Julia on path, run your selected benchmark with:
 For example. to run the CUDA implementation:
 
 ```shell
-> cd BabelStream.jl
+> cd JuliaStream.jl
 > julia --project=CUDA -e 'import Pkg; Pkg.instantiate()' 
 > julia --project=CUDA src/CUDAStream.jl
 ```
@@ -61,7 +61,7 @@ There may be instances where some packages are locked to an older version becaus
 
 To run the benchmark using the top-level project, run the benchmark with:
 ```shell
-> cd BabelStream.jl
+> cd JuliaStream.jl
 > julia --project -e 'import Pkg; Pkg.instantiate()'  
 > julia --project src/<IMPL>Stream.jl
 ```
