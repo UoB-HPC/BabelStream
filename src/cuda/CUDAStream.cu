@@ -21,15 +21,6 @@ void check_error(void)
 template <class T>
 CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
 {
-
-  // The array size must be divisible by TBSIZE for kernel launches
-  if (ARRAY_SIZE % TBSIZE != 0)
-  {
-    std::stringstream ss;
-    ss << "Array size must be a multiple of " << TBSIZE;
-    throw std::runtime_error(ss.str());
-  }
-
   // Set device
   int count;
   cudaGetDeviceCount(&count);
@@ -122,18 +113,20 @@ CUDAStream<T>::~CUDAStream()
 
 
 template <typename T>
-__global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC)
+__global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, int array_size)
 {
-  const int i = blockDim.x * blockIdx.x + threadIdx.x;
-  a[i] = initA;
-  b[i] = initB;
-  c[i] = initC;
+  
+  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+    a[i] = initA;
+    b[i] = initB;
+    c[i] = initC;
+  }
 }
 
 template <class T>
 void CUDAStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  init_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, initA, initB, initC);
+  init_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, initA, initB, initC, array_size);
   check_error();
   cudaDeviceSynchronize();
   check_error();
@@ -163,83 +156,88 @@ void CUDAStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vecto
 
 
 template <typename T>
-__global__ void copy_kernel(const T * a, T * c)
+__global__ void copy_kernel(const T * a, T * c, int array_size)
 {
-  const int i = blockDim.x * blockIdx.x + threadIdx.x;
-  c[i] = a[i];
+  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+    c[i] = a[i];
+  }
 }
 
 template <class T>
 void CUDAStream<T>::copy()
 {
-  copy_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_c);
+  copy_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_c, array_size);
   check_error();
   cudaDeviceSynchronize();
   check_error();
 }
 
 template <typename T>
-__global__ void mul_kernel(T * b, const T * c)
+__global__ void mul_kernel(T * b, const T * c, int array_size)
 {
   const T scalar = startScalar;
-  const int i = blockDim.x * blockIdx.x + threadIdx.x;
-  b[i] = scalar * c[i];
+  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+    b[i] = scalar * c[i];
+  }
 }
 
 template <class T>
 void CUDAStream<T>::mul()
 {
-  mul_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_b, d_c);
+  mul_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_b, d_c, array_size);
   check_error();
   cudaDeviceSynchronize();
   check_error();
 }
 
 template <typename T>
-__global__ void add_kernel(const T * a, const T * b, T * c)
+__global__ void add_kernel(const T * a, const T * b, T * c, int array_size)
 {
-  const int i = blockDim.x * blockIdx.x + threadIdx.x;
-  c[i] = a[i] + b[i];
+  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+    c[i] = a[i] + b[i];
+  }
 }
 
 template <class T>
 void CUDAStream<T>::add()
 {
-  add_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c);
+  add_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
   check_error();
   cudaDeviceSynchronize();
   check_error();
 }
 
 template <typename T>
-__global__ void triad_kernel(T * a, const T * b, const T * c)
+__global__ void triad_kernel(T * a, const T * b, const T * c, int array_size)
 {
   const T scalar = startScalar;
-  const int i = blockDim.x * blockIdx.x + threadIdx.x;
-  a[i] = b[i] + scalar * c[i];
+  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+    a[i] = b[i] + scalar * c[i];
+  }
 }
 
 template <class T>
 void CUDAStream<T>::triad()
 {
-  triad_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c);
+  triad_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
   check_error();
   cudaDeviceSynchronize();
   check_error();
 }
 
 template <typename T>
-__global__ void nstream_kernel(T * a, const T * b, const T * c)
+__global__ void nstream_kernel(T * a, const T * b, const T * c, int array_size)
 {
   const T scalar = startScalar;
-  const int i = blockDim.x * blockIdx.x + threadIdx.x;
-  a[i] += b[i] + scalar * c[i];
+  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+    a[i] += b[i] + scalar * c[i];
+  }
 }
 
 template <class T>
 void CUDAStream<T>::nstream()
 {
-  nstream_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c);
+  nstream_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
   check_error();
   cudaDeviceSynchronize();
   check_error();
