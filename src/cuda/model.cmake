@@ -22,6 +22,7 @@ register_flag_optional(CUDA_EXTRA_FLAGS
 
 
 macro(setup)
+    set(CMAKE_CUDA_STANDARD 17)
 
     # XXX CMake 3.18 supports CMAKE_CUDA_ARCHITECTURES/CUDA_ARCHITECTURES but we support older CMakes
     if(POLICY CMP0104)

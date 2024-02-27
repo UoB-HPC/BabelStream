@@ -8,27 +8,22 @@
 
 #include "CUDAStream.h"
 
-void check_error(void)
-{
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess)
-  {
-    std::cerr << "Error: " << cudaGetErrorString(err) << std::endl;
-    exit(err);
-  }
+[[noreturn]] inline void error(char const* file, int line, char const* expr, cudaError_t e) {
+  std::fprintf(stderr, "Error at %s:%d: %s (%d)\n  %s\n", file, line, cudaGetErrorString(e), e, expr);
+  exit(e);
 }
+
+#define CU(EXPR) if (auto __e = (EXPR); __e != cudaSuccess) error(__FILE__, __LINE__, #EXPR, __e);
 
 template <class T>
 CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
 {
   // Set device
   int count;
-  cudaGetDeviceCount(&count);
-  check_error();
+  CU(cudaGetDeviceCount(&count));
   if (device_index >= count)
     throw std::runtime_error("Invalid device index");
-  cudaSetDevice(device_index);
-  check_error();
+  CU(cudaSetDevice(device_index));
 
   // Print out device information
   std::cout << "Using CUDA device " << getDeviceName(device_index) << std::endl;
@@ -45,8 +40,7 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
 
   // Query device for sensible dot kernel block count
   cudaDeviceProp props;
-  cudaGetDeviceProperties(&props, device_index);
-  check_error();
+  CU(cudaGetDeviceProperties(&props, device_index));
   dot_num_blocks = props.multiProcessorCount * 4;
 
   // Allocate the host array for partial sums for dot kernels
@@ -63,28 +57,20 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
 
   // Create device buffers
 #if defined(MANAGED)
-  cudaMallocManaged(&d_a, array_bytes);
-  check_error();
-  cudaMallocManaged(&d_b, array_bytes);
-  check_error();
-  cudaMallocManaged(&d_c, array_bytes);
-  check_error();
-  cudaMallocManaged(&d_sum, dot_num_blocks*sizeof(T));
-  check_error();
+  CU(cudaMallocManaged(&d_a, array_bytes));
+  CU(cudaMallocManaged(&d_b, array_bytes));
+  CU(cudaMallocManaged(&d_c, array_bytes));
+  CU(cudaMallocManaged(&d_sum, dot_num_blocks*sizeof(T)));
 #elif defined(PAGEFAULT)
   d_a = (T*)malloc(array_bytes);
   d_b = (T*)malloc(array_bytes);
   d_c = (T*)malloc(array_bytes);
   d_sum = (T*)malloc(sizeof(T)*dot_num_blocks);
 #else
-  cudaMalloc(&d_a, array_bytes);
-  check_error();
-  cudaMalloc(&d_b, array_bytes);
-  check_error();
-  cudaMalloc(&d_c, array_bytes);
-  check_error();
-  cudaMalloc(&d_sum, dot_num_blocks*sizeof(T));
-  check_error();
+  CU(cudaMalloc(&d_a, array_bytes));
+  CU(cudaMalloc(&d_b, array_bytes));
+  CU(cudaMalloc(&d_c, array_bytes));
+  CU(cudaMalloc(&d_sum, dot_num_blocks*sizeof(T)));
 #endif
 }
 
@@ -100,22 +86,17 @@ CUDAStream<T>::~CUDAStream()
   free(d_c);
   free(d_sum);
 #else
-  cudaFree(d_a);
-  check_error();
-  cudaFree(d_b);
-  check_error();
-  cudaFree(d_c);
-  check_error();
-  cudaFree(d_sum);
-  check_error();
+  CU(cudaFree(d_a));
+  CU(cudaFree(d_b));
+  CU(cudaFree(d_c));
+  CU(cudaFree(d_sum));
 #endif
 }
 
 
 template <typename T>
 __global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, int array_size)
-{
-  
+{  
   for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
     a[i] = initA;
     b[i] = initB;
@@ -127,9 +108,8 @@ template <class T>
 void CUDAStream<T>::init_arrays(T initA, T initB, T initC)
 {
   init_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, initA, initB, initC, array_size);
-  check_error();
-  cudaDeviceSynchronize();
-  check_error();
+  CU(cudaPeekAtLastError());
+  CU(cudaDeviceSynchronize());
 }
 
 template <class T>
@@ -137,7 +117,7 @@ void CUDAStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vecto
 {
   // Copy device memory to host
 #if defined(PAGEFAULT) || defined(MANAGED)
-  cudaDeviceSynchronize();
+  CU(cudaDeviceSynchronize());
   for (int i = 0; i < array_size; i++)
   {
     a[i] = d_a[i];
@@ -145,12 +125,9 @@ void CUDAStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vecto
     c[i] = d_c[i];
   }
 #else
-  cudaMemcpy(a.data(), d_a, a.size()*sizeof(T), cudaMemcpyDeviceToHost);
-  check_error();
-  cudaMemcpy(b.data(), d_b, b.size()*sizeof(T), cudaMemcpyDeviceToHost);
-  check_error();
-  cudaMemcpy(c.data(), d_c, c.size()*sizeof(T), cudaMemcpyDeviceToHost);
-  check_error();
+  CU(cudaMemcpy(a.data(), d_a, a.size()*sizeof(T), cudaMemcpyDeviceToHost));
+  CU(cudaMemcpy(b.data(), d_b, b.size()*sizeof(T), cudaMemcpyDeviceToHost));
+  CU(cudaMemcpy(c.data(), d_c, c.size()*sizeof(T), cudaMemcpyDeviceToHost));
 #endif
 }
 
@@ -167,9 +144,8 @@ template <class T>
 void CUDAStream<T>::copy()
 {
   copy_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_c, array_size);
-  check_error();
-  cudaDeviceSynchronize();
-  check_error();
+  CU(cudaPeekAtLastError());
+  CU(cudaDeviceSynchronize());
 }
 
 template <typename T>
@@ -185,9 +161,8 @@ template <class T>
 void CUDAStream<T>::mul()
 {
   mul_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_b, d_c, array_size);
-  check_error();
-  cudaDeviceSynchronize();
-  check_error();
+  CU(cudaPeekAtLastError());
+  CU(cudaDeviceSynchronize());
 }
 
 template <typename T>
@@ -202,9 +177,8 @@ template <class T>
 void CUDAStream<T>::add()
 {
   add_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
-  check_error();
-  cudaDeviceSynchronize();
-  check_error();
+  CU(cudaPeekAtLastError());  
+  CU(cudaDeviceSynchronize());
 }
 
 template <typename T>
@@ -220,9 +194,8 @@ template <class T>
 void CUDAStream<T>::triad()
 {
   triad_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
-  check_error();
-  cudaDeviceSynchronize();
-  check_error();
+  CU(cudaPeekAtLastError());
+  CU(cudaDeviceSynchronize());
 }
 
 template <typename T>
@@ -238,9 +211,8 @@ template <class T>
 void CUDAStream<T>::nstream()
 {
   nstream_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
-  check_error();
-  cudaDeviceSynchronize();
-  check_error();
+  CU(cudaPeekAtLastError());
+  CU(cudaDeviceSynchronize());
 }
 
 template <class T>
@@ -272,14 +244,12 @@ template <class T>
 T CUDAStream<T>::dot()
 {
   dot_kernel<<<dot_num_blocks, TBSIZE>>>(d_a, d_b, d_sum, array_size);
-  check_error();
+  CU(cudaPeekAtLastError());
 
 #if defined(MANAGED) || defined(PAGEFAULT)
-  cudaDeviceSynchronize();
-  check_error();
+  CU(cudaDeviceSynchronize());
 #else
-  cudaMemcpy(sums, d_sum, dot_num_blocks*sizeof(T), cudaMemcpyDeviceToHost);
-  check_error();
+  CU(cudaMemcpy(sums, d_sum, dot_num_blocks*sizeof(T), cudaMemcpyDeviceToHost));
 #endif
 
   T sum = 0.0;
@@ -299,8 +269,7 @@ void listDevices(void)
 {
   // Get number of devices
   int count;
-  cudaGetDeviceCount(&count);
-  check_error();
+  CU(cudaGetDeviceCount(&count));
 
   // Print device names
   if (count == 0)
@@ -323,19 +292,16 @@ void listDevices(void)
 std::string getDeviceName(const int device)
 {
   cudaDeviceProp props;
-  cudaGetDeviceProperties(&props, device);
-  check_error();
+  CU(cudaGetDeviceProperties(&props, device));
   return std::string(props.name);
 }
 
 
 std::string getDeviceDriver(const int device)
 {
-  cudaSetDevice(device);
-  check_error();
+  CU(cudaSetDevice(device));
   int driver;
-  cudaDriverGetVersion(&driver);
-  check_error();
+  CU(cudaDriverGetVersion(&driver));
   return std::to_string(driver);
 }
 
