@@ -21,6 +21,8 @@ void check_error(void)
   }
 }
 
+__host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1)/b; }
+
 template <class T>
 HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
 {
@@ -116,7 +118,8 @@ __global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, int 
 template <class T>
 void HIPStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  init_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c, initA, initB, initC, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  init_kernel<T><<<dim3(blocks), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c, initA, initB, initC, array_size);
   check_error();
   hipDeviceSynchronize();
   check_error();
@@ -156,7 +159,8 @@ __global__ void copy_kernel(const T * a, T * c, int array_size)
 template <class T>
 void HIPStream<T>::copy()
 {
-  copy_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_c, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  copy_kernel<T><<<dim3(blocks), dim3(TBSIZE), 0, 0>>>(d_a, d_c, array_size);
   check_error();
   hipDeviceSynchronize();
   check_error();
@@ -174,7 +178,8 @@ __global__ void mul_kernel(T * b, const T * c, int array_size)
 template <class T>
 void HIPStream<T>::mul()
 {
-  mul_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_b, d_c, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  mul_kernel<T><<<dim3(blocks), dim3(TBSIZE), 0, 0>>>(d_b, d_c, array_size);
   check_error();
   hipDeviceSynchronize();
   check_error();
@@ -192,7 +197,8 @@ __global__ void add_kernel(const T * a, const T * b, T * c, int array_size)
 template <class T>
 void HIPStream<T>::add()
 {
-  add_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  add_kernel<T><<<dim3(blocks), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c, array_size);
   check_error();
   hipDeviceSynchronize();
   check_error();
@@ -210,7 +216,8 @@ __global__ void triad_kernel(T * a, const T * b, const T * c, int array_size)
 template <class T>
 void HIPStream<T>::triad()
 {
-  triad_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  triad_kernel<T><<<dim3(blocks), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c, array_size);
   check_error();
   hipDeviceSynchronize();
   check_error();
@@ -228,7 +235,8 @@ __global__ void nstream_kernel(T * a, const T * b, const T * c, int array_size)
 template <class T>
 void HIPStream<T>::nstream()
 {
-  nstream_kernel<T><<<dim3(array_size/TBSIZE), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  nstream_kernel<T><<<dim3(blocks), dim3(TBSIZE), 0, 0>>>(d_a, d_b, d_c, array_size);
   check_error();
   hipDeviceSynchronize();
   check_error();
