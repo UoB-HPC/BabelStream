@@ -17,6 +17,8 @@
 
 __host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1)/b; }
 
+cudaStream_t stream;
+
 template <class T>
 CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
 {
@@ -26,6 +28,8 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
   if (device_index >= count)
     throw std::runtime_error("Invalid device index");
   CU(cudaSetDevice(device_index));
+
+  CU(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
 
   // Print out device information
   std::cout << "Using CUDA device " << getDeviceName(device_index) << std::endl;
@@ -80,6 +84,7 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
 template <class T>
 CUDAStream<T>::~CUDAStream()
 {
+  CU(cudaStreamDestroy(stream));
   free(sums);
 
 #if defined(PAGEFAULT)
@@ -110,9 +115,9 @@ template <class T>
 void CUDAStream<T>::init_arrays(T initA, T initB, T initC)
 {
   size_t blocks = ceil_div(array_size, TBSIZE);
-  init_kernel<<<blocks, TBSIZE>>>(d_a, d_b, d_c, initA, initB, initC, array_size);
+  init_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, initA, initB, initC, array_size);
   CU(cudaPeekAtLastError());
-  CU(cudaDeviceSynchronize());
+  CU(cudaStreamSynchronize(stream));
 }
 
 template <class T>
@@ -120,7 +125,7 @@ void CUDAStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vecto
 {
   // Copy device memory to host
 #if defined(PAGEFAULT) || defined(MANAGED)
-  CU(cudaDeviceSynchronize());
+  CU(cudaStreamSynchronize(stream));
   for (int i = 0; i < array_size; i++)
   {
     a[i] = d_a[i];
@@ -147,9 +152,9 @@ template <class T>
 void CUDAStream<T>::copy()
 {
   size_t blocks = ceil_div(array_size, TBSIZE);
-  copy_kernel<<<blocks, TBSIZE>>>(d_a, d_c, array_size);
+  copy_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_c, array_size);
   CU(cudaPeekAtLastError());
-  CU(cudaDeviceSynchronize());
+  CU(cudaStreamSynchronize(stream));
 }
 
 template <typename T>
@@ -165,9 +170,9 @@ template <class T>
 void CUDAStream<T>::mul()
 {
   size_t blocks = ceil_div(array_size, TBSIZE);
-  mul_kernel<<<blocks, TBSIZE>>>(d_b, d_c, array_size);
+  mul_kernel<<<blocks, TBSIZE, 0, stream>>>(d_b, d_c, array_size);
   CU(cudaPeekAtLastError());
-  CU(cudaDeviceSynchronize());
+  CU(cudaStreamSynchronize(stream));
 }
 
 template <typename T>
@@ -182,9 +187,9 @@ template <class T>
 void CUDAStream<T>::add()
 {
   size_t blocks = ceil_div(array_size, TBSIZE);
-  add_kernel<<<blocks, TBSIZE>>>(d_a, d_b, d_c, array_size);
+  add_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
   CU(cudaPeekAtLastError());  
-  CU(cudaDeviceSynchronize());
+  CU(cudaStreamSynchronize(stream));
 }
 
 template <typename T>
@@ -200,9 +205,9 @@ template <class T>
 void CUDAStream<T>::triad()
 {
   size_t blocks = ceil_div(array_size, TBSIZE);
-  triad_kernel<<<blocks, TBSIZE>>>(d_a, d_b, d_c, array_size);
+  triad_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
   CU(cudaPeekAtLastError());
-  CU(cudaDeviceSynchronize());
+  CU(cudaStreamSynchronize(stream));
 }
 
 template <typename T>
@@ -218,9 +223,9 @@ template <class T>
 void CUDAStream<T>::nstream()
 {
   size_t blocks = ceil_div(array_size, TBSIZE);
-  nstream_kernel<<<blocks, TBSIZE>>>(d_a, d_b, d_c, array_size);
+  nstream_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
   CU(cudaPeekAtLastError());
-  CU(cudaDeviceSynchronize());
+  CU(cudaStreamSynchronize(stream));
 }
 
 template <class T>
@@ -251,14 +256,13 @@ __global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
 template <class T>
 T CUDAStream<T>::dot()
 {
-  dot_kernel<<<dot_num_blocks, TBSIZE>>>(d_a, d_b, d_sum, array_size);
+  dot_kernel<<<dot_num_blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_sum, array_size);
   CU(cudaPeekAtLastError());
 
-#if defined(MANAGED) || defined(PAGEFAULT)
-  CU(cudaDeviceSynchronize());
-#else
-  CU(cudaMemcpy(sums, d_sum, dot_num_blocks*sizeof(T), cudaMemcpyDeviceToHost));
+#if !(defined(MANAGED) || defined(PAGEFAULT))
+  CU(cudaMemcpyAsync(sums, d_sum, dot_num_blocks*sizeof(T), cudaMemcpyDeviceToHost, stream));
 #endif
+  CU(cudaStreamSynchronize(stream));
 
   T sum = 0.0;
   for (int i = 0; i < dot_num_blocks; i++)
