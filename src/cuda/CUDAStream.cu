@@ -13,7 +13,7 @@
   exit(e);
 }
 
-#define CU(EXPR) if (auto __e = (EXPR); __e != cudaSuccess) error(__FILE__, __LINE__, #EXPR, __e);
+#define CU(EXPR) do { auto __e = (EXPR); if (__e != cudaSuccess) error(__FILE__, __LINE__, #EXPR, __e); } while(false)
 
 __host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1)/b; }
 
