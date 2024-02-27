@@ -15,6 +15,8 @@
 
 #define CU(EXPR) if (auto __e = (EXPR); __e != cudaSuccess) error(__FILE__, __LINE__, #EXPR, __e);
 
+__host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1)/b; }
+
 template <class T>
 CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
 {
@@ -107,7 +109,8 @@ __global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, int 
 template <class T>
 void CUDAStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  init_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, initA, initB, initC, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  init_kernel<<<blocks, TBSIZE>>>(d_a, d_b, d_c, initA, initB, initC, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaDeviceSynchronize());
 }
@@ -143,7 +146,8 @@ __global__ void copy_kernel(const T * a, T * c, int array_size)
 template <class T>
 void CUDAStream<T>::copy()
 {
-  copy_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_c, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  copy_kernel<<<blocks, TBSIZE>>>(d_a, d_c, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaDeviceSynchronize());
 }
@@ -160,7 +164,8 @@ __global__ void mul_kernel(T * b, const T * c, int array_size)
 template <class T>
 void CUDAStream<T>::mul()
 {
-  mul_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_b, d_c, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  mul_kernel<<<blocks, TBSIZE>>>(d_b, d_c, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaDeviceSynchronize());
 }
@@ -176,7 +181,8 @@ __global__ void add_kernel(const T * a, const T * b, T * c, int array_size)
 template <class T>
 void CUDAStream<T>::add()
 {
-  add_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  add_kernel<<<blocks, TBSIZE>>>(d_a, d_b, d_c, array_size);
   CU(cudaPeekAtLastError());  
   CU(cudaDeviceSynchronize());
 }
@@ -193,7 +199,8 @@ __global__ void triad_kernel(T * a, const T * b, const T * c, int array_size)
 template <class T>
 void CUDAStream<T>::triad()
 {
-  triad_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  triad_kernel<<<blocks, TBSIZE>>>(d_a, d_b, d_c, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaDeviceSynchronize());
 }
@@ -210,7 +217,8 @@ __global__ void nstream_kernel(T * a, const T * b, const T * c, int array_size)
 template <class T>
 void CUDAStream<T>::nstream()
 {
-  nstream_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
+  size_t blocks = ceil_div(array_size, TBSIZE);
+  nstream_kernel<<<blocks, TBSIZE>>>(d_a, d_b, d_c, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaDeviceSynchronize());
 }
