@@ -18,6 +18,7 @@
 
 #include "Stream.h"
 #include "StreamModels.h"
+#include "Unit.h"
 
 // Default size of 2^25
 int ARRAY_SIZE = 33554432;
@@ -25,7 +26,7 @@ unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
 bool output_as_csv = false;
-bool mibibytes = false;
+Unit unit = MegaByte;
 std::string csv_separator = ",";
 
 // Benchmarks:
@@ -83,9 +84,6 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 
 template <typename T>
 void run();
-
-// Units for output:
-enum class Unit { Mega, Giga };
 
 void parseArguments(int argc, char *argv[]);
 
@@ -154,31 +152,16 @@ void run()
   std::streamsize ss = std::cout.precision();
 
   // Formatting utilities:
-  auto fmt_unit = [](double bytes, Unit unit = Unit::Mega) {
-    switch(unit) {
-    case Unit::Mega: return (mibibytes? pow(2.0, -20.0) : 1.0E-6) * bytes;
-    case Unit::Giga: return (mibibytes? pow(2.0, -30.0) : 1.0E-9) * bytes;
-    default: std::cerr << "Unimplemented!" << std::endl; abort();
-    }
+  auto fmt_bw = [&](size_t weight, double dt) {
+    return unit.fmt((weight * sizeof(T) * ARRAY_SIZE)/dt);
   };
-  auto unit_label = [](Unit unit = Unit::Mega) {
-    switch(unit) {
-    case Unit::Mega: return mibibytes? "MiB" : "MB";
-    case Unit::Giga: return mibibytes? "GiB" : "GB";
-    default: std::cerr << "Unimplemented!" << std::endl; abort();
-    }
-  };
-  auto fmt_bw = [&](size_t weight, double dt, Unit unit = Unit::Mega) {
-    return fmt_unit((weight * sizeof(T) * ARRAY_SIZE)/dt, unit);
-  };
-  // Output formatting:
   auto fmt_csv_header = [] {
     std::cout
       << "function" << csv_separator
       << "num_times" << csv_separator
       << "n_elements" << csv_separator
       << "sizeof" << csv_separator
-      << ((mibibytes) ? "max_mibytes_per_sec" : "max_mbytes_per_sec") << csv_separator
+      << "max_" << unit.lower() << "_per_sec" << csv_separator
       << "min_runtime" << csv_separator
       << "max_runtime" << csv_separator
       << "avg_runtime" << std::endl;
@@ -222,11 +205,9 @@ void run()
     std::cout << "Precision: " << (sizeof(T) == sizeof(float)? "float" : "double") << std::endl;
 
     size_t nbytes = ARRAY_SIZE*sizeof(T);
-    std::cout << setprecision(1) << fixed
-	 << "Array size: " << fmt_unit(nbytes, Unit::Mega) << " " << unit_label(Unit::Mega)
-	 << " (=" << fmt_unit(nbytes, Unit::Giga) << " " << unit_label(Unit::Giga) << ")" << std::endl;
-    std::cout << "Total size: " << fmt_unit(3.0*nbytes, Unit::Mega) << " " << unit_label(Unit::Mega)
-	 << " (=" << fmt_unit(3.0*nbytes, Unit::Giga) << " " << unit_label(Unit::Giga) << ")" << std::endl;
+    std::cout << std::setprecision(1) << std::fixed
+	 << "Array size: " << unit.fmt(nbytes) << " " << unit.str() << std::endl;
+    std::cout << "Total size: " << unit.fmt(3.0*nbytes) << " " << unit.str() << std::endl;
     std::cout.precision(ss);
   }
 
@@ -255,27 +236,19 @@ void run()
   {
     std::cout << "Init: "
       << std::setw(7)
-      << initElapsedS
-      << " s (="
-      << initBWps
-      << (mibibytes ? " MiBytes/sec" : " MBytes/sec")
-      << ")" << std::endl;
+      << initElapsedS << " s (=" << initBWps << " " << unit.str() << "/s" << ")" << std::endl;
     std::cout << "Read: "
       << std::setw(7)
-      << readElapsedS
-      << " s (="
-      << readBWps
-      << (mibibytes ? " MiBytes/sec" : " MBytes/sec")
-      << ")" << std::endl;
+      << readElapsedS << " s (=" << readBWps << " " << unit.str() << "/s" << ")" << std::endl;
 
     std::cout
       << std::left << std::setw(12) << "Function"
-      << std::left << std::setw(12) << ((mibibytes) ? "MiBytes/sec" : "MBytes/sec")
+      << std::left << std::setw(12) << (string(unit.str()) + "/s")
       << std::left << std::setw(12) << "Min (sec)"
       << std::left << std::setw(12) << "Max"
       << std::left << std::setw(12) << "Average"
       << std::endl
-      << std::fixed;
+      << fixed;
   }
 
   for (int i = 0; i < num_benchmarks; ++i)
@@ -458,7 +431,19 @@ void parseArguments(int argc, char *argv[])
     }
     else if (!std::string("--mibibytes").compare(argv[i]))
     {
-      mibibytes = true;
+      unit = Unit(MibiByte);
+    }
+    else if (!string("--megabytes").compare(argv[i]))
+    {
+      unit = Unit(MegaByte);
+    }
+    else if (!string("--gibibytes").compare(argv[i]))
+    {
+      unit = Unit(GibiByte);
+    }
+    else if (!string("--gigabytes").compare(argv[i]))
+    {
+      unit = Unit(GigaByte);
     }
     else if (!std::string("--help").compare(argv[i]) ||
              !std::string("-h").compare(argv[i]))
@@ -475,14 +460,17 @@ void parseArguments(int argc, char *argv[])
       std::cout << "  -o  --only       NAME    Only run one benchmark (see --print-names)" << std::endl;
       std::cout << "      --print-names        Prints all available benchmark names" << std::endl;
       std::cout << "      --csv                Output as csv table" << std::endl;
+      std::cout << "      --megabytes          Use MB=10^6 for bandwidth calculation (default)" << std::endl;
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;
+      std::cout << "      --gigibytes          Use GiB=2^30 for bandwidth calculation (default MB=10^6)" << std::endl;
+      std::cout << "      --gigabytes          Use GB=10^9 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << std::endl;
       std::exit(EXIT_SUCCESS);
     }
     else
     {
       std::cerr << "Unrecognized argument '" << argv[i] << "' (try '--help')"
-                << std::endl;
+                << std::std::endl;
       std::exit(EXIT_FAILURE);
     }
   }
