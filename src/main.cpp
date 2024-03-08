@@ -414,13 +414,43 @@ void parseArguments(int argc, char *argv[])
     {
       use_float = true;
     }
-    else if (!std::string("--triad-only").compare(argv[i]))
+    else if (!std::string("--print-names").compare(argv[i]))
     {
-      selection = Benchmark::Triad;
+      std::cout << "Available benchmarks: ";
+      print_labels(std::cout);
+      std::cout << std::endl;
+      exit(EXIT_SUCCESS);
     }
-    else if (!std::string("--nstream-only").compare(argv[i]))
+    else if (!std::string("--only").compare(argv[i]) || !std::string("-o").compare(argv[i]))
     {
-      selection = Benchmark::Nstream;
+      if (++i >= argc)
+      {
+	std::cerr << "Expected benchmark name after --only" << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      auto key = string(argv[i]);
+      if (key == "Classic")
+      {
+        selection = Benchmark::Classic;
+      }
+      else if (key == "All")
+      {
+        selection = Benchmark::All;
+      }
+      else
+      {
+        auto p = find_if(labels.begin(), labels.end(), [&](char const* label) {
+            return string(label) == key;
+          });
+        if (p == labels.end()) {
+          std::cerr << "Unknown benchmark name \"" << argv[i] << "\" after --only" << std::endl;
+          std::cerr << "Available benchmarks: All,Classic,";
+          print_labels(std::cerr);
+          std::cerr << std::endl;
+	  std::exit(EXIT_FAILURE);
+        }
+        selection = (Benchmark)(distance(labels.begin(), p));
+      }
     }
     else if (!std::string("--csv").compare(argv[i]))
     {
@@ -442,18 +472,18 @@ void parseArguments(int argc, char *argv[])
       std::cout << "  -s  --arraysize  SIZE    Use SIZE elements in the array" << std::endl;
       std::cout << "  -n  --numtimes   NUM     Run the test NUM times (NUM >= 2)" << std::endl;
       std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
-      std::cout << "      --triad-only         Only run triad" << std::endl;
-      std::cout << "      --nstream-only       Only run nstream" << std::endl;
+      std::cout << "  -o  --only       NAME    Only run one benchmark (see --print-names)" << std::endl;
+      std::cout << "      --print-names        Prints all available benchmark names" << std::endl;
       std::cout << "      --csv                Output as csv table" << std::endl;
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << std::endl;
-      exit(EXIT_SUCCESS);
+      std::exit(EXIT_SUCCESS);
     }
     else
     {
       std::cerr << "Unrecognized argument '" << argv[i] << "' (try '--help')"
                 << std::endl;
-      exit(EXIT_FAILURE);
+      std::exit(EXIT_FAILURE);
     }
   }
 }
