@@ -1,51 +1,31 @@
 #pragma once
 #include <iostream>
 
-enum { MegaByte, GigaByte, MibiByte, GibiByte };
-
 // Units for output:
 struct Unit {
-  int value;
-  Unit(int v) : value(v) {}
-  double fmt(double bytes) {
+  enum class Kind { MegaByte, GigaByte, TeraByte, MibiByte, GibiByte, TebiByte };
+  Kind value;
+  explicit Unit(Kind v) : value(v) {}
+  double fmt(double bytes) const {
     switch(value) {
-    case MibiByte: return pow(2.0, -20.0) * bytes;
-    case MegaByte: return 1.0E-6 * bytes;
-    case GibiByte: return pow(2.0, -30.0) * bytes;
-    case GigaByte: return 1.0E-9 * bytes;
-    default: std::cerr << "Unimplemented!" << std::endl; abort();
+    case Kind::MibiByte: return std::pow(2.0, -20.0) * bytes;
+    case Kind::MegaByte: return 1.0E-6 * bytes;
+    case Kind::GibiByte: return std::pow(2.0, -30.0) * bytes;
+    case Kind::GigaByte: return 1.0E-9 * bytes;
+    case Kind::TebiByte: return std::pow(2.0, -40.0) * bytes;
+    case Kind::TeraByte: return 1.0E-12 * bytes;      
+    default: std::cerr << "Unimplemented!" << std::endl; std::abort();
     }
   }
-  char const* str() {
+  char const* str() const {
     switch(value) {
-    case MibiByte: return "MiB";
-    case MegaByte: return "MB";
-    case GibiByte: return "GiB";
-    case GigaByte: return "GB";
-    default: std::cerr << "Unimplemented!" << std::endl; abort();
-    }
-  }
-  Unit kibi() {
-    switch(value) {
-    case MegaByte: return Unit(MibiByte);
-    case GigaByte: return Unit(GibiByte);
-    default: return *this;
-    }
-  }
-  Unit byte() {
-    switch(value) {
-    case MibiByte: return Unit(MegaByte);
-    case GibiByte: return Unit(GigaByte);
-    default: return *this;
-    }
-  }
-  char const* lower() {
-    switch(value) {
-    case MibiByte: return "mibytes";
-    case MegaByte: return "mbytes";
-    case GibiByte: return "gibytes";
-    case GigaByte: return "gbytes";
-    default: std::cerr << "Unimplemented!" << std::endl; abort();
+    case Kind::MibiByte: return "MiB";
+    case Kind::MegaByte: return "MB";
+    case Kind::GibiByte: return "GiB";
+    case Kind::GigaByte: return "GB";
+    case Kind::TebiByte: return "TiB";
+    case Kind::TeraByte: return "TB";
+    default: std::cerr << "Unimplemented!" << std::endl; std::abort();
     }
   }
 };

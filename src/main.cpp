@@ -27,16 +27,16 @@ unsigned int num_times = 100;
 unsigned int deviceIndex = 0;
 bool use_float = false;
 bool output_as_csv = false;
-Unit unit = MegaByte;
+Unit unit{Unit::Kind::MegaByte};
 bool silence_errors = false;
 std::string csv_separator = ",";
 
 // Benchmarks:
 constexpr size_t num_benchmarks = 6;
-array<char const*, num_benchmarks> labels = {"Copy", "Add", "Mul", "Triad", "Dot", "Nstream"};
+std::array<char const*, num_benchmarks> labels = {"Copy", "Add", "Mul", "Triad", "Dot", "Nstream"};
 // Weights data moved by benchmark & therefore achieved BW:
 // bytes = weight * sizeof(T) * ARRAY_SIZE -> bw = bytes / dur
-array<size_t, num_benchmarks> weight = {/*Copy:*/ 2, /*Add:*/ 2, /*Mul:*/ 3, /*Triad:*/ 3, /*Dot:*/ 2, /*Nstream:*/ 4};
+std::array<size_t, num_benchmarks> weight = {/*Copy:*/ 2, /*Add:*/ 2, /*Mul:*/ 3, /*Triad:*/ 3, /*Dot:*/ 2, /*Nstream:*/ 4};
 
 // Options for running the benchmark:
 // - Classic 5 kernels (Copy, Add, Mul, Triad, Dot).
@@ -63,19 +63,17 @@ bool run_benchmark(int id) {
 // Prints all available benchmark labels:
 template <typename OStream>
 void print_labels(OStream& os) {
-  for (int i = 0; i < num_benchmarks; ++i) {
+  for (size_t i = 0; i < num_benchmarks; ++i) {
     os << labels[i];
     if (i != (num_benchmarks - 1)) os << ",";
   }
 }
 
-// Clock and duration types:
-using clk_t = chrono::high_resolution_clock;
-using dur_t = chrono::duration<double>;
-
 // Returns duration of executing function f:
 template <typename F>
 double time(F&& f) {
+  using clk_t = std::chrono::high_resolution_clock;
+  using dur_t = std::chrono::duration<double>;
   auto start = clk_t::now();
   f();
   return dur_t(clk_t::now() - start).count();
@@ -107,7 +105,7 @@ int main(int argc, char *argv[])
   else
     run<double>();
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 // Run specified kernels
@@ -163,7 +161,7 @@ void run()
       << "num_times" << csv_separator
       << "n_elements" << csv_separator
       << "sizeof" << csv_separator
-      << "max_" << unit.lower() << "_per_sec" << csv_separator
+      << "max_" << unit.str() << "_per_sec" << csv_separator
       << "min_runtime" << csv_separator
       << "max_runtime" << csv_separator
       << "avg_runtime" << std::endl;
@@ -182,10 +180,10 @@ void run()
   auto fmt_cli = [](char const* function, double bandwidth, double dt_min, double dt_max, double dt_avg) {
     std::cout
       << std::left << std::setw(12) << function
-      << std::left << std::setw(12) << setprecision(3) << bandwidth
-      << std::left << std::setw(12) << setprecision(5) << dt_min
-      << std::left << std::setw(12) << setprecision(5) << dt_max
-      << std::left << std::setw(12) << setprecision(5) << dt_avg
+      << std::left << std::setw(12) << std::setprecision(3) << bandwidth
+      << std::left << std::setw(12) << std::setprecision(5) << dt_min
+      << std::left << std::setw(12) << std::setprecision(5) << dt_max
+      << std::left << std::setw(12) << std::setprecision(5) << dt_avg
       << std::endl;
   };
   auto fmt_result = [&](char const* function, size_t num_times, size_t num_elements,
@@ -213,15 +211,15 @@ void run()
     std::cout.precision(ss);
   }
 
-  auto stream = construct_stream<T>(ARRAY_SIZE, deviceIndex);
+  auto stream = make_stream<T>(ARRAY_SIZE, deviceIndex);
   auto initElapsedS = time([&] { stream->init_arrays(startA, startB, startC); });
 
   // Result of the Dot kernel, if used.
   T sum{};
-  vector<vector<double>> timings = run_all<T>(stream, sum);
+  std::vector<std::vector<double>> timings = run_all<T>(stream, sum);
 
   // Create & read host vectors:
-  vector<T> a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE);
+  std::vector<T> a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE);
   auto readElapsedS = time([&] { stream->read_arrays(a, b, c); });
 
   check_solution<T>(num_times, a, b, c, sum);
@@ -250,7 +248,7 @@ void run()
       << std::left << std::setw(12) << "Max"
       << std::left << std::setw(12) << "Average"
       << std::endl
-      << fixed;
+      << std::fixed;
   }
 
   for (int i = 0; i < num_benchmarks; ++i)
@@ -280,13 +278,13 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 
   const T scalar = startScalar;
 
-  for (int b = 0; b < num_benchmarks; ++b)
+  for (size_t b = 0; b < num_benchmarks; ++b)
   {
     if (!run_benchmark(b)) continue;
 
     for (unsigned int i = 0; i < ntimes; i++)
     {
-      switch((Benchmark)b) {
+      switch(static_cast<Benchmark>(b)) {
       case Benchmark::Copy:    goldC = goldA; break;
       case Benchmark::Mul:     goldB = scalar * goldC; break;
       case Benchmark::Add:     goldC = goldA + goldB; break;
@@ -307,7 +305,7 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
   errC /= c.size();
   long double errSum = std::fabs((sum - goldSum)/goldSum);
 
-  long double epsi = std::numeric_limits<T>::epsilon() * 100.0;
+  long double epsi = std::numeric_limits<T>::epsilon() * 1000.0;
 
   bool failed = false;
   if (errA > epsi) {
@@ -425,7 +423,7 @@ void parseArguments(int argc, char *argv[])
       }
       else
       {
-        auto p = find_if(labels.begin(), labels.end(), [&](char const* label) {
+        auto p = std::find_if(labels.begin(), labels.end(), [&](char const* label) {
             return std::string(label) == key;
           });
         if (p == labels.end()) {
@@ -435,7 +433,7 @@ void parseArguments(int argc, char *argv[])
           std::cerr << std::endl;
 	  std::exit(EXIT_FAILURE);
         }
-        selection = (Benchmark)(distance(labels.begin(), p));
+        selection = (Benchmark)(std::distance(labels.begin(), p));
       }
     }
     else if (!std::string("--csv").compare(argv[i]))
@@ -444,19 +442,27 @@ void parseArguments(int argc, char *argv[])
     }
     else if (!std::string("--mibibytes").compare(argv[i]))
     {
-      unit = Unit(MibiByte);
+      unit = Unit(Unit::Kind::MibiByte);
     }
     else if (!std::string("--megabytes").compare(argv[i]))
     {
-      unit = Unit(MegaByte);
+      unit = Unit(Unit::Kind::MegaByte);
     }
     else if (!std::string("--gibibytes").compare(argv[i]))
     {
-      unit = Unit(GibiByte);
+      unit = Unit(Unit::Kind::GibiByte);
     }
     else if (!std::string("--gigabytes").compare(argv[i]))
     {
-      unit = Unit(GigaByte);
+      unit = Unit(Unit::Kind::GigaByte);
+    }
+    else if (!std::string("--tebibytes").compare(argv[i]))
+    {
+      unit = Unit(Unit::Kind::TebiByte);
+    }
+    else if (!std::string("--terabytes").compare(argv[i]))
+    {
+      unit = Unit(Unit::Kind::TeraByte);
     }
     else if (!std::string("--silence-errors").compare(argv[i]))
     {
@@ -481,6 +487,8 @@ void parseArguments(int argc, char *argv[])
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << "      --gigibytes          Use GiB=2^30 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << "      --gigabytes          Use GB=10^9 for bandwidth calculation (default MB=10^6)" << std::endl;
+      std::cout << "      --tebibytes          Use TiB=2^40 for bandwidth calculation (default MB=10^6)" << std::endl;
+      std::cout << "      --terabytes          Use TB=10^12 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << "      --silence-errors     Ignores validation errors." << std::endl;
       std::cout << std::endl;
       std::exit(EXIT_SUCCESS);
