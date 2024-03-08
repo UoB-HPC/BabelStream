@@ -5,6 +5,7 @@
 // source code
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstring>
@@ -27,6 +28,7 @@ unsigned int deviceIndex = 0;
 bool use_float = false;
 bool output_as_csv = false;
 Unit unit = MegaByte;
+bool silence_errors = false;
 std::string csv_separator = ",";
 
 // Benchmarks:
@@ -243,7 +245,7 @@ void run()
 
     std::cout
       << std::left << std::setw(12) << "Function"
-      << std::left << std::setw(12) << (string(unit.str()) + "/s")
+      << std::left << std::setw(12) << (std::string(unit.str()) + "/s")
       << std::left << std::setw(12) << "Min (sec)"
       << std::left << std::setw(12) << "Max"
       << std::left << std::setw(12) << "Average"
@@ -307,26 +309,37 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 
   long double epsi = std::numeric_limits<T>::epsilon() * 100.0;
 
-  if (errA > epsi)
+  bool failed = false;
+  if (errA > epsi) {
+    failed = true;
     std::cerr
       << "Validation failed on a[]. Average error " << errA
       << std::endl;
-  if (errB > epsi)
+  }
+  if (errB > epsi) {
+    failed = true;
     std::cerr
       << "Validation failed on b[]. Average error " << errB
       << std::endl;
-  if (errC > epsi)
+  }
+  if (errC > epsi) {
+    failed = true;
     std::cerr
       << "Validation failed on c[]. Average error " << errC
       << std::endl;
+  }
   // Check sum to 8 decimal places
-  if (selection == Benchmark::All && errSum > 1.0E-8)
+  if (selection == Benchmark::All && errSum > epsi) {
+    failed = true;
     std::cerr
       << "Validation failed on sum. Error " << errSum
       << std::endl << std::setprecision(15)
       << "Sum was " << sum << " but should be " << goldSum
       << std::endl;
+  }
 
+  if (failed && !silence_errors)
+    std::exit(EXIT_FAILURE);
 }
 
 int parseUInt(const char *str, unsigned int *output)
@@ -401,7 +414,7 @@ void parseArguments(int argc, char *argv[])
 	std::cerr << "Expected benchmark name after --only" << std::endl;
         exit(EXIT_FAILURE);
       }
-      auto key = string(argv[i]);
+      auto key = std::string(argv[i]);
       if (key == "Classic")
       {
         selection = Benchmark::Classic;
@@ -413,7 +426,7 @@ void parseArguments(int argc, char *argv[])
       else
       {
         auto p = find_if(labels.begin(), labels.end(), [&](char const* label) {
-            return string(label) == key;
+            return std::string(label) == key;
           });
         if (p == labels.end()) {
           std::cerr << "Unknown benchmark name \"" << argv[i] << "\" after --only" << std::endl;
@@ -433,17 +446,21 @@ void parseArguments(int argc, char *argv[])
     {
       unit = Unit(MibiByte);
     }
-    else if (!string("--megabytes").compare(argv[i]))
+    else if (!std::string("--megabytes").compare(argv[i]))
     {
       unit = Unit(MegaByte);
     }
-    else if (!string("--gibibytes").compare(argv[i]))
+    else if (!std::string("--gibibytes").compare(argv[i]))
     {
       unit = Unit(GibiByte);
     }
-    else if (!string("--gigabytes").compare(argv[i]))
+    else if (!std::string("--gigabytes").compare(argv[i]))
     {
       unit = Unit(GigaByte);
+    }
+    else if (!std::string("--silence-errors").compare(argv[i]))
+    {
+      silence_errors = true;
     }
     else if (!std::string("--help").compare(argv[i]) ||
              !std::string("-h").compare(argv[i]))
@@ -464,13 +481,14 @@ void parseArguments(int argc, char *argv[])
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << "      --gigibytes          Use GiB=2^30 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << "      --gigabytes          Use GB=10^9 for bandwidth calculation (default MB=10^6)" << std::endl;
+      std::cout << "      --silence-errors     Ignores validation errors." << std::endl;
       std::cout << std::endl;
       std::exit(EXIT_SUCCESS);
     }
     else
     {
       std::cerr << "Unrecognized argument '" << argv[i] << "' (try '--help')"
-                << std::std::endl;
+                << std::endl;
       std::exit(EXIT_FAILURE);
     }
   }
