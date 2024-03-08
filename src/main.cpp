@@ -241,26 +241,51 @@ void run()
   auto initBWps = fmt_bw(3, initElapsedS);
   auto readBWps = fmt_bw(3, readElapsedS);
 
+  auto fmt_csv = [](char const* function, size_t num_times, size_t num_elements,
+		    size_t type_size, double bandwidth,
+		    double dt_min, double dt_max, double dt_avg) {
+    cout << function << csv_separator
+         << num_times << csv_separator
+         << num_elements << csv_separator
+         << type_size << csv_separator
+         << bandwidth << csv_separator
+         << dt_min << csv_separator
+         << dt_max << csv_separator
+         << dt_avg << endl;
+  };
+
+  auto fmt_cli = [](char const* function, double bandwidth,
+		    double dt_min, double dt_max, double dt_avg) {
+    cout
+      << left << setw(12) << function
+      << left << setw(12) << setprecision(3) << bandwidth
+      << left << setw(12) << setprecision(5) << dt_min
+      << left << setw(12) << setprecision(5) << dt_max
+      << left << setw(12) << setprecision(5) << dt_avg
+      << endl;
+  };
+
+  auto fmt_result = [&](char const* function, size_t num_times, size_t num_elements,
+		    size_t type_size, double bandwidth,
+		    double dt_min, double dt_max, double dt_avg) {
+    if (!output_as_csv) return fmt_cli(function, bandwidth, dt_min, dt_max, dt_avg);
+    fmt_csv(function, num_times, num_elements, type_size, bandwidth, dt_min, dt_max, dt_avg);
+  };
+
   if (output_as_csv)
   {
     std::cout
-      << "phase" << csv_separator
+      << "function" << csv_separator
+      << "num_times" << csv_separator
       << "n_elements" << csv_separator
       << "sizeof" << csv_separator
       << ((mibibytes) ? "max_mibytes_per_sec" : "max_mbytes_per_sec") << csv_separator
-      << "runtime" << std::endl;
-    std::cout
-      << "Init" << csv_separator
-      << ARRAY_SIZE << csv_separator
-      << sizeof(T) << csv_separator
-      << initBWps << csv_separator
-      << initElapsedS << std::endl;
-    std::cout
-      << "Read" << csv_separator
-      << ARRAY_SIZE << csv_separator
-      << sizeof(T) << csv_separator
-      << readBWps << csv_separator
-      << readElapsedS << std::endl;
+      << "min_runtime" << csv_separator
+      << "max_runtime" << csv_separator
+      << "avg_runtime" << endl;
+
+    fmt_csv("Init", 1, ARRAY_SIZE, sizeof(T), initBWps, initElapsedS, initElapsedS, initElapsedS);
+    fmt_csv("Read", 1, ARRAY_SIZE, sizeof(T), readBWps, readElapsedS, readElapsedS, readElapsedS);
   }
   else
   {
@@ -277,24 +302,8 @@ void run()
       << " s (="
       << readBWps
       << (mibibytes ? " MiBytes/sec" : " MBytes/sec")
-      << ")" << std::endl;
-  }
+      << ")" << endl;
 
-  // Display timing results
-  if (output_as_csv)
-  {
-    std::cout
-      << "function" << csv_separator
-      << "num_times" << csv_separator
-      << "n_elements" << csv_separator
-      << "sizeof" << csv_separator
-      << ((mibibytes) ? "max_mibytes_per_sec" : "max_mbytes_per_sec") << csv_separator
-      << "min_runtime" << csv_separator
-      << "max_runtime" << csv_separator
-      << "avg_runtime" << std::endl;
-  }
-  else
-  {
     std::cout
       << std::left << std::setw(12) << "Function"
       << std::left << std::setw(12) << ((mibibytes) ? "MiBytes/sec" : "MBytes/sec")
@@ -304,7 +313,6 @@ void run()
       << std::endl
       << std::fixed;
   }
-
 
   if (selection == Benchmark::All || selection == Benchmark::Nstream)
   {
@@ -317,31 +325,8 @@ void run()
       double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
 
       // Display results
-      if (output_as_csv)
-      {
-        std::cout
-          << labels[i] << csv_separator
-          << num_times << csv_separator
-          << ARRAY_SIZE << csv_separator
-          << sizeof(T) << csv_separator
-          << fmt_bw(weight[i], *minmax.first) << csv_separator
-          << *minmax.first << csv_separator
-          << *minmax.second << csv_separator
-          << average
-          << std::endl;
-      }
-      else
-      {
-
-        std::cout
-          << std::left << std::setw(12) << labels[i]
-          << std::left << std::setw(12) << std::setprecision(3) << fmt_bw(weight[i], *minmax.first)
-          << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
-          << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
-          << std::left << std::setw(12) << std::setprecision(5) << average
-          << std::endl;
-          << left << setw(12) << setprecision(3) 
-      }
+      fmt_result(labels[i], num_times, ARRAY_SIZE, sizeof(T), fmt_bw(weight[i], *minmax.first),
+		 *minmax.first, *minmax.second, average);
     }
   } else if (selection == Benchmark::Triad)
   {
@@ -381,7 +366,6 @@ void run()
     }
   }
 }
-
 
 template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum)
