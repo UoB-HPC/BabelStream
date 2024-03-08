@@ -1,4 +1,3 @@
-
 // Copyright (c) 2015-16 Tom Deakin, Simon McIntosh-Smith,
 // University of Bristol HPC
 //
@@ -37,13 +36,35 @@ array<char const*, num_benchmarks> labels = {"Copy", "Add", "Mul", "Triad", "Dot
 array<size_t, num_benchmarks> weight = {/*Copy:*/ 2, /*Add:*/ 2, /*Mul:*/ 3, /*Triad:*/ 3, /*Dot:*/ 2, /*Nstream:*/ 4};
 
 // Options for running the benchmark:
-// - All 5 kernels (Copy, Add, Mul, Triad, Dot).
-// - Triad only.
-// - Nstream only.
-enum class Benchmark {All, Triad, Nstream};
+// - Classic 5 kernels (Copy, Add, Mul, Triad, Dot).
+// - All kernels (Copy, Add, Mul, Triad, Dot, Nstream).
+// - Individual kernels only.
+enum class Benchmark : int {Copy = 0, Add = 1, Mul = 2, Triad = 3, Dot = 4, Nstream = 5, Classic, All};
 
 // Selected run options.
 Benchmark selection = Benchmark::All;
+
+// Returns true if the benchmark needs to be run:
+bool run_benchmark(int id) {
+  if (selection == Benchmark::All)                return true;
+  if (selection == Benchmark::Classic && id < 5)  return true;
+  if (id == 0 && selection == Benchmark::Copy)    return true;
+  if (id == 1 && selection == Benchmark::Add)     return true;
+  if (id == 2 && selection == Benchmark::Mul)     return true;
+  if (id == 3 && selection == Benchmark::Triad)   return true;
+  if (id == 4 && selection == Benchmark::Dot)     return true;
+  if (id == 5 && selection == Benchmark::Nstream) return true;
+  return false;
+}
+
+// Prints all available benchmark labels:
+template <typename OStream>
+void print_labels(OStream& os) {
+  for (int i = 0; i < num_benchmarks; ++i) {
+    os << labels[i];
+    if (i != (num_benchmarks - 1)) os << ",";
+  }
+}
 
 // Clock and duration types:
 using clk_t = chrono::high_resolution_clock;
@@ -89,65 +110,39 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-
-// Run the 5 main kernels
+// Run specified kernels
 template <typename T>
 
 std::vector<std::vector<double>> run_all(std::unique_ptr<Stream<T>>& stream, T& sum)
 {
+  // Times for each measured benchmark:
+  std::vector<std::vector<double>> timings(num_benchmarks);
 
-  // List of times
-  std::vector<std::vector<double>> timings(5);
+  // Time a particular benchmark:
+  auto dt = [&](size_t i)
+  {
+    switch((Benchmark)i) {
+    case Benchmark::Copy:    return time([&] { stream->copy(); });
+    case Benchmark::Mul:     return time([&] { stream->mul(); });
+    case Benchmark::Add:     return time([&] { stream->add(); });
+    case Benchmark::Triad:   return time([&] { stream->triad(); });
+    case Benchmark::Dot:     return time([&] { sum  = stream->dot(); });
+    case Benchmark::Nstream: return time([&] { stream->nstream(); });
+    default:
+      std::cerr << "Unimplemented benchmark: " << i << "," <<  labels[i] << std::endl;
+      abort();
+    }
+  };
 
   // Main loop
-  for (unsigned int k = 0; k < num_times; k++)
+  for (size_t i = 0; i < num_benchmarks; ++i)
   {
-    // Execute Copy
-    timings[0].push_back(time([&] { stream->copy(); }));
-
-    // Execute Mul
-    timings[1].push_back(time([&] { stream->mul(); }));
-
-    // Execute Add
-    timings[2].push_back(time([&] { stream->add(); }));
-
-    // Execute Triad
-    timings[3].push_back(time([&] { stream->triad(); }));
-
-    // Execute Dot
-    timings[4].push_back(time([&] { sum = stream->dot(); }));
+    if (!run_benchmark(i)) continue;
+    timings[i].reserve(num_times);
+    for (unsigned int k = 0; k < num_times; k++) timings[i].push_back(dt(i));
   }
 
   // Compiler should use a move
-  return timings;
-}
-
-// Run the Triad kernel
-template <typename T>
-std::vector<std::vector<double>> run_triad(std::unique_ptr<Stream<T>>& stream)
-{
-
-  std::vector<std::vector<double>> timings(1);
-
-  // Run triad in loop (compute a single time only!):
-  timings[0].push_back(time([&] {
-    for (int k = 0; k < num_times; k++) stream->triad();
-  }));
-
-  return timings;
-}
-
-// Run the Nstream kernel
-template <typename T>
-std::vector<std::vector<double>> run_nstream(std::unique_ptr<Stream<T>>& stream)
-{
-  std::vector<std::vector<double>> timings(1);
-
-  // Run nstream in loop
-  for (int k = 0; k < num_times; k++) {
-    timings[0].push_back(time([&] { stream->nstream(); }));
-  }
-
   return timings;
 }
 
@@ -158,122 +153,26 @@ void run()
 {
   std::streamsize ss = std::cout.precision();
 
-  if (!output_as_csv)
-  {
-    if (selection == Benchmark::All)
-      std::cout << "Running kernels " << num_times << " times" << std::endl;
-    else if (selection == Benchmark::Triad)
-    {
-      std::cout << "Running triad " << num_times << " times" << std::endl;
-      std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
-    }
-
-
-    if (sizeof(T) == sizeof(float))
-      std::cout << "Precision: float" << std::endl;
-    else
-      std::cout << "Precision: double" << std::endl;
-
-
-    if (mibibytes)
-    {
-      // MiB = 2^20
-      std::cout << std::setprecision(1) << std::fixed
-                << "Array size: " << ARRAY_SIZE*sizeof(T)*std::pow(2.0, -20.0) << " MiB"
-                << " (=" << ARRAY_SIZE*sizeof(T)*std::pow(2.0, -30.0) << " GiB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*std::pow(2.0, -20.0) << " MiB"
-                << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*std::pow(2.0, -30.0) << " GiB)" << std::endl;
-    }
-    else
-    {
-      // MB = 10^6
-      std::cout << std::setprecision(1) << std::fixed
-                << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-                << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-                << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
-    }
-    std::cout.precision(ss);
-
-  }
-
-  auto stream = construct_stream<T>(ARRAY_SIZE, deviceIndex);
-
-  auto initElapsedS = time([&] { stream->init_arrays(startA, startB, startC); });
-
-  // Result of the Dot kernel, if used.
-  T sum{};
-
-  std::vector<std::vector<double>> timings;
-
-  switch (selection)
-  {
-    case Benchmark::All:
-      timings = run_all<T>(stream, sum);
-      break;
-    case Benchmark::Triad:
-      timings = run_triad<T>(stream);
-      break;
-    case Benchmark::Nstream:
-      timings = run_nstream<T>(stream);
-      break;
-  };
-
-  // Check solutions
-  // Create host vectors
-  std::vector<T> a(ARRAY_SIZE);
-  std::vector<T> b(ARRAY_SIZE);
-  std::vector<T> c(ARRAY_SIZE);
-
-  auto readElapsedS = time([&] { stream->read_arrays(a, b, c); });
-
-  check_solution<T>(num_times, a, b, c, sum);
-
-  auto fmt_bw = [&](size_t weight, double dt, Unit unit = Unit::Mega) {
-    double bps = (weight * sizeof(T) * ARRAY_SIZE)/dt;
+  // Formatting utilities:
+  auto fmt_unit = [](double bytes, Unit unit = Unit::Mega) {
     switch(unit) {
-    case Unit::Mega: return (mibibytes ? pow(2.0, -20.0) : 1.0E-6) * bps;
-    case Unit::Giga: return (mibibytes ? pow(2.0, -30.0) : 1.0E-9) * bps;
-    default: cerr << "Unimplemented!" << endl; abort();
+    case Unit::Mega: return (mibibytes? pow(2.0, -20.0) : 1.0E-6) * bytes;
+    case Unit::Giga: return (mibibytes? pow(2.0, -30.0) : 1.0E-9) * bytes;
+    default: std::cerr << "Unimplemented!" << std::endl; abort();
     }
   };
-
-  auto initBWps = fmt_bw(3, initElapsedS);
-  auto readBWps = fmt_bw(3, readElapsedS);
-
-  auto fmt_csv = [](char const* function, size_t num_times, size_t num_elements,
-		    size_t type_size, double bandwidth,
-		    double dt_min, double dt_max, double dt_avg) {
-    cout << function << csv_separator
-         << num_times << csv_separator
-         << num_elements << csv_separator
-         << type_size << csv_separator
-         << bandwidth << csv_separator
-         << dt_min << csv_separator
-         << dt_max << csv_separator
-         << dt_avg << endl;
+  auto unit_label = [](Unit unit = Unit::Mega) {
+    switch(unit) {
+    case Unit::Mega: return mibibytes? "MiB" : "MB";
+    case Unit::Giga: return mibibytes? "GiB" : "GB";
+    default: std::cerr << "Unimplemented!" << std::endl; abort();
+    }
   };
-
-  auto fmt_cli = [](char const* function, double bandwidth,
-		    double dt_min, double dt_max, double dt_avg) {
-    cout
-      << left << setw(12) << function
-      << left << setw(12) << setprecision(3) << bandwidth
-      << left << setw(12) << setprecision(5) << dt_min
-      << left << setw(12) << setprecision(5) << dt_max
-      << left << setw(12) << setprecision(5) << dt_avg
-      << endl;
+  auto fmt_bw = [&](size_t weight, double dt, Unit unit = Unit::Mega) {
+    return fmt_unit((weight * sizeof(T) * ARRAY_SIZE)/dt, unit);
   };
-
-  auto fmt_result = [&](char const* function, size_t num_times, size_t num_elements,
-		    size_t type_size, double bandwidth,
-		    double dt_min, double dt_max, double dt_avg) {
-    if (!output_as_csv) return fmt_cli(function, bandwidth, dt_min, dt_max, dt_avg);
-    fmt_csv(function, num_times, num_elements, type_size, bandwidth, dt_min, dt_max, dt_avg);
-  };
-
-  if (output_as_csv)
-  {
+  // Output formatting:
+  auto fmt_csv_header = [] {
     std::cout
       << "function" << csv_separator
       << "num_times" << csv_separator
@@ -282,8 +181,73 @@ void run()
       << ((mibibytes) ? "max_mibytes_per_sec" : "max_mbytes_per_sec") << csv_separator
       << "min_runtime" << csv_separator
       << "max_runtime" << csv_separator
-      << "avg_runtime" << endl;
+      << "avg_runtime" << std::endl;
+  };
+  auto fmt_csv = [](char const* function, size_t num_times, size_t num_elements,
+                    size_t type_size, double bandwidth, double dt_min, double dt_max, double dt_avg) {
+    std::cout << function << csv_separator
+         << num_times << csv_separator
+         << num_elements << csv_separator
+         << type_size << csv_separator
+         << bandwidth << csv_separator
+         << dt_min << csv_separator
+         << dt_max << csv_separator
+         << dt_avg << std::endl;
+  };
+  auto fmt_cli = [](char const* function, double bandwidth, double dt_min, double dt_max, double dt_avg) {
+    std::cout
+      << std::left << std::setw(12) << function
+      << std::left << std::setw(12) << setprecision(3) << bandwidth
+      << std::left << std::setw(12) << setprecision(5) << dt_min
+      << std::left << std::setw(12) << setprecision(5) << dt_max
+      << std::left << std::setw(12) << setprecision(5) << dt_avg
+      << std::endl;
+  };
+  auto fmt_result = [&](char const* function, size_t num_times, size_t num_elements,
+                        size_t type_size, double bandwidth, double dt_min, double dt_max, double dt_avg) {
+    if (!output_as_csv) return fmt_cli(function, bandwidth, dt_min, dt_max, dt_avg);
+    fmt_csv(function, num_times, num_elements, type_size, bandwidth, dt_min, dt_max, dt_avg);
+  };
 
+  if (!output_as_csv)
+  {
+    std::cout << "Running ";
+    switch(selection) {
+    case Benchmark::All: std::cout << " All kernels "; break;
+    case Benchmark::Classic: std::cout << " Classic kernels "; break;
+    default: std::cout << "Running " << labels[(int)selection] << " ";
+    }
+    std::cout << num_times << " times" << std::endl;
+    std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
+    std::cout << "Precision: " << (sizeof(T) == sizeof(float)? "float" : "double") << std::endl;
+
+    size_t nbytes = ARRAY_SIZE*sizeof(T);
+    std::cout << setprecision(1) << fixed
+	 << "Array size: " << fmt_unit(nbytes, Unit::Mega) << " " << unit_label(Unit::Mega)
+	 << " (=" << fmt_unit(nbytes, Unit::Giga) << " " << unit_label(Unit::Giga) << ")" << std::endl;
+    std::cout << "Total size: " << fmt_unit(3.0*nbytes, Unit::Mega) << " " << unit_label(Unit::Mega)
+	 << " (=" << fmt_unit(3.0*nbytes, Unit::Giga) << " " << unit_label(Unit::Giga) << ")" << std::endl;
+    std::cout.precision(ss);
+  }
+
+  auto stream = construct_stream<T>(ARRAY_SIZE, deviceIndex);
+  auto initElapsedS = time([&] { stream->init_arrays(startA, startB, startC); });
+
+  // Result of the Dot kernel, if used.
+  T sum{};
+  vector<vector<double>> timings = run_all<T>(stream, sum);
+
+  // Create & read host vectors:
+  vector<T> a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE);
+  auto readElapsedS = time([&] { stream->read_arrays(a, b, c); });
+
+  check_solution<T>(num_times, a, b, c, sum);
+  auto initBWps = fmt_bw(3, initElapsedS);
+  auto readBWps = fmt_bw(3, readElapsedS);
+
+  if (output_as_csv)
+  {
+    fmt_csv_header();
     fmt_csv("Init", 1, ARRAY_SIZE, sizeof(T), initBWps, initElapsedS, initElapsedS, initElapsedS);
     fmt_csv("Read", 1, ARRAY_SIZE, sizeof(T), readBWps, readElapsedS, readElapsedS, readElapsedS);
   }
@@ -302,7 +266,7 @@ void run()
       << " s (="
       << readBWps
       << (mibibytes ? " MiBytes/sec" : " MBytes/sec")
-      << ")" << endl;
+      << ")" << std::endl;
 
     std::cout
       << std::left << std::setw(12) << "Function"
@@ -314,56 +278,19 @@ void run()
       << std::fixed;
   }
 
-  if (selection == Benchmark::All || selection == Benchmark::Nstream)
+  for (int i = 0; i < num_benchmarks; ++i)
   {
-    for (int i = 0; i < timings.size(); ++i)
-    {
-      // Get min/max; ignore the first result
-      auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
+    if (!run_benchmark(i)) continue;
 
-      // Calculate average; ignore the first result
-      double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
+    // Get min/max; ignore the first result
+    auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
 
-      // Display results
-      fmt_result(labels[i], num_times, ARRAY_SIZE, sizeof(T), fmt_bw(weight[i], *minmax.first),
-		 *minmax.first, *minmax.second, average);
-    }
-  } else if (selection == Benchmark::Triad)
-  {
-    // Display timing results
-    double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
-    double bandwidth = fmt_bw(3 * num_times, timings[0][0], Unit::Giga);
+    // Calculate average; ignore the first result
+    double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
 
-    if (output_as_csv)
-    {
-      std::cout
-        << "function" << csv_separator
-        << "num_times" << csv_separator
-        << "n_elements" << csv_separator
-        << "sizeof" << csv_separator
-        << ((mibibytes) ? "gibytes_per_sec" : "gbytes_per_sec") << csv_separator
-        << "runtime"
-        << std::endl;
-      std::cout
-        << "Triad" << csv_separator
-        << num_times << csv_separator
-        << ARRAY_SIZE << csv_separator
-        << sizeof(T) << csv_separator
-        << bandwidth << csv_separator
-        << timings[0][0]
-        << std::endl;
-    }
-    else
-    {
-      std::cout
-        << "--------------------------------"
-        << std::endl << std::fixed
-        << "Runtime (seconds): " << std::left << std::setprecision(5)
-        << timings[0][0] << std::endl
-        << "Bandwidth (" << ((mibibytes) ? "GiB/s" : "GB/s") << "):  "
-        << std::left << std::setprecision(3)
-        << bandwidth << std::endl;
-    }
+    // Display results
+    fmt_result(labels[i], num_times, ARRAY_SIZE, sizeof(T), fmt_bw(weight[i], *minmax.first),
+               *minmax.first, *minmax.second, average);
   }
 }
 
@@ -378,26 +305,23 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 
   const T scalar = startScalar;
 
-  for (unsigned int i = 0; i < ntimes; i++)
+  for (int b = 0; b < num_benchmarks; ++b)
   {
-    // Do STREAM!
-    if (selection == Benchmark::All)
+    if (!run_benchmark(b)) continue;
+
+    for (unsigned int i = 0; i < ntimes; i++)
     {
-      goldC = goldA;
-      goldB = scalar * goldC;
-      goldC = goldA + goldB;
-      goldA = goldB + scalar * goldC;
-    } else if (selection == Benchmark::Triad)
-    {
-      goldA = goldB + scalar * goldC;
-    } else if (selection == Benchmark::Nstream)
-    {
-      goldA += goldB + scalar * goldC;
+      switch((Benchmark)b) {
+      case Benchmark::Copy:    goldC = goldA; break;
+      case Benchmark::Mul:     goldB = scalar * goldC; break;
+      case Benchmark::Add:     goldC = goldA + goldB; break;
+      case Benchmark::Triad:   goldA = goldB + scalar * goldC; break;
+      case Benchmark::Nstream: goldA += goldB + scalar * goldC; break;
+      case Benchmark::Dot:     goldSum = goldA * goldB * ARRAY_SIZE; break;
+      default: std::cerr << "Unimplemented Check: " << i << "," << labels[b] << std::endl; abort();
+      }
     }
   }
-
-  // Do the reduction
-  goldSum = goldA * goldB * ARRAY_SIZE;
 
   // Calculate the average error
   long double errA = std::accumulate(a.begin(), a.end(), T{}, [&](double sum, const T val){ return sum + std::fabs(val - goldA); });
