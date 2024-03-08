@@ -43,7 +43,7 @@ array<size_t, num_benchmarks> weight = {/*Copy:*/ 2, /*Add:*/ 2, /*Mul:*/ 3, /*T
 enum class Benchmark : int {Copy = 0, Add = 1, Mul = 2, Triad = 3, Dot = 4, Nstream = 5, Classic, All};
 
 // Selected run options.
-Benchmark selection = Benchmark::All;
+Benchmark selection = Benchmark::Classic;
 
 // Returns true if the benchmark needs to be run:
 bool run_benchmark(int id) {
