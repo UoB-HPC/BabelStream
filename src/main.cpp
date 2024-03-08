@@ -29,12 +29,6 @@ bool output_as_csv = false;
 bool mibibytes = false;
 std::string csv_separator = ",";
 
-template <typename T>
-void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
-
-template <typename T>
-void run();
-
 // Options for running the benchmark:
 // - All 5 kernels (Copy, Add, Mul, Triad, Dot).
 // - Triad only.
@@ -43,6 +37,24 @@ enum class Benchmark {All, Triad, Nstream};
 
 // Selected run options.
 Benchmark selection = Benchmark::All;
+
+// Clock and duration types:
+using clk_t = chrono::high_resolution_clock;
+using dur_t = chrono::duration<double>;
+
+// Returns duration of executing function f:
+template <typename F>
+double time(F&& f) {
+  auto start = clk_t::now();
+  f();
+  return dur_t(clk_t::now() - start).count();
+}
+
+template <typename T>
+void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
+
+template <typename T>
+void run();
 
 void parseArguments(int argc, char *argv[]);
 
@@ -62,8 +74,9 @@ int main(int argc, char *argv[])
   if (use_float)
     run<float>();
   else
-    run<double>(); 
+    run<double>();
 
+  return 0;
 }
 
 
@@ -76,42 +89,23 @@ std::vector<std::vector<double>> run_all(std::unique_ptr<Stream<T>>& stream, T& 
   // List of times
   std::vector<std::vector<double>> timings(5);
 
-  // Declare timers
-  std::chrono::high_resolution_clock::time_point t1, t2;
-
   // Main loop
   for (unsigned int k = 0; k < num_times; k++)
   {
     // Execute Copy
-    t1 = std::chrono::high_resolution_clock::now();
-    stream->copy();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+    timings[0].push_back(time([&] { stream->copy(); }));
 
     // Execute Mul
-    t1 = std::chrono::high_resolution_clock::now();
-    stream->mul();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[1].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+    timings[1].push_back(time([&] { stream->mul(); }));
 
     // Execute Add
-    t1 = std::chrono::high_resolution_clock::now();
-    stream->add();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[2].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+    timings[2].push_back(time([&] { stream->add(); }));
 
     // Execute Triad
-    t1 = std::chrono::high_resolution_clock::now();
-    stream->triad();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+    timings[3].push_back(time([&] { stream->triad(); }));
 
     // Execute Dot
-    t1 = std::chrono::high_resolution_clock::now();
-    sum = stream->dot();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
-
+    timings[4].push_back(time([&] { sum = stream->dot(); }));
   }
 
   // Compiler should use a move
@@ -125,19 +119,10 @@ std::vector<std::vector<double>> run_triad(std::unique_ptr<Stream<T>>& stream)
 
   std::vector<std::vector<double>> timings(1);
 
-  // Declare timers
-  std::chrono::high_resolution_clock::time_point t1, t2;
-
-  // Run triad in loop
-  t1 = std::chrono::high_resolution_clock::now();
-  for (unsigned int k = 0; k < num_times; k++)
-  {
-    stream->triad();
-  }
-  t2 = std::chrono::high_resolution_clock::now();
-
-  double runtime = std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-  timings[0].push_back(runtime);
+  // Run triad in loop (compute a single time only!):
+  timings[0].push_back(time([&] {
+    for (int k = 0; k < num_times; k++) stream->triad();
+  }));
 
   return timings;
 }
@@ -148,19 +133,12 @@ std::vector<std::vector<double>> run_nstream(std::unique_ptr<Stream<T>>& stream)
 {
   std::vector<std::vector<double>> timings(1);
 
-  // Declare timers
-  std::chrono::high_resolution_clock::time_point t1, t2;
-
   // Run nstream in loop
   for (int k = 0; k < num_times; k++) {
-    t1 = std::chrono::high_resolution_clock::now();
-    stream->nstream();
-    t2 = std::chrono::high_resolution_clock::now();
-    timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count());
+    timings[0].push_back(time([&] { stream->nstream(); }));
   }
 
   return timings;
-
 }
 
 // Generic run routine
@@ -211,9 +189,7 @@ void run()
 
   auto stream = construct_stream<T>(ARRAY_SIZE, deviceIndex);
 
-  auto init1 = std::chrono::high_resolution_clock::now();
-  stream->init_arrays(startA, startB, startC);
-  auto init2 = std::chrono::high_resolution_clock::now();
+  auto initElapsedS = time([&] { stream->init_arrays(startA, startB, startC); });
 
   // Result of the Dot kernel, if used.
   T sum{};
@@ -239,15 +215,9 @@ void run()
   std::vector<T> b(ARRAY_SIZE);
   std::vector<T> c(ARRAY_SIZE);
 
-
-  auto read1 = std::chrono::high_resolution_clock::now();
-  stream->read_arrays(a, b, c);
-  auto read2 = std::chrono::high_resolution_clock::now();
-
-  auto initElapsedS = std::chrono::duration_cast<std::chrono::duration<double>>(read2 - read1).count();
-  auto readElapsedS = std::chrono::duration_cast<std::chrono::duration<double>>(init2 - init1).count();
-  auto initBWps = ((mibibytes ? std::pow(2.0, -20.0) : 1.0E-6) * (3 * sizeof(T) * ARRAY_SIZE)) / initElapsedS;
-  auto readBWps = ((mibibytes ? std::pow(2.0, -20.0) : 1.0E-6) * (3 * sizeof(T) * ARRAY_SIZE)) / readElapsedS;
+  auto readElapsedS = time([&] { stream->read_arrays(a, b, c); });
+  auto initBWps = ((mibibytes ? pow(2.0, -20.0) : 1.0E-6) * (3 * sizeof(T) * ARRAY_SIZE)) / initElapsedS;
+  auto readBWps = ((mibibytes ? pow(2.0, -20.0) : 1.0E-6) * (3 * sizeof(T) * ARRAY_SIZE)) / readElapsedS;
 
   if (output_as_csv)
   {
