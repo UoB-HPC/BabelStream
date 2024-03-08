@@ -29,6 +29,13 @@ bool output_as_csv = false;
 bool mibibytes = false;
 std::string csv_separator = ",";
 
+// Benchmarks:
+constexpr size_t num_benchmarks = 6;
+array<char const*, num_benchmarks> labels = {"Copy", "Add", "Mul", "Triad", "Dot", "Nstream"};
+// Weights data moved by benchmark & therefore achieved BW:
+// bytes = weight * sizeof(T) * ARRAY_SIZE -> bw = bytes / dur
+array<size_t, num_benchmarks> weight = {/*Copy:*/ 2, /*Add:*/ 2, /*Mul:*/ 3, /*Triad:*/ 3, /*Dot:*/ 2, /*Nstream:*/ 4};
+
 // Options for running the benchmark:
 // - All 5 kernels (Copy, Add, Mul, Triad, Dot).
 // - Triad only.
@@ -55,6 +62,9 @@ void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>
 
 template <typename T>
 void run();
+
+// Units for output:
+enum class Unit { Mega, Giga };
 
 void parseArguments(int argc, char *argv[]);
 
@@ -216,8 +226,20 @@ void run()
   std::vector<T> c(ARRAY_SIZE);
 
   auto readElapsedS = time([&] { stream->read_arrays(a, b, c); });
-  auto initBWps = ((mibibytes ? pow(2.0, -20.0) : 1.0E-6) * (3 * sizeof(T) * ARRAY_SIZE)) / initElapsedS;
-  auto readBWps = ((mibibytes ? pow(2.0, -20.0) : 1.0E-6) * (3 * sizeof(T) * ARRAY_SIZE)) / readElapsedS;
+
+  check_solution<T>(num_times, a, b, c, sum);
+
+  auto fmt_bw = [&](size_t weight, double dt, Unit unit = Unit::Mega) {
+    double bps = (weight * sizeof(T) * ARRAY_SIZE)/dt;
+    switch(unit) {
+    case Unit::Mega: return (mibibytes ? pow(2.0, -20.0) : 1.0E-6) * bps;
+    case Unit::Giga: return (mibibytes ? pow(2.0, -30.0) : 1.0E-9) * bps;
+    default: cerr << "Unimplemented!" << endl; abort();
+    }
+  };
+
+  auto initBWps = fmt_bw(3, initElapsedS);
+  auto readBWps = fmt_bw(3, readElapsedS);
 
   if (output_as_csv)
   {
@@ -258,8 +280,6 @@ void run()
       << ")" << std::endl;
   }
 
-  check_solution<T>(num_times, a, b, c, sum);
-
   // Display timing results
   if (output_as_csv)
   {
@@ -288,25 +308,6 @@ void run()
 
   if (selection == Benchmark::All || selection == Benchmark::Nstream)
   {
-
-    std::vector<std::string> labels;
-    std::vector<size_t> sizes;
-
-    if (selection == Benchmark::All)
-    {
-      labels = {"Copy", "Mul", "Add", "Triad", "Dot"};
-      sizes = {
-        2 * sizeof(T) * ARRAY_SIZE,
-        2 * sizeof(T) * ARRAY_SIZE,
-        3 * sizeof(T) * ARRAY_SIZE,
-        3 * sizeof(T) * ARRAY_SIZE,
-        2 * sizeof(T) * ARRAY_SIZE};
-    } else if (selection == Benchmark::Nstream)
-    {
-      labels = {"Nstream"};
-      sizes = {4 * sizeof(T) * ARRAY_SIZE };
-    }
-
     for (int i = 0; i < timings.size(); ++i)
     {
       // Get min/max; ignore the first result
@@ -323,7 +324,7 @@ void run()
           << num_times << csv_separator
           << ARRAY_SIZE << csv_separator
           << sizeof(T) << csv_separator
-          << ((mibibytes) ? std::pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first) << csv_separator
+          << fmt_bw(weight[i], *minmax.first) << csv_separator
           << *minmax.first << csv_separator
           << *minmax.second << csv_separator
           << average
@@ -331,21 +332,22 @@ void run()
       }
       else
       {
+
         std::cout
           << std::left << std::setw(12) << labels[i]
-          << std::left << std::setw(12) << std::setprecision(3) << 
-            ((mibibytes) ? std::pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first)
+          << std::left << std::setw(12) << std::setprecision(3) << fmt_bw(weight[i], *minmax.first)
           << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
           << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
           << std::left << std::setw(12) << std::setprecision(5) << average
           << std::endl;
+          << left << setw(12) << setprecision(3) 
       }
     }
   } else if (selection == Benchmark::Triad)
   {
     // Display timing results
     double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
-    double bandwidth = ((mibibytes) ? std::pow(2.0, -30.0) : 1.0E-9) * (total_bytes / timings[0][0]);
+    double bandwidth = fmt_bw(3 * num_times, timings[0][0], Unit::Giga);
 
     if (output_as_csv)
     {
