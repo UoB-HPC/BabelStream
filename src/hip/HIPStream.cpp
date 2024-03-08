@@ -21,6 +21,7 @@ void check_error(void)
   }
 }
 
+// It is best practice to include __device__ and constexpr even though in BabelStream it only needs to be __host__ const
 __host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1)/b; }
 
 template <class T>
