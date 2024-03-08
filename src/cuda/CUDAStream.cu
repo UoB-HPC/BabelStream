@@ -16,6 +16,7 @@
 // The do while is there to make sure you remember to put a semi-colon after calling CU
 #define CU(EXPR) do { auto __e = (EXPR); if (__e != cudaSuccess) error(__FILE__, __LINE__, #EXPR, __e); } while(false)
 
+// It is best practice to include __device__ and constexpr even though in BabelStream it only needs to be __host__ const
 __host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1)/b; }
 
 cudaStream_t stream;
