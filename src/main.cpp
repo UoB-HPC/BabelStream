@@ -18,40 +18,7 @@
 #define VERSION_STRING "5.0"
 
 #include "Stream.h"
-
-#if defined(CUDA)
-#include "CUDAStream.h"
-#elif defined(STD_DATA)
-#include "STDDataStream.h"
-#elif defined(STD_INDICES)
-#include "STDIndicesStream.h"
-#elif defined(STD_RANGES)
-#include "STDRangesStream.hpp"
-#elif defined(TBB)
-#include "TBBStream.hpp"
-#elif defined(THRUST)
-#include "ThrustStream.h"
-#elif defined(HIP)
-#include "HIPStream.h"
-#elif defined(HC)
-#include "HCStream.h"
-#elif defined(OCL)
-#include "OCLStream.h"
-#elif defined(USE_RAJA)
-#include "RAJAStream.hpp"
-#elif defined(KOKKOS)
-#include "KokkosStream.hpp"
-#elif defined(ACC)
-#include "ACCStream.h"
-#elif defined(SYCL)
-#include "SYCLStream.h"
-#elif defined(SYCL2020)
-#include "SYCLStream2020.h"
-#elif defined(OMP)
-#include "OMPStream.h"
-#elif defined(FUTHARK)
-#include "FutharkStream.h"
-#endif
+#include "StreamModels.h"
 
 // Default size of 2^25
 int ARRAY_SIZE = 33554432;
@@ -102,7 +69,8 @@ int main(int argc, char *argv[])
 
 // Run the 5 main kernels
 template <typename T>
-std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
+
+std::vector<std::vector<double>> run_all(std::unique_ptr<Stream<T>>& stream, T& sum)
 {
 
   // List of times
@@ -152,7 +120,7 @@ std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
 
 // Run the Triad kernel
 template <typename T>
-std::vector<std::vector<double>> run_triad(Stream<T> *stream)
+std::vector<std::vector<double>> run_triad(std::unique_ptr<Stream<T>>& stream)
 {
 
   std::vector<std::vector<double>> timings(1);
@@ -176,7 +144,7 @@ std::vector<std::vector<double>> run_triad(Stream<T> *stream)
 
 // Run the Nstream kernel
 template <typename T>
-std::vector<std::vector<double>> run_nstream(Stream<T> *stream)
+std::vector<std::vector<double>> run_nstream(std::unique_ptr<Stream<T>>& stream)
 {
   std::vector<std::vector<double>> timings(1);
 
@@ -194,7 +162,6 @@ std::vector<std::vector<double>> run_nstream(Stream<T> *stream)
   return timings;
 
 }
-
 
 // Generic run routine
 // Runs the kernel(s) and prints output.
@@ -242,69 +209,7 @@ void run()
 
   }
 
-  Stream<T> *stream;
-
-#if defined(CUDA)
-  // Use the CUDA implementation
-  stream = new CUDAStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(HIP)
-  // Use the HIP implementation
-  stream = new HIPStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(HC)
-  // Use the HC implementation
-  stream = new HCStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(OCL)
-  // Use the OpenCL implementation
-  stream = new OCLStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(USE_RAJA)
-  // Use the RAJA implementation
-  stream = new RAJAStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(KOKKOS)
-  // Use the Kokkos implementation
-  stream = new KokkosStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(STD_DATA)
-  // Use the C++ STD data-oriented implementation
-  stream = new STDDataStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(STD_INDICES)
-  // Use the C++ STD index-oriented implementation
-  stream = new STDIndicesStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(STD_RANGES)
-  // Use the C++ STD ranges implementation
-  stream = new STDRangesStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(TBB)
-  // Use the C++20 implementation
-  stream = new TBBStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(THRUST)
-  // Use the Thrust implementation
-  stream = new ThrustStream<T>(ARRAY_SIZE, deviceIndex); 
-
-#elif defined(ACC)
-  // Use the OpenACC implementation
-  stream = new ACCStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(SYCL) || defined(SYCL2020)
-  // Use the SYCL implementation
-  stream = new SYCLStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(OMP)
-  // Use the OpenMP implementation
-  stream = new OMPStream<T>(ARRAY_SIZE, deviceIndex);
-
-#elif defined(FUTHARK)
-  // Use the Futhark implementation
-  stream = new FutharkStream<T>(ARRAY_SIZE, deviceIndex);
-
-#endif
+  auto stream = construct_stream<T>(ARRAY_SIZE, deviceIndex);
 
   auto init1 = std::chrono::high_resolution_clock::now();
   stream->init_arrays(startA, startB, startC);
@@ -503,9 +408,6 @@ void run()
         << bandwidth << std::endl;
     }
   }
-
-  delete stream;
-
 }
 
 
