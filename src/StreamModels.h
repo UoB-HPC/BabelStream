@@ -36,66 +36,66 @@
 #endif
 
 template <typename T>
-std::unique_ptr<Stream<T>> make_stream(int ARRAY_SIZE, unsigned int deviceIndex) {
+std::unique_ptr<Stream<T>> make_stream(int array_size, int deviceIndex) {
 #if defined(CUDA)
   // Use the CUDA implementation
-  return std::make_unique<CUDAStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<CUDAStream<T>>(array_size, deviceIndex);
 
 #elif defined(HIP)
   // Use the HIP implementation
-  return std::make_unique<HIPStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<HIPStream<T>>(array_size, deviceIndex);
 
 #elif defined(HC)
   // Use the HC implementation
-  return std::make_unique<HCStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<HCStream<T>>(array_size, deviceIndex);
 
 #elif defined(OCL)
   // Use the OpenCL implementation
-  return std::make_unique<OCLStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<OCLStream<T>>(array_size, deviceIndex);
 
 #elif defined(USE_RAJA)
   // Use the RAJA implementation
-  return std::make_unique<RAJAStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<RAJAStream<T>>(array_size, deviceIndex);
 
 #elif defined(KOKKOS)
   // Use the Kokkos implementation
-  return std::make_unique<KokkosStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<KokkosStream<T>>(array_size, deviceIndex);
 
 #elif defined(STD_DATA)
   // Use the C++ STD data-oriented implementation
-  return std::make_unique<STDDataStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<STDDataStream<T>>(array_size, deviceIndex);
 
 #elif defined(STD_INDICES)
   // Use the C++ STD index-oriented implementation
-  return std::make_unique<STDIndicesStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<STDIndicesStream<T>>(array_size, deviceIndex);
 
 #elif defined(STD_RANGES)
   // Use the C++ STD ranges implementation
-  return std::make_unique<STDRangesStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<STDRangesStream<T>>(array_size, deviceIndex);
 
 #elif defined(TBB)
   // Use the C++20 implementation
-  return std::make_unique<TBBStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<TBBStream<T>>(array_size, deviceIndex);
 
 #elif defined(THRUST)
   // Use the Thrust implementation
-  return std::make_unique<ThrustStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<ThrustStream<T>>(array_size, deviceIndex);
 
 #elif defined(ACC)
   // Use the OpenACC implementation
-  return std::make_unique<ACCStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<ACCStream<T>>(array_size, deviceIndex);
 
 #elif defined(SYCL) || defined(SYCL2020)
   // Use the SYCL implementation
-  return std::make_unique<SYCLStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<SYCLStream<T>>(array_size, deviceIndex);
 
 #elif defined(OMP)
   // Use the OpenMP implementation
-  return std::make_unique<OMPStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<OMPStream<T>>(array_size, deviceIndex);
 
 #elif defined(FUTHARK)
   // Use the Futhark implementation
-  return std::make_unique<FutharkStream<T>>(ARRAY_SIZE, deviceIndex);
+  return std::make_unique<FutharkStream<T>>(array_size, deviceIndex);
 
 #else
 
