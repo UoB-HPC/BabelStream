@@ -31,8 +31,8 @@ endmacro()
 # the final executable name
 set(EXE_NAME babelstream)
 
-# for chrono and some basic CXX features, models can overwrite this if required
-set(CMAKE_CXX_STANDARD 11)
+# for chrono, make_unique, and some basic CXX features, models can overwrite this if required
+set(CMAKE_CXX_STANDARD 14)
 
 if (NOT CMAKE_BUILD_TYPE)
     message("No CMAKE_BUILD_TYPE specified, defaulting to 'Release'")

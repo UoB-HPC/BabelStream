@@ -20,7 +20,6 @@ template <class T>
 class Stream
 {
   public:
-
     virtual ~Stream(){}
 
     // Kernels
@@ -35,9 +34,7 @@ class Stream
     // Copy memory between host and device
     virtual void init_arrays(T initA, T initB, T initC) = 0;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) = 0;
-
 };
-
 
 // Implementation specific device functions
 void listDevices(void);

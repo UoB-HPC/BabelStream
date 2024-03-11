@@ -31,13 +31,11 @@ class CUDAStream : public Stream<T>
     T *d_a;
     T *d_b;
     T *d_c;
-    T *d_sum;
 
     // Number of blocks for dot kernel
     int dot_num_blocks;
 
   public:
-
     CUDAStream(const int, const int);
     ~CUDAStream();
 
@@ -50,5 +48,4 @@ class CUDAStream : public Stream<T>
 
     virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
-
 };
