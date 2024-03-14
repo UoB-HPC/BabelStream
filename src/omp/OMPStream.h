@@ -21,7 +21,7 @@ class OMPStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    intptr_t array_size;
 
     // Device side pointers
     T *a;
@@ -29,7 +29,7 @@ class OMPStream : public Stream<T>
     T *c;
 
   public:
-    OMPStream(const int, int);
+    OMPStream(const intptr_t, int);
     ~OMPStream();
 
     virtual void copy() override;
@@ -41,7 +41,4 @@ class OMPStream : public Stream<T>
 
     virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
-
-
-
 };

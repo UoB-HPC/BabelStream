@@ -23,7 +23,7 @@ class ThrustStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    intptr_t array_size;
 
   #if defined(MANAGED)
     thrust::universtal_vector<T> a;
@@ -36,7 +36,7 @@ class ThrustStream : public Stream<T>
   #endif
 
   public:
-    ThrustStream(const int, int);
+    ThrustStream(const intptr_t, int);
     ~ThrustStream() = default;
 
     virtual void copy() override;

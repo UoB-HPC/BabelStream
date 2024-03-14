@@ -25,7 +25,7 @@ void check_error(void)
 __host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1)/b; }
 
 template <class T>
-HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
+HIPStream<T>::HIPStream(const intptr_t ARRAY_SIZE, const int device_index)
 {
   // Set device
   int count;
@@ -107,9 +107,9 @@ HIPStream<T>::~HIPStream()
 
 
 template <typename T>
-__global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, int array_size)
+__global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, intptr_t array_size)
 {
-  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (intptr_t i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
     a[i] = initA;
     b[i] = initB;
     c[i] = initC;
@@ -133,7 +133,7 @@ void HIPStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector
   // Copy device memory to host
 #if defined(PAGEFAULT) || defined(MANAGED)
     hipDeviceSynchronize();
-  for (int i = 0; i < array_size; i++)
+  for (intptr_t i = 0; i < array_size; i++)
   {
     a[i] = d_a[i];
     b[i] = d_b[i];
@@ -150,9 +150,9 @@ void HIPStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector
 }
 
 template <typename T>
-__global__ void copy_kernel(const T * a, T * c, int array_size)
+__global__ void copy_kernel(const T * a, T * c, intptr_t array_size)
 {
-  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (intptr_t i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
     c[i] = a[i];
   }
 }
@@ -168,10 +168,10 @@ void HIPStream<T>::copy()
 }
 
 template <typename T>
-__global__ void mul_kernel(T * b, const T * c, int array_size)
+__global__ void mul_kernel(T * b, const T * c, intptr_t array_size)
 {
   const T scalar = startScalar;
-  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (intptr_t i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
     b[i] = scalar * c[i];
   }
 }
@@ -187,10 +187,10 @@ void HIPStream<T>::mul()
 }
 
 template <typename T>
-__global__ void add_kernel(const T * a, const T * b, T * c, int array_size)
+__global__ void add_kernel(const T * a, const T * b, T * c, intptr_t array_size)
 {
   const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
-  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (intptr_t i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
     c[i] = a[i] + b[i];
   }
 }
@@ -206,10 +206,10 @@ void HIPStream<T>::add()
 }
 
 template <typename T>
-__global__ void triad_kernel(T * a, const T * b, const T * c, int array_size)
+__global__ void triad_kernel(T * a, const T * b, const T * c, intptr_t array_size)
 {
   const T scalar = startScalar;
-  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (intptr_t i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
     a[i] = b[i] + scalar * c[i];
   }
 }
@@ -225,10 +225,10 @@ void HIPStream<T>::triad()
 }
 
 template <typename T>
-__global__ void nstream_kernel(T * a, const T * b, const T * c, int array_size)
+__global__ void nstream_kernel(T * a, const T * b, const T * c, intptr_t array_size)
 {
   const T scalar = startScalar;
-  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (intptr_t i = blockDim.x * blockIdx.x + threadIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
     a[i] += b[i] + scalar * c[i];
   }
 }
@@ -244,7 +244,7 @@ void HIPStream<T>::nstream()
 }
 
 template <typename T>
-__global__ void dot_kernel(const T * a, const T * b, T * sum, int array_size)
+__global__ void dot_kernel(const T * a, const T * b, T * sum, intptr_t array_size)
 {
   __shared__ T tb_sum[TBSIZE];
 
@@ -277,7 +277,7 @@ T HIPStream<T>::dot()
   check_error();
 
   T sum{};
-  for (int i = 0; i < dot_num_blocks; i++)
+  for (intptr_t i = 0; i < dot_num_blocks; i++)
     sum += sums[i];
 
   return sum;

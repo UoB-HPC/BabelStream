@@ -22,7 +22,7 @@ class CUDAStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    intptr_t array_size;
 
     // Host array for partial sums for dot kernel
     T *sums;
@@ -33,10 +33,10 @@ class CUDAStream : public Stream<T>
     T *d_c;
 
     // Number of blocks for dot kernel
-    int dot_num_blocks;
+    intptr_t dot_num_blocks;
 
   public:
-    CUDAStream(const int, const int);
+    CUDAStream(const intptr_t, const int);
     ~CUDAStream();
 
     virtual void copy() override;

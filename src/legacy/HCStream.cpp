@@ -52,7 +52,7 @@ void listDevices(void)
 
 
 template <class T>
-HCStream<T>::HCStream(const int ARRAY_SIZE, const int device_index):
+HCStream<T>::HCStream(const intptr_t ARRAY_SIZE, const int device_index):
   array_size(ARRAY_SIZE),
   d_a(ARRAY_SIZE),
   d_b(ARRAY_SIZE),

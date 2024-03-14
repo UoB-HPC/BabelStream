@@ -17,7 +17,7 @@ std::vector<device> devices;
 void getDeviceList(void);
 
 template <class T>
-SYCLStream<T>::SYCLStream(const int ARRAY_SIZE, const int device_index)
+SYCLStream<T>::SYCLStream(const intptr_t ARRAY_SIZE, const int device_index)
 {
   if (!cached)
     getDeviceList();

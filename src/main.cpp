@@ -1,3 +1,4 @@
+
 // Copyright (c) 2015-16 Tom Deakin, Simon McIntosh-Smith,
 // University of Bristol HPC
 //
@@ -22,7 +23,7 @@
 #include "Unit.h"
 
 // Default size of 2^25
-int ARRAY_SIZE = 33554432;
+intptr_t ARRAY_SIZE = 33554432;
 size_t num_times = 100;
 size_t deviceIndex = 0;
 bool use_float = false;
@@ -313,7 +314,7 @@ void check_solution(const size_t num_times,
   size_t failed = 0;
   T epsi = std::numeric_limits<T>::epsilon() * T(100000.0);
   auto check = [&](const char* name, T is, T should, T e, size_t i = size_t(-1)) {
-    if (e > epsi) {
+    if (e > epsi || std::isnan(e) || std::isnan(is)) {
       ++failed;
       if (failed > 10) return;
       std::cerr << "FAILED validation of " << name;

@@ -8,12 +8,11 @@
 #include "ACCStream.h"
 
 template <class T>
-ACCStream<T>::ACCStream(const int ARRAY_SIZE, int device)
+ACCStream<T>::ACCStream(const intptr_t ARRAY_SIZE, int device)
+  : array_size{ARRAY_SIZE}
 {
   acc_device_t device_type = acc_get_device_type();
   acc_set_device_num(device, device_type);
-
-  array_size = ARRAY_SIZE;
 
   // Set up data region on device
   this->a = new T[array_size];
@@ -32,7 +31,7 @@ template <class T>
 ACCStream<T>::~ACCStream()
 {
   // End data region on device
-  int array_size = this->array_size;
+  intptr_t array_size = this->array_size;
 
   T * restrict a = this->a;
   T * restrict b = this->b;
@@ -49,12 +48,12 @@ ACCStream<T>::~ACCStream()
 template <class T>
 void ACCStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  int array_size = this->array_size;
+  intptr_t array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
   #pragma acc parallel loop present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
-  for (int i = 0; i < array_size; i++)
+  for (intptr_t i = 0; i < array_size; i++)
   {
     a[i] = initA;
     b[i] = initB;
@@ -70,16 +69,23 @@ void ACCStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
   T *c = this->c;
   #pragma acc update host(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
+
+  for (intptr_t i = 0; i < array_size; i++)
+  {
+    h_a[i] = a[i];
+    h_b[i] = b[i];
+    h_c[i] = c[i];
+  }
 }
 
 template <class T>
 void ACCStream<T>::copy()
 {
-  int array_size = this->array_size;
+  intptr_t array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict c = this->c;
   #pragma acc parallel loop present(a[0:array_size], c[0:array_size]) wait
-  for (int i = 0; i < array_size; i++)
+  for (intptr_t i = 0; i < array_size; i++)
   {
     c[i] = a[i];
   }
@@ -90,11 +96,11 @@ void ACCStream<T>::mul()
 {
   const T scalar = startScalar;
 
-  int array_size = this->array_size;
+  intptr_t array_size = this->array_size;
   T * restrict b = this->b;
   T * restrict c = this->c;
   #pragma acc parallel loop present(b[0:array_size], c[0:array_size]) wait
-  for (int i = 0; i < array_size; i++)
+  for (intptr_t i = 0; i < array_size; i++)
   {
     b[i] = scalar * c[i];
   }
@@ -103,12 +109,12 @@ void ACCStream<T>::mul()
 template <class T>
 void ACCStream<T>::add()
 {
-  int array_size = this->array_size;
+  intptr_t array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
   #pragma acc parallel loop present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
-  for (int i = 0; i < array_size; i++)
+  for (intptr_t i = 0; i < array_size; i++)
   {
     c[i] = a[i] + b[i];
   }
@@ -119,12 +125,12 @@ void ACCStream<T>::triad()
 {
   const T scalar = startScalar;
 
-  int array_size = this->array_size;
+  intptr_t array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
   #pragma acc parallel loop present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
-  for (int i = 0; i < array_size; i++)
+  for (intptr_t i = 0; i < array_size; i++)
   {
     a[i] = b[i] + scalar * c[i];
   }
@@ -135,12 +141,12 @@ void ACCStream<T>::nstream()
 {
   const T scalar = startScalar;
 
-  int array_size = this->array_size;
+  intptr_t array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
   #pragma acc parallel loop present(a[0:array_size],  b[0:array_size], c[0:array_size]) wait
-  for (int i = 0; i < array_size; i++)
+  for (intptr_t i = 0; i < array_size; i++)
   {
     a[i] += b[i] + scalar * c[i];
   }
@@ -151,11 +157,11 @@ T ACCStream<T>::dot()
 {
   T sum{};
 
-  int array_size = this->array_size;
+  intptr_t array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
   #pragma acc parallel loop reduction(+:sum) present(a[0:array_size], b[0:array_size]) wait
-  for (int i = 0; i < array_size; i++)
+  for (intptr_t i = 0; i < array_size; i++)
   {
     sum += a[i] * b[i];
   }

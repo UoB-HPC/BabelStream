@@ -54,7 +54,7 @@ class SYCLStream : public Stream<T>
 
   public:
 
-    SYCLStream(const int, const int);
+    SYCLStream(const intptr_t, const int);
     ~SYCLStream();
 
     virtual void copy() override;

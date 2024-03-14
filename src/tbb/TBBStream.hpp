@@ -47,10 +47,8 @@ class TBBStream : public Stream<T>
     T *a, *b, *c;
 #endif
 
-
-
   public:
-    TBBStream(const int, int);
+    TBBStream(const intptr_t, int);
     ~TBBStream() = default;
 
     virtual void copy() override;
@@ -62,6 +60,5 @@ class TBBStream : public Stream<T>
 
     virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
-
 };
 

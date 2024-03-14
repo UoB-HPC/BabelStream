@@ -20,7 +20,7 @@ __host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + 
 cudaStream_t stream;
 
 template <class T>
-CUDAStream<T>::CUDAStream(const int array_size, const int device_index)
+CUDAStream<T>::CUDAStream(const intptr_t array_size, const int device_index)
   : array_size(array_size)
 {
   // Set device
@@ -96,9 +96,9 @@ CUDAStream<T>::~CUDAStream()
 }
 
 template <typename T>
-__global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, int array_size)
+__global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, size_t array_size)
 {  
-  for (int i = threadIdx.x + blockDim.x * blockIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     a[i] = initA;
     b[i] = initB;
     c[i] = initC;
@@ -120,7 +120,7 @@ void CUDAStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vecto
   // Copy device memory to host
 #if defined(PAGEFAULT) || defined(MANAGED)
   CU(cudaStreamSynchronize(stream));
-  for (int i = 0; i < array_size; ++i)
+  for (intptr_t i = 0; i < array_size; ++i)
   {
     a[i] = d_a[i];
     b[i] = d_b[i];
@@ -134,9 +134,9 @@ void CUDAStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vecto
 }
 
 template <typename T>
-__global__ void copy_kernel(const T * a, T * c, int array_size)
+__global__ void copy_kernel(const T * a, T * c, size_t array_size)
 {
-  for (int i = threadIdx.x + blockDim.x * blockIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     c[i] = a[i];
   }
 }
@@ -151,10 +151,10 @@ void CUDAStream<T>::copy()
 }
 
 template <typename T>
-__global__ void mul_kernel(T * b, const T * c, int array_size)
+__global__ void mul_kernel(T * b, const T * c, size_t array_size)
 {
   const T scalar = startScalar;
-  for (int i = threadIdx.x + blockDim.x * blockIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     b[i] = scalar * c[i];
   }
 }
@@ -169,9 +169,9 @@ void CUDAStream<T>::mul()
 }
 
 template <typename T>
-__global__ void add_kernel(const T * a, const T * b, T * c, int array_size)
+__global__ void add_kernel(const T * a, const T * b, T * c, size_t array_size)
 {
-  for (int i = threadIdx.x + blockDim.x * blockIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     c[i] = a[i] + b[i];
   }
 }
@@ -186,10 +186,10 @@ void CUDAStream<T>::add()
 }
 
 template <typename T>
-__global__ void triad_kernel(T * a, const T * b, const T * c, int array_size)
+__global__ void triad_kernel(T * a, const T * b, const T * c, size_t array_size)
 {
   const T scalar = startScalar;
-  for (int i = threadIdx.x + blockDim.x * blockIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     a[i] = b[i] + scalar * c[i];
   }
 }
@@ -204,10 +204,10 @@ void CUDAStream<T>::triad()
 }
 
 template <typename T>
-__global__ void nstream_kernel(T * a, const T * b, const T * c, int array_size)
+__global__ void nstream_kernel(T * a, const T * b, const T * c, size_t array_size)
 {
   const T scalar = startScalar;
-  for (int i = threadIdx.x + blockDim.x * blockIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     a[i] += b[i] + scalar * c[i];
   }
 }
@@ -222,12 +222,12 @@ void CUDAStream<T>::nstream()
 }
 
 template <class T>
-__global__ void dot_kernel(const T * a, const T * b, T* sums, int array_size)
+__global__ void dot_kernel(const T * a, const T * b, T* sums, size_t array_size)
 {
   __shared__ T smem[TBSIZE];
   T tmp = T(0.);
   const size_t tidx = threadIdx.x;
-  for (int i = tidx + (size_t)blockDim.x * blockIdx.x; i < array_size; i += gridDim.x * blockDim.x) {
+  for (size_t i = tidx + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     tmp += a[i] * b[i];
   }
   smem[tidx] = tmp;
@@ -248,7 +248,7 @@ T CUDAStream<T>::dot()
   CU(cudaStreamSynchronize(stream));
 
   T sum = 0.0;
-  for (int i = 0; i < dot_num_blocks; ++i) sum += sums[i];
+  for (intptr_t i = 0; i < dot_num_blocks; ++i) sum += sums[i];
 
   return sum;
 }

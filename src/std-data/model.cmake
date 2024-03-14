@@ -4,7 +4,7 @@ register_flag_optional(CMAKE_CXX_COMPILER
         "c++")
 
 register_flag_optional(NVHPC_OFFLOAD
-        "Enable offloading support (via the non-standard `-stdpar`) for the new NVHPC SDK.
+        "Enable offloading support (via the non-standard `-stdpar=gpu`) for the new NVHPC SDK.
          The values are Nvidia architectures in ccXY format will be passed in via `-gpu=` (e.g `cc70`)
 
          Possible values are:
@@ -38,7 +38,7 @@ register_flag_optional(USE_ONEDPL
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)
     if (NVHPC_OFFLOAD)
-        set(NVHPC_FLAGS -stdpar -gpu=${NVHPC_OFFLOAD})
+        set(NVHPC_FLAGS -stdpar=gpu -gpu=${NVHPC_OFFLOAD})
         # propagate flags to linker so that it links with the gpu stuff as well
         register_append_cxx_flags(ANY ${NVHPC_FLAGS})
         register_append_link_flags(${NVHPC_FLAGS})

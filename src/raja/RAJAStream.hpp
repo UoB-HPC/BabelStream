@@ -41,8 +41,8 @@ class RAJAStream : public Stream<T>
 {
   protected:
     // Size of arrays
-	const int array_size;
-	const RangeSegment range;
+    const intptr_t array_size;
+    const RangeSegment range;
 
     // Device side pointers to arrays
     T* d_a;
@@ -51,7 +51,7 @@ class RAJAStream : public Stream<T>
 
   public:
 
-    RAJAStream(const int, const int);
+    RAJAStream(const intptr_t, const int);
     ~RAJAStream();
 
     virtual void copy() override;

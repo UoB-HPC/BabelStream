@@ -19,16 +19,15 @@
 template <class T>
 class ACCStream : public Stream<T>
 {
-
-	struct A{
-		T *a;
-		T *b;
-		T *c;
-	};
+  struct A{
+    T *a;
+    T *b;
+    T *c;
+  };
 
   protected:
     // Size of arrays
-    int array_size;
+    intptr_t array_size;
     A aa;
     // Device side pointers
     T *a;
@@ -36,7 +35,7 @@ class ACCStream : public Stream<T>
     T *c;
 
   public:
-    ACCStream(const int, int);
+    ACCStream(const intptr_t, int);
     ~ACCStream();
 
     virtual void copy() override;
@@ -48,7 +47,4 @@ class ACCStream : public Stream<T>
 
     virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
-
-
-
 };

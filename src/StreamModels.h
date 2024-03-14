@@ -36,7 +36,7 @@
 #endif
 
 template <typename T>
-std::unique_ptr<Stream<T>> make_stream(int array_size, int deviceIndex) {
+std::unique_ptr<Stream<T>> make_stream(intptr_t array_size, int deviceIndex) {
 #if defined(CUDA)
   // Use the CUDA implementation
   return std::make_unique<CUDAStream<T>>(array_size, deviceIndex);

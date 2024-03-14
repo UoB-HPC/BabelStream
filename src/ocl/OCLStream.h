@@ -26,7 +26,7 @@ class OCLStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    intptr_t array_size;
 
     // Host array for partial sums for dot kernel
     std::vector<T> sums;
@@ -48,7 +48,7 @@ class OCLStream : public Stream<T>
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *add_kernel;
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *triad_kernel;
     cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *nstream_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_int> *dot_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_long> *dot_kernel;
 
     // NDRange configuration for the dot kernel
     size_t dot_num_groups;
@@ -56,7 +56,7 @@ class OCLStream : public Stream<T>
 
   public:
 
-    OCLStream(const int, const int);
+    OCLStream(const intptr_t, const int);
     ~OCLStream();
 
     virtual void copy() override;

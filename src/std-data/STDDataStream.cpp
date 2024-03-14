@@ -7,7 +7,7 @@
 #include "STDDataStream.h"
 
 template <class T>
-STDDataStream<T>::STDDataStream(const int ARRAY_SIZE, int device)
+STDDataStream<T>::STDDataStream(const intptr_t ARRAY_SIZE, int device)
   noexcept : array_size{ARRAY_SIZE},
   a(alloc_raw<T>(ARRAY_SIZE)), b(alloc_raw<T>(ARRAY_SIZE)), c(alloc_raw<T>(ARRAY_SIZE))
 {
