@@ -19,13 +19,13 @@ class STDDataStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    intptr_t array_size;
 
     // Device side pointers
     T *a, *b, *c;
 
   public:
-    STDDataStream(const int, int) noexcept;
+    STDDataStream(const intptr_t, int) noexcept;
     ~STDDataStream();
 
     virtual void copy() override;

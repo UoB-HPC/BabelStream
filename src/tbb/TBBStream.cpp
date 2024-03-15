@@ -20,8 +20,8 @@
 #endif
 
 template <class T>
-TBBStream<T>::TBBStream(const int ARRAY_SIZE, int device)
- : partitioner(), range(0, ARRAY_SIZE),
+TBBStream<T>::TBBStream(const intptr_t ARRAY_SIZE, int device)
+  : partitioner(), range(0, (size_t)ARRAY_SIZE),
 #ifdef USE_VECTOR
    a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
 #else

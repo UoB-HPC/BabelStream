@@ -16,7 +16,7 @@ using RAJA::forall;
 #endif
 
 template <class T>
-RAJAStream<T>::RAJAStream(const int ARRAY_SIZE, const int device_index)
+RAJAStream<T>::RAJAStream(const intptr_t ARRAY_SIZE, const int device_index)
     : array_size(ARRAY_SIZE), range(0, ARRAY_SIZE)
 {
 
@@ -120,9 +120,14 @@ void RAJAStream<T>::triad()
 template <class T>
 void RAJAStream<T>::nstream()
 {
-  // TODO implement me!
-  std::cerr << "Not implemented yet!" << std::endl;
-  throw std::runtime_error("Not implemented yet!");
+  T* RAJA_RESTRICT a = d_a;
+  T* RAJA_RESTRICT b = d_b;
+  T* RAJA_RESTRICT c = d_c;
+  const T scalar = startScalar;
+  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
+  {
+    a[index] += b[index] + scalar * c[index];;
+  });
 }
 
 template <class T>

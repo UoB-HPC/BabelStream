@@ -75,7 +75,7 @@ std::string kernels{R"CLC(
     global const TYPE * restrict b,
     global TYPE * restrict sum,
     local TYPE * restrict wg_sum,
-    int array_size)
+    long array_size)
   {
     size_t i = get_global_id(0);
     const size_t local_i = get_local_id(0);
@@ -100,7 +100,8 @@ std::string kernels{R"CLC(
 
 
 template <class T>
-OCLStream<T>::OCLStream(const int ARRAY_SIZE, const int device_index)
+OCLStream<T>::OCLStream(const intptr_t ARRAY_SIZE, const int device_index)
+  : array_size{ARRAY_SIZE}
 {
   if (!cached)
     getDeviceList();
@@ -166,9 +167,7 @@ OCLStream<T>::OCLStream(const int ARRAY_SIZE, const int device_index)
   add_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "add");
   triad_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "triad");
   nstream_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "nstream");
-  dot_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_int>(program, "stream_dot");
-
-  array_size = ARRAY_SIZE;
+  dot_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_long>(program, "stream_dot");
 
   // Check buffers fit on the device
   cl_ulong totalmem = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();

@@ -151,7 +151,7 @@ macro(setup)
         # offload but OFFLOAD_FLAGS overrides
         register_definitions(OMP_TARGET_GPU)
         separate_arguments(OFFLOAD_FLAGS)
-        list(OMP_FLAGS APPEND ${OFFLOAD_FLAGS})
+        list(APPEND OMP_FLAGS ${OFFLOAD_FLAGS})
     else ()
 
         # handle the vendor:arch value

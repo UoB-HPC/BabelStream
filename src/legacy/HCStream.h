@@ -21,7 +21,7 @@ class HCStream : public Stream<T>
 {
 protected:
   // Size of arrays
-  int array_size;
+  intptr_t array_size;
   // Device side pointers to arrays
   hc::array<T,1> d_a;
   hc::array<T,1> d_b;
@@ -30,7 +30,7 @@ protected:
 
 public:
 
-  HCStream(const int, const int);
+  HCStream(const intptr_t, const int);
   ~HCStream();
 
   virtual void copy() override;

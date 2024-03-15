@@ -71,16 +71,16 @@ class STDIndicesStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    intptr_t array_size;
 
     // induction range
-    ranged<int> range;
+    ranged<intptr_t> range;
 
     // Device side pointers
     T *a, *b, *c;
 
   public:
-    STDIndicesStream(const int, int) noexcept;
+    STDIndicesStream(const intptr_t, int) noexcept;
     ~STDIndicesStream();
 
     virtual void copy() override;

@@ -19,8 +19,8 @@ static inline void synchronise()
 }
 
 template <class T>
-ThrustStream<T>::ThrustStream(const int ARRAY_SIZE, int device)
-    : array_size{ARRAY_SIZE}, a(array_size), b(array_size), c(array_size) {
+ThrustStream<T>::ThrustStream(const intptr_t array_size, int device)
+    : array_size{array_size}, a(array_size), b(array_size), c(array_size) {
   std::cout << "Using CUDA device: " << getDeviceName(device) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device) << std::endl;
   std::cout << "Thrust version: " << THRUST_VERSION << std::endl;

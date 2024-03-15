@@ -12,7 +12,7 @@
 #endif
 
 template <class T>
-STDRangesStream<T>::STDRangesStream(const int ARRAY_SIZE, int device)
+STDRangesStream<T>::STDRangesStream(const intptr_t ARRAY_SIZE, int device)
 noexcept : array_size{ARRAY_SIZE},
   a(alloc_raw<T>(ARRAY_SIZE)), b(alloc_raw<T>(ARRAY_SIZE)), c(alloc_raw<T>(ARRAY_SIZE))
 {
@@ -44,8 +44,8 @@ void STDRangesStream<T>::init_arrays(T initA, T initB, T initC)
 {
   std::for_each_n(
     exe_policy,
-    std::views::iota(0).begin(), array_size, // loop range
-    [&] (int i) {
+    std::views::iota((intptr_t)0).begin(), array_size, // loop range
+    [=, this] (intptr_t i) {
       a[i] = initA;
       b[i] = initB;
       c[i] = initC;
@@ -67,8 +67,8 @@ void STDRangesStream<T>::copy()
 {
   std::for_each_n(
     exe_policy,
-    std::views::iota(0).begin(), array_size,
-    [&] (int i) {
+    std::views::iota((intptr_t)0).begin(), array_size,
+    [=, this] (intptr_t i) {
       c[i] = a[i];
     }
   );
@@ -81,8 +81,8 @@ void STDRangesStream<T>::mul()
 
   std::for_each_n(
     exe_policy,
-    std::views::iota(0).begin(), array_size,
-    [&] (int i) {
+    std::views::iota((intptr_t)0).begin(), array_size,
+    [=, this] (intptr_t i) {
       b[i] = scalar * c[i];
     }
   );
@@ -93,8 +93,8 @@ void STDRangesStream<T>::add()
 {
   std::for_each_n(
     exe_policy,
-    std::views::iota(0).begin(), array_size,
-    [&] (int i) {
+    std::views::iota((intptr_t)0).begin(), array_size,
+    [=, this] (intptr_t i) {
       c[i] = a[i] + b[i];
     }
   );
@@ -107,8 +107,8 @@ void STDRangesStream<T>::triad()
 
   std::for_each_n(
     exe_policy,
-    std::views::iota(0).begin(), array_size,
-    [&] (int i) {
+    std::views::iota((intptr_t)0).begin(), array_size,
+    [=, this] (intptr_t i) {
       a[i] = b[i] + scalar * c[i];
     }
   );
@@ -121,8 +121,8 @@ void STDRangesStream<T>::nstream()
 
   std::for_each_n(
     exe_policy,
-    std::views::iota(0).begin(), array_size,
-    [&] (int i) {
+    std::views::iota((intptr_t)0).begin(), array_size,
+    [=, this] (intptr_t i) {
       a[i] += b[i] + scalar * c[i];
     }
   );

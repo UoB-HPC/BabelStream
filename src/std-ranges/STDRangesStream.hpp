@@ -18,13 +18,13 @@ class STDRangesStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    intptr_t array_size;
 
     // Device side pointers
     T *a, *b, *c;
 
   public:
-    STDRangesStream(const int, int) noexcept;
+    STDRangesStream(const intptr_t, int) noexcept;
     ~STDRangesStream();
 
     virtual void copy() override;
