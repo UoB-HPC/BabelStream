@@ -138,6 +138,7 @@ build_gcc() {
   local name="gcc_build"
   local cxx="-DCMAKE_CXX_COMPILER=${GCC_CXX:?}"
 
+  run_build $name "${GCC_CXX:?}" serial "$cxx"
   run_build $name "${GCC_CXX:?}" omp "$cxx"
   if [ "$MODEL" = "all" ] || [ "$MODEL" = "OMP" ]; then
     # sanity check that it at least runs
@@ -219,6 +220,7 @@ build_gcc() {
 build_clang() {
   local name="clang_build"
   local cxx="-DCMAKE_CXX_COMPILER=${CLANG_CXX:?}"
+  run_build $name "${CLANG_CXX:?}" serial "$cxx"
   run_build $name "${CLANG_CXX:?}" omp "$cxx"
 
   if [ "${CLANG_OMP_OFFLOAD_AMD:-false}" != "false" ]; then
@@ -276,6 +278,7 @@ build_nvhpc() {
 }
 
 build_aocc() {
+  run_build aocc_build "${AOCC_CXX:?}" serial "-DCMAKE_CXX_COMPILER=${AOCC_CXX:?}"
   run_build aocc_build "${AOCC_CXX:?}" omp "-DCMAKE_CXX_COMPILER=${AOCC_CXX:?}"
 }
 
@@ -309,6 +312,7 @@ build_icpc() {
   set -u
   local name="intel_build"
   local cxx="-DCMAKE_CXX_COMPILER=${ICPC_CXX:?}"
+  run_build $name "${ICPC_CXX:?}" serial "$cxx"
   run_build $name "${ICPC_CXX:?}" omp "$cxx"
   run_build $name "${ICPC_CXX:?}" ocl "$cxx -DOpenCL_LIBRARY=${OCL_LIB:?}"
   if check_cmake_ver "3.20.0"; then
