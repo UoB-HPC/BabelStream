@@ -1,5 +1,5 @@
-// Copyright (c) 2020 Tom Deakin
-// University of Bristol HPC
+// Copyright (c) 2020 Tom Deakin, 2025 Bernhard Manfred Gruber
+// University of Bristol HPC, NVIDIA
 //
 // For full license terms please see the LICENSE file distributed with this
 // source code
@@ -8,11 +8,7 @@
 
 #include <iostream>
 #include <vector>
-#if defined(MANAGED)
-#include <thrust/universal_vector.h>
-#else
-#include <thrust/device_vector.h>
-#endif
+#include <memory>
 
 #include "Stream.h"
 
@@ -22,22 +18,13 @@ template <class T>
 class ThrustStream : public Stream<T>
 {
   protected:
-    // Size of arrays
+    struct Impl;
+    std::unique_ptr<Impl> impl; // avoid thrust vectors leaking into non-CUDA translation units
     intptr_t array_size;
 
-  #if defined(MANAGED)
-    thrust::universtal_vector<T> a;
-    thrust::universtal_vector<T> b;
-    thrust::universtal_vector<T> c;
-  #else
-    thrust::device_vector<T> a;
-    thrust::device_vector<T> b;
-    thrust::device_vector<T> c;
-  #endif
-
   public:
-    ThrustStream(const intptr_t, int);
-    ~ThrustStream() = default;
+    ThrustStream(intptr_t array_size, int device);
+    ~ThrustStream();
 
     virtual void copy() override;
     virtual void add() override;
