@@ -145,8 +145,8 @@ void ThrustStream<T>::nstream()
 {
   const T scalar = startScalar;
   thrust::transform(
-      thrust::make_zip_iterator(thrust::make_tuple(impl->a.begin(), impl->b.begin(), impl->c.begin())),
-      thrust::make_zip_iterator(thrust::make_tuple(impl->a.end(), impl->b.end(), impl->c.end())),
+      thrust::make_zip_iterator(impl->a.begin(), impl->b.begin(), impl->c.begin()),
+      thrust::make_zip_iterator(impl->a.end(), impl->b.end(), impl->c.end()),
       impl->a.begin(),
       thrust::make_zip_function(
           [=] __device__ __host__ (const T& ai, const T& bi, const T& ci){
