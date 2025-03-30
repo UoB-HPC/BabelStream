@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <iostream>
 #include <vector>
 #if defined(MANAGED)

@@ -9,6 +9,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -28,7 +29,7 @@ size_t num_times = 100;
 size_t deviceIndex = 0;
 bool use_float = false;
 bool output_as_csv = false;
-// Default unit of memory is MegaBytes (as per STREAM) 
+// Default unit of memory is MegaBytes (as per STREAM)
 Unit unit{Unit::Kind::MegaByte};
 bool silence_errors = false;
 std::string csv_separator = ",";

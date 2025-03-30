@@ -7,6 +7,7 @@
 #pragma once
 #include "dpl_shim.h"
 
+#include <cstdint>
 #include <iostream>
 #include <stdexcept>
 #include "Stream.h"

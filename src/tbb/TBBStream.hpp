@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <iostream>
 #include <vector>
 #include "tbb/tbb.h"
@@ -36,7 +37,7 @@ template <class T>
 class TBBStream : public Stream<T>
 {
   protected:
-  
+
     tbb_partitioner partitioner;
     tbb::blocked_range<size_t> range;
     // Device side pointers
