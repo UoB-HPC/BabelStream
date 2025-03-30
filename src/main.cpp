@@ -391,13 +391,21 @@ void check_solution(const size_t num_times,
   // Calculate the L^infty-norm relative error
   for (size_t i = 0; i < a.size(); ++i) {
     T vA = a[i], vB = b[i], vC = c[i];
-    T eA = std::fabs(vA - goldA) / std::fabs(goldA);
-    T eB = std::fabs(vB - goldB) / std::fabs(goldB);
-    T eC = std::fabs(vC - goldC) / std::fabs(goldC);
 
-    check("a", a[i], goldA, eA, i);
-    check("b", b[i], goldB, eB, i);
-    check("c", c[i], goldC, eC, i);
+    if (!(vA == T(0) && goldA == T(0))) {
+      T eA = std::fabs(vA - goldA) / std::fabs(goldA);
+      check("a", a[i], goldA, eA, i);
+    }
+
+    if (!(vB == T(0) && goldB == T(0))) {
+      T eB = std::fabs(vB - goldB) / std::fabs(goldB);
+      check("b", b[i], goldB, eB, i);
+    }
+
+    if (!(vC == T(0) && goldC == T(0))) {
+      T eC = std::fabs(vC - goldC) / std::fabs(goldC);
+      check("c", c[i], goldC, eC, i);
+    }
   }
 
   if (failed > 0 && !silence_errors)
