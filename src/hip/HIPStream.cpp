@@ -47,13 +47,15 @@ HIPStream<T>::HIPStream(const intptr_t ARRAY_SIZE, const int device_index)
     std::cout << "Memory: DEFAULT" << std::endl;
 #endif
 
+  hipDeviceProp_t props;
+  hipGetDeviceProperties(&props, device_index);
+  check_error();
+
   array_size = ARRAY_SIZE;
-  // Round dot_num_blocks up to next multiple of (TBSIZE * dot_elements_per_lane)
-  dot_num_blocks = (array_size + (TBSIZE * dot_elements_per_lane - 1)) / (TBSIZE * dot_elements_per_lane);
+  dot_num_blocks = props.multiProcessorCount * 4;
 
   size_t array_bytes = sizeof(T);
   array_bytes *= ARRAY_SIZE;
-  size_t total_bytes = array_bytes * 3;
 
   // Allocate the host array for partial sums for dot kernels using hipHostMalloc.
   // This creates an array on the host which is visible to the device. However, it requires
@@ -63,9 +65,7 @@ HIPStream<T>::HIPStream(const intptr_t ARRAY_SIZE, const int device_index)
   check_error();
 
   // Check buffers fit on the device
-  hipDeviceProp_t props;
-  hipGetDeviceProperties(&props, 0);
-  if (props.totalGlobalMem < std::size_t{3}*ARRAY_SIZE*sizeof(T))
+  if (props.totalGlobalMem < std::size_t{3}*array_bytes)
     throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
   // Create device buffers
