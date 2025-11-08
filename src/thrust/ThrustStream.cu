@@ -4,6 +4,9 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
+// Thrust fails to compile if the following macro is defined:
+#undef THRUST
+
 #include "ThrustStream.h"
 #include <thrust/inner_product.h>
 #include <thrust/device_vector.h>
