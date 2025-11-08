@@ -1,13 +1,13 @@
 
 register_flag_optional(THRUST_IMPL
         "Which Thrust implementation to use, supported options include:
-         - CUDA (via https://github.com/NVIDIA/thrust or https://github.com/NVIDIA/CCCL)
+         - CUDA (via https://github.com/NVIDIA/CCCL (CUDA Core Compute Libraries))
          - ROCM (via https://github.com/ROCmSoftwarePlatform/rocThrust)
         "
         "CUDA")
 
 register_flag_optional(SDK_DIR
-        "Path to the installation prefix for CCCL or Thrust (e.g `/opt/nvidia/hpc_sdk/Linux_x86_64/24.5/cuda/12.4/lib64/cmake` for NVHPC, or `/usr/local/cuda-12.5/lib64/cmake` for nvcc, or `/usr/local/cuda-11.4/include` for older nvcc, or `/opt/rocm` for ROCm)"
+        "Path to the installation prefix for CCCL or Thrust (e.g `/opt/nvidia/hpc_sdk/Linux_x86_64/24.5/cuda/12.4/lib64/cmake` for NVHPC, or `/usr/local/cuda-13.0/lib64/cmake` for nvcc, or `/opt/rocm` for ROCm)"
         "")
 
 register_flag_optional(BACKEND
@@ -36,10 +36,10 @@ register_flag_optional(CUDA_EXTRA_FLAGS
 
 option(FETCH_CCCL "Fetch (download) the CCCL library. This uses CMake's FetchContent feature.
                    Specify version by setting FETCH_CCCL_VERSION" OFF)
-set(FETCH_CCCL_VERSION "v2.4.0" CACHE STRING "Specify version of CCCL to use if FETCH_CCCL is ON")
+set(FETCH_CCCL_VERSION "v3.1.0" CACHE STRING "Specify version of CCCL to use if FETCH_CCCL is ON")
 
 macro(setup)
-    set(CMAKE_CXX_STANDARD 14)
+    set(CMAKE_CXX_STANDARD 17)
     if (MANAGED)
       register_definitions(MANAGED)
     endif ()
@@ -56,15 +56,20 @@ macro(setup)
 
         message(STATUS "NVCC flags: ${CMAKE_CUDA_FLAGS} ${CMAKE_CUDA_FLAGS_${BUILD_TYPE}}")
 
+        # append SDK_DIR to help finding CCCL
         if (SDK_DIR)
             # CMake tries several subdirectories below SDK_DIR, see documentation:
             # https://cmake.org/cmake/help/latest/command/find_package.html#config-mode-search-procedure
             list(APPEND CMAKE_PREFIX_PATH ${SDK_DIR})
         endif ()
 
+        # append CUDA Toolkit cmake config dir to help finding CCCL
+        find_package(CUDAToolkit REQUIRED)
+        list(APPEND CMAKE_PREFIX_PATH "${CUDAToolkit_LIBRARY_DIR}/cmake")
+
         set(CCCL_THRUST_DEVICE_SYSTEM ${BACKEND} CACHE STRING "" FORCE)
 
-        # fetch CCCL if user wants to
+        # fetch CCCL if user wants to, otherwise just try to find it
         if (FETCH_CCCL)
             FetchContent_Declare(
                     CCCL
@@ -72,21 +77,10 @@ macro(setup)
                     GIT_TAG "${FETCH_CCCL_VERSION}"
             )
             FetchContent_MakeAvailable(CCCL)
-            register_link_library(CCCL::CCCL)
         else()
-            # try to find CCCL locally
-            find_package(CCCL CONFIG)
-            if (CCCL_FOUND)
-                register_link_library(CCCL::CCCL)
-            else()
-                # backup: find legacy projects separately
-                message(WARNING "No CCCL found on your system. Trying Thrust and CUB legacy targets.")
-                find_package(CUB REQUIRED CONFIG)
-                find_package(Thrust REQUIRED CONFIG)
-                thrust_create_target(Thrust${BACKEND} HOST CPP DEVICE ${BACKEND})
-                register_link_library(Thrust${BACKEND})
-            endif()
+            find_package(CCCL CONFIG REQUIRED)
         endif()
+        register_link_library(CCCL::CCCL)
     elseif (${THRUST_IMPL} STREQUAL "ROCM")
         if (SDK_DIR)
             find_package(rocprim REQUIRED CONFIG PATHS ${SDK_DIR}/rocprim)
