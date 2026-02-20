@@ -16,8 +16,9 @@ using RAJA::forall;
 #endif
 
 template <class T>
-RAJAStream<T>::RAJAStream(const intptr_t ARRAY_SIZE, const int device_index)
-    : array_size(ARRAY_SIZE), range(0, ARRAY_SIZE)
+RAJAStream<T>::RAJAStream(BenchId bs, const intptr_t array_size, const int device_index,
+			  T initA, T initB, T initC)
+  : array_size(array_size), range(0, array_size)
 {
 
 #ifdef RAJA_TARGET_CPU
@@ -25,11 +26,13 @@ RAJAStream<T>::RAJAStream(const intptr_t ARRAY_SIZE, const int device_index)
   d_b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
   d_c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
 #else
-  cudaMallocManaged((void**)&d_a, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
-  cudaMallocManaged((void**)&d_b, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
-  cudaMallocManaged((void**)&d_c, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
+  cudaMallocManaged((void**)&d_a, sizeof(T)*array_size, cudaMemAttachGlobal);
+  cudaMallocManaged((void**)&d_b, sizeof(T)*array_size, cudaMemAttachGlobal);
+  cudaMallocManaged((void**)&d_c, sizeof(T)*array_size, cudaMemAttachGlobal);
   cudaDeviceSynchronize();
 #endif
+
+  init_arrays(initA, initB, initC);
 }
 
 template <class T>
@@ -61,12 +64,11 @@ void RAJAStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void RAJAStream<T>::read_arrays(
-        std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
+void RAJAStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 {
-  std::copy(d_a, d_a + array_size, a.data());
-  std::copy(d_b, d_b + array_size, b.data());
-  std::copy(d_c, d_c + array_size, c.data());
+  a = d_a;
+  b = d_b;
+  c = d_c;
 }
 
 template <class T>

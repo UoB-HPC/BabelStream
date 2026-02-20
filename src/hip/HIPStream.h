@@ -48,20 +48,21 @@ class HIPStream : public Stream<T>
     T *d_b;
     T *d_c;
 
+    // If UVM is disabled, host arrays for verification purposes
+    std::vector<T> h_a, h_b, h_c;
 
   public:
-
-    HIPStream(const intptr_t, const int);
+    HIPStream(BenchId bs, const intptr_t array_size, const int device_id,
+	      T initA, T initB, T initC);
     ~HIPStream();
 
-    virtual void copy() override;
-    virtual void add() override;
-    virtual void mul() override;
-    virtual void triad() override;
-    virtual void nstream() override;
-    virtual T dot() override;
+    void copy() override;
+    void add() override;
+    void mul() override;
+    void triad() override;
+    void nstream() override;
+    T dot() override;
 
-    virtual void init_arrays(T initA, T initB, T initC) override;
-    virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
-
+    void get_arrays(T const*& a, T const*& b, T const*& c) override;    
+    void init_arrays(T initA, T initB, T initC);
 };

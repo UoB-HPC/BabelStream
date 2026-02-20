@@ -25,7 +25,9 @@ void check_error(void)
 __host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1)/b; }
 
 template <class T>
-HIPStream<T>::HIPStream(const intptr_t ARRAY_SIZE, const int device_index)
+HIPStream<T>::HIPStream(BenchId bs, const intptr_t array_size, const int device_index,
+	      T initA, T initB, T initC)
+  : array_size(array_size)
 {
   // Set device
   int count;
@@ -47,13 +49,12 @@ HIPStream<T>::HIPStream(const intptr_t ARRAY_SIZE, const int device_index)
     std::cout << "Memory: DEFAULT" << std::endl;
 #endif
 
-  array_size = ARRAY_SIZE;
   // Round dot_num_blocks up to next multiple of (TBSIZE * dot_elements_per_lane)
   dot_num_blocks = (array_size + (TBSIZE * dot_elements_per_lane - 1)) / (TBSIZE * dot_elements_per_lane);
 
   size_t array_bytes = sizeof(T);
-  array_bytes *= ARRAY_SIZE;
-  size_t total_bytes = array_bytes * 3;
+  array_bytes *= array_size;
+  size_t total_bytes = array_bytes * std::size_t{3};
 
   // Allocate the host array for partial sums for dot kernels using hipHostMalloc.
   // This creates an array on the host which is visible to the device. However, it requires
@@ -65,7 +66,7 @@ HIPStream<T>::HIPStream(const intptr_t ARRAY_SIZE, const int device_index)
   // Check buffers fit on the device
   hipDeviceProp_t props;
   hipGetDeviceProperties(&props, 0);
-  if (props.totalGlobalMem < std::size_t{3}*ARRAY_SIZE*sizeof(T))
+  if (props.totalGlobalMem < total_bytes)
     throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
   // Create device buffers
@@ -88,6 +89,8 @@ HIPStream<T>::HIPStream(const intptr_t ARRAY_SIZE, const int device_index)
   hipMalloc(&d_c, array_bytes);
   check_error();
 #endif
+
+  init_arrays(initA, initB, initC);
 }
 
 
@@ -127,24 +130,28 @@ void HIPStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void HIPStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
+void HIPStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 {
-
-  // Copy device memory to host
+  hipDeviceSynchronize();
 #if defined(PAGEFAULT) || defined(MANAGED)
-    hipDeviceSynchronize();
-  for (intptr_t i = 0; i < array_size; i++)
-  {
-    a[i] = d_a[i];
-    b[i] = d_b[i];
-    c[i] = d_c[i];
-  }
+  // Unified memory: return pointers to device memory  
+  a = d_a;
+  b = d_b;
+  c = d_c;
 #else
-  hipMemcpy(a.data(), d_a, a.size()*sizeof(T), hipMemcpyDeviceToHost);
+  // No Unified memory: copy data to the host  
+  size_t nbytes = array_size * sizeof(T);
+  h_a.resize(array_size);
+  h_b.resize(array_size);
+  h_c.resize(array_size);
+  a = h_a.data();
+  b = h_b.data();
+  c = h_c.data();
+  hipMemcpy(h_a.data(), d_a, nbytes, hipMemcpyDeviceToHost);
   check_error();
-  hipMemcpy(b.data(), d_b, b.size()*sizeof(T), hipMemcpyDeviceToHost);
+  hipMemcpy(h_b.data(), d_b, nbytes, hipMemcpyDeviceToHost);
   check_error();
-  hipMemcpy(c.data(), d_c, c.size()*sizeof(T), hipMemcpyDeviceToHost);
+  hipMemcpy(h_c.data(), d_c, nbytes, hipMemcpyDeviceToHost);
   check_error();
 #endif
 }

@@ -111,6 +111,10 @@ register_flag_optional(OFFLOAD_APPEND_LINK_FLAG
         This is required for most offload implementations so that offload libraries can linked correctly."
         ON)
 
+register_flag_optional(MEM "Device memory mode:
+        DEFAULT   - allocate host and device memory pointers.
+        PAGEFAULT - shared memory, only host pointers allocated."
+        "DEFAULT")
 
 macro(setup)
     find_package(OpenMP REQUIRED)
@@ -190,5 +194,8 @@ macro(setup)
     if (OFFLOAD_APPEND_LINK_FLAG)
         register_append_link_flags(${OMP_FLAGS})
     endif ()
+
+    register_definitions(${MEM})
+
 endmacro()
 

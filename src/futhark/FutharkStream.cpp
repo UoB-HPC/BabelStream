@@ -11,9 +11,10 @@
 #include "FutharkStream.h"
 
 template <class T>
-FutharkStream<T>::FutharkStream(const int ARRAY_SIZE, int device)
+FutharkStream<T>::FutharkStream(BenchId bs, const intptr_t array_size, const int device,
+				T initA, T initB, T initC)
+  : array_size(array_size)
 {
-  this->array_size = ARRAY_SIZE;
   this->cfg = futhark_context_config_new();
   this->device = "#" + std::to_string(device);
 #if defined(FUTHARK_BACKEND_cuda) || defined(FUTHARK_BACKEND_opencl)
@@ -23,6 +24,7 @@ FutharkStream<T>::FutharkStream(const int ARRAY_SIZE, int device)
   this->a = NULL;
   this->b = NULL;
   this->c = NULL;
+  init_arrays(initA, initB, initC);
 }
 
 template <>
@@ -98,19 +100,31 @@ void FutharkStream<double>::init_arrays(double initA, double initB, double initC
 }
 
 template <>
-void FutharkStream<float>::read_arrays(std::vector<float>& h_a, std::vector<float>& h_b, std::vector<float>& h_c) {
+void FutharkStream<float>::get_arrays(float const*& a_, float const*& b_, float const*& c_) {
+  h_a.resize(array_size);
+  h_b.resize(array_size);
+  h_c.resize(array_size);
   futhark_values_f32_1d(this->ctx, (futhark_f32_1d*)this->a, h_a.data());
   futhark_values_f32_1d(this->ctx, (futhark_f32_1d*)this->b, h_b.data());
   futhark_values_f32_1d(this->ctx, (futhark_f32_1d*)this->c, h_c.data());
   futhark_context_sync(this->ctx);
+  a_ = h_a.data();
+  b_ = h_b.data();
+  c_ = h_c.data();
 }
 
 template <>
-void FutharkStream<double>::read_arrays(std::vector<double>& h_a, std::vector<double>& h_b, std::vector<double>& h_c) {
+void FutharkStream<double>::get_arrays(double const*& a_, double const*& b_, double const*& c_) {
+  h_a.resize(array_size);
+  h_b.resize(array_size);
+  h_c.resize(array_size);
   futhark_values_f64_1d(this->ctx, (futhark_f64_1d*)this->a, h_a.data());
   futhark_values_f64_1d(this->ctx, (futhark_f64_1d*)this->b, h_b.data());
   futhark_values_f64_1d(this->ctx, (futhark_f64_1d*)this->c, h_c.data());
   futhark_context_sync(this->ctx);
+  a_ = h_a.data();
+  b_ = h_b.data();
+  c_ = h_c.data();
 }
 
 template <>

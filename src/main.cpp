@@ -19,6 +19,7 @@
 #define VERSION_STRING "5.0"
 
 #include "Stream.h"
+
 #include "StreamModels.h"
 #include "Unit.h"
 
@@ -30,7 +31,7 @@
 #endif
 
 // Default size of 2^25
-intptr_t ARRAY_SIZE = 33554432;
+intptr_t array_size = 33554432;
 size_t num_times = 100;
 size_t deviceIndex = 0;
 bool use_float = false;
@@ -40,42 +41,11 @@ Unit unit{Unit::Kind::MegaByte};
 bool silence_errors = false;
 std::string csv_separator = ",";
 
-// Benchmark Identifier: identifies individual & groups of benchmarks:
-// - Classic: 5 classic kernels: Copy, Mul, Add, Triad, Dot.
-// - All: all kernels.
-// - Individual kernels only.
-enum class BenchId : int {Copy, Mul, Add, Triad, Nstream, Dot, Classic, All};
-
-struct Benchmark {
-  BenchId id;
-  char const* label;
-  // Weight counts data elements of original arrays moved each loop iteration - used to calculate achieved BW:
-  // bytes = weight * sizeof(T) * ARRAY_SIZE -> bw = bytes / dur
-  size_t weight;
-  // Is it one of: Copy, Mul, Add, Triad, Dot?
-  bool classic = false;
-};
-
-// Benchmarks in the order in which - if present - should be run for validation purposes:
-constexpr size_t num_benchmarks = 6;
-std::array<Benchmark, num_benchmarks> bench = {
-  Benchmark { .id = BenchId::Copy,    .label = "Copy",    .weight = 2, .classic = true  },
-  Benchmark { .id = BenchId::Mul,     .label = "Mul",     .weight = 2, .classic = true  },
-  Benchmark { .id = BenchId::Add,     .label = "Add",     .weight = 3, .classic = true  },
-  Benchmark { .id = BenchId::Triad,   .label = "Triad",   .weight = 3, .classic = true  },
-  Benchmark { .id = BenchId::Dot,     .label = "Dot",     .weight = 2, .classic = true  },
-  Benchmark { .id = BenchId::Nstream, .label = "Nstream", .weight = 4, .classic = false }
-};
-
 // Selected benchmarks to run: default is all 5 classic benchmarks.
 BenchId selection = BenchId::Classic;
 
 // Returns true if the benchmark needs to be run:
-bool run_benchmark(Benchmark const& b) {
-  if (selection == BenchId::All)                  return true;
-  if (selection == BenchId::Classic && b.classic) return true;
-  return selection == b.id;
-}
+bool run_benchmark(Benchmark const& b) { return run_benchmark(selection, b); }
 
 // Benchmark run order
 // - Classic: runs each bench once in the order above, and repeats n times.
@@ -214,8 +184,7 @@ std::vector<std::vector<double>> run_all(std::unique_ptr<Stream<T>>& stream, T& 
 }
 
 template <typename T>
-void check_solution(const size_t ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c,
-		    T& sum);
+void check_solution(const size_t ntimes, T const* a, T const* b, T const* c, T sum);
 
 // Generic run routine
 // Runs the kernel(s) and prints output.
@@ -226,7 +195,7 @@ void run()
 
   // Formatting utilities:
   auto fmt_bw = [&](size_t weight, double dt) {
-    return unit.fmt((weight * sizeof(T) * ARRAY_SIZE)/dt);
+    return unit.fmt((weight * sizeof(T) * array_size)/dt);
   };
   auto fmt_csv_header = [] {
     std::cout
@@ -284,22 +253,32 @@ void run()
       }
       std::cout << " ";
     }
-    std::cout << num_times << " times" << std::endl;
-    std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
+    std::cout << num_times << " times in ";
+    switch (order) {
+    case BenchOrder::Classic: std::cout << " Classic"; break;
+    case BenchOrder::Isolated: std::cout << " Isolated"; break;
+    default: std::cerr << "Error: Unknown order" << std::endl; abort();
+    };
+    std::cout << " order " << std::endl;
+    std::cout << "Number of elements: " << array_size << std::endl;
     std::cout << "Precision: " << (sizeof(T) == sizeof(float)? "float" : "double") << std::endl;
 
-    size_t nbytes = ARRAY_SIZE * sizeof(T);
+    size_t nbytes = array_size * sizeof(T);
     std::cout << std::setprecision(1) << std::fixed
 	      << "Array size: " << unit.fmt(nbytes) << " " << unit.str() << std::endl;
     std::cout << "Total size: " << unit.fmt(3.0*nbytes) << " " << unit.str() << std::endl;
     std::cout.precision(ss);
   }
 
-  std::unique_ptr<Stream<T>> stream = make_stream<T>(ARRAY_SIZE, deviceIndex);
+  std::unique_ptr<Stream<T>> stream
+    = make_stream<T>(selection, array_size, deviceIndex, startA, startB, startC);
+  
 #ifdef ENABLE_CALIPER
     CALI_MARK_BEGIN("init_arrays");
-#endif 
+#endif
+
   auto initElapsedS = time([&] { stream->init_arrays(startA, startB, startC); });
+
 #ifdef ENABLE_CALIPER
     CALI_MARK_END("init_arrays");
 #endif
@@ -309,28 +288,19 @@ void run()
   std::vector<std::vector<double>> timings = run_all<T>(stream, sum);
 
   // Create & read host vectors:
-  std::vector<T> a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE);
-  auto readElapsedS = time([&] { stream->read_arrays(a, b, c); });
+  T const* a;
+  T const* b;
+  T const* c;
+  stream->get_arrays(a, b, c);
 
   check_solution<T>(num_times, a, b, c, sum);
-  auto initBWps = fmt_bw(3, initElapsedS);
-  auto readBWps = fmt_bw(3, readElapsedS);
 
   if (output_as_csv)
   {
     fmt_csv_header();
-    fmt_csv("Init", 1, ARRAY_SIZE, sizeof(T), initBWps, initElapsedS, initElapsedS, initElapsedS);
-    fmt_csv("Read", 1, ARRAY_SIZE, sizeof(T), readBWps, readElapsedS, readElapsedS, readElapsedS);
   }
   else
   {
-    std::cout << "Init: "
-      << std::setw(7)
-      << initElapsedS << " s (=" << initBWps << " " << unit.str() << "/s" << ")" << std::endl;
-    std::cout << "Read: "
-      << std::setw(7)
-      << readElapsedS << " s (=" << readBWps << " " << unit.str() << "/s" << ")" << std::endl;
-
     std::cout
       << std::left << std::setw(12) << "Function"
       << std::left << std::setw(12) << (std::string(unit.str()) + "/s")
@@ -353,15 +323,13 @@ void run()
       / (double)(num_times - 1);
 
     // Display results
-    fmt_result(bench[i].label, num_times, ARRAY_SIZE, sizeof(T),
+    fmt_result(bench[i].label, num_times, array_size, sizeof(T),
 	       fmt_bw(bench[i].weight, *minmax.first), *minmax.first, *minmax.second, average);
   }
 }
 
 template <typename T>
-void check_solution(const size_t num_times,
-		    std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum)
-{
+void check_solution(const size_t num_times, T const* a, T const* b, T const* c, T sum) {
   // Generate correct solution
   T goldA = startA;
   T goldB = startB;
@@ -378,7 +346,7 @@ void check_solution(const size_t num_times,
     case BenchId::Add:     goldC = goldA + goldB; break;
     case BenchId::Triad:   goldA = goldB + scalar * goldC; break;
     case BenchId::Nstream: goldA += goldB + scalar * goldC; break;
-    case BenchId::Dot:     goldS = goldA * goldB * T(ARRAY_SIZE); break; // This calculates the answer exactly
+    case BenchId::Dot:     goldS = goldA * goldB * T(array_size); break; // This calculates the answer exactly
     default:
     std::cerr << "Unimplemented Check: " << bench[b].label << std::endl;
     abort();
@@ -410,39 +378,42 @@ void check_solution(const size_t num_times,
     abort();
   }
 
-  // Error relative tolerance check
+  // Error relative tolerance check - a higher tolerance is used for reductions.
   size_t failed = 0;
-  T epsi = std::numeric_limits<T>::epsilon() * T(100000.0);
-  auto check = [&](const char* name, T is, T should, T e, size_t i = size_t(-1)) {
-    if (e > epsi || std::isnan(e) || std::isnan(is)) {
+  T max_rel = std::numeric_limits<T>::epsilon() * T(100.0);
+  T max_rel_dot = std::numeric_limits<T>::epsilon() * T(10000000.0);
+  auto check = [&](const char* name, T is, T should, T mrel, size_t i = size_t(-1)) {
+    // Relative difference:
+    T diff = std::abs(is - should);
+    T abs_is = std::abs(is);
+    T abs_sh = std::abs(should);
+    T largest = std::max(abs_is, abs_sh);
+    T same = diff <= largest * mrel;
+    if (!same || std::isnan(is)) {
       ++failed;
       if (failed > 10) return;
       std::cerr << "FAILED validation of " << name;
       if (i != size_t(-1)) std::cerr << "[" << i << "]";
-      std::cerr << ": " << is << " != " << should
-		<< ", relative error=" << e << " > " << epsi << std::endl;
+      std::cerr << ": " << is << " (is) != " << should
+		<< " (should)" << ", diff=" << diff << " > "
+		<< largest * mrel << " (largest=" << largest
+		<< ", max_rel=" << mrel << ")" << std::endl;
     }
   };
 
   // Sum
-  T eS = std::fabs(sum - goldS) / std::fabs(goldS);
   for (size_t i = 0; i < num_benchmarks; ++i) {
     if (bench[i].id != BenchId::Dot) continue;
     if (run_benchmark(bench[i]))
-      check("sum", sum,  goldS, eS);
+      check("sum", sum, goldS, max_rel_dot);
     break;
   }
 
   // Calculate the L^infty-norm relative error
-  for (size_t i = 0; i < a.size(); ++i) {
-    T vA = a[i], vB = b[i], vC = c[i];
-    T eA = std::fabs(vA - goldA) / std::fabs(goldA);
-    T eB = std::fabs(vB - goldB) / std::fabs(goldB);
-    T eC = std::fabs(vC - goldC) / std::fabs(goldC);
-
-    check("a", a[i], goldA, eA, i);
-    check("b", b[i], goldB, eB, i);
-    check("c", c[i], goldC, eC, i);
+  for (size_t i = 0; i < array_size; ++i) {
+    check("a", a[i], goldA, max_rel, i);
+    check("b", b[i], goldB, max_rel, i);
+    check("c", c[i], goldC, max_rel, i);
   }
 
   if (failed > 0 && !silence_errors)
@@ -488,13 +459,11 @@ void parseArguments(int argc, char *argv[])
     else if (!std::string("--arraysize").compare(argv[i]) ||
              !std::string("-s").compare(argv[i]))
     {
-      intptr_t array_size;
       if (++i >= argc || !parseInt(argv[i], &array_size) || array_size <= 0)
       {
         std::cerr << "Invalid array size." << std::endl;
         std::exit(EXIT_FAILURE);
       }
-      ARRAY_SIZE = array_size;
     }
     else if (!std::string("--numtimes").compare(argv[i]) ||
              !std::string("-n").compare(argv[i]))
@@ -556,12 +525,12 @@ void parseArguments(int argc, char *argv[])
     {
       if (++i >= argc)
       {
-       std::cerr << "Expected benchmark order after --order. Options: \"classic\" (default), \"isolated\"."
+       std::cerr << "Expected benchmark order after --order. Options: \"Classic\" (default), \"Isolated\"."
 		  << std::endl;
         exit(EXIT_FAILURE);
       }
       auto key = std::string(argv[i]);
-      if (key == "isolated")
+      if (key == "Isolated")
       {
         order = BenchOrder::Isolated;
       }
@@ -612,7 +581,7 @@ void parseArguments(int argc, char *argv[])
       std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
       std::cout << "  -o  --only       NAME    Only run one benchmark (see --print-names)" << std::endl;
       std::cout << "      --print-names        Prints all available benchmark names" << std::endl;
-      std::cout << "      --order              Benchmark run order: \"classic\" (default) or \"isolated\"." << std::endl;
+      std::cout << "      --order              Benchmark run order: \"Classic\" (default) or \"Isolated\"." << std::endl;
       std::cout << "      --csv                Output as csv table" << std::endl;
       std::cout << "      --megabytes          Use MB=10^6 for bandwidth calculation (default)" << std::endl;
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;

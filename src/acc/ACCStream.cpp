@@ -8,11 +8,12 @@
 #include "ACCStream.h"
 
 template <class T>
-ACCStream<T>::ACCStream(const intptr_t ARRAY_SIZE, int device)
-  : array_size{ARRAY_SIZE}
+ACCStream<T>::ACCStream(BenchId bs, const intptr_t array_size, const int device_id,
+			T initA, T initB, T initC)
+  : array_size{array_size}
 {
   acc_device_t device_type = acc_get_device_type();
-  acc_set_device_num(device, device_type);
+  acc_set_device_num(device_id, device_type);
 
   // Set up data region on device
   this->a = new T[array_size];
@@ -25,6 +26,8 @@ ACCStream<T>::ACCStream(const intptr_t ARRAY_SIZE, int device)
 
   #pragma acc enter data create(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
+
+  init_arrays(initA, initB, initC);
 }
 
 template <class T>
@@ -62,7 +65,7 @@ void ACCStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void ACCStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
+void ACCStream<T>::get_arrays(T const*& h_a, T const*& h_b, T const*& h_c)
 {
   T *a = this->a;
   T *b = this->b;
@@ -70,12 +73,9 @@ void ACCStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
   #pragma acc update host(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
 
-  for (intptr_t i = 0; i < array_size; i++)
-  {
-    h_a[i] = a[i];
-    h_b[i] = b[i];
-    h_c[i] = c[i];
-  }
+  h_a = a;
+  h_b = b;
+  h_c = c;
 }
 
 template <class T>

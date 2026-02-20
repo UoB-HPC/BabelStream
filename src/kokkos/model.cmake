@@ -1,5 +1,5 @@
 register_flag_optional(CMAKE_CXX_COMPILER
-        "Any CXX compiler that is supported by CMake detection and RAJA.
+        "Any CXX compiler that is supported by CMake detection and Kokkos.
          See https://github.com/kokkos/kokkos#primary-tested-compilers-on-x86-are"
         "c++")
 
@@ -21,7 +21,7 @@ macro(setup)
     set(CMAKE_CXX_STANDARD 17) # Kokkos 4+ requires CXX >= 17
     cmake_policy(SET CMP0074 NEW) #see https://github.com/kokkos/kokkos/blob/master/BUILD.md
 
-
+    message("KOKKOS_IN_PACKAGE=${KOKKOS_IN_PACKAGE}")
     if (EXISTS "${KOKKOS_IN_TREE}")
         message(STATUS "Build using in-tree Kokkos source at `${KOKKOS_IN_TREE}`")
         add_subdirectory(${KOKKOS_IN_TREE} ${CMAKE_BINARY_DIR}/kokkos)

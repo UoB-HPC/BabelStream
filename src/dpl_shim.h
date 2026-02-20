@@ -29,12 +29,15 @@ T *alloc_raw(size_t size) { return sycl::malloc_shared<T>(size, exe_policy.queue
 template<typename T>
 void dealloc_raw(T *ptr) { sycl::free(ptr, exe_policy.queue()); }
 
+#define WORKAROUND
+
 #else
 
 // auto exe_policy = dpl::execution::seq;
 // auto exe_policy = dpl::execution::par;
 static constexpr auto exe_policy = dpl::execution::par_unseq;
 #define USE_STD_PTR_ALLOC_DEALLOC
+#define WORKAROUND
 
 #endif
 

@@ -68,6 +68,7 @@ ThrustStream<T>::ThrustStream(const intptr_t array_size, int device)
 
 #endif
 
+  init_arrays(initA, initB, initC);
 }
 
 template <class T>
