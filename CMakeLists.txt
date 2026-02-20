@@ -4,7 +4,7 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif ()
 
-project(BabelStream VERSION 5.0 LANGUAGES CXX C)
+project(BabelStream VERSION 6.0 LANGUAGES CXX C)
 
 # uncomment for debugging build issues:
 #set(CMAKE_VERBOSE_MAKEFILE ON)
