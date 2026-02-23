@@ -327,17 +327,17 @@ build_icpc() {
 }
 
 build_dpcpp() {
-  run_build intel_build "${DPCPP_DIR:?}" sycl "-DCMAKE_CXX_COMPILER=${GCC_CXX:?} \
+  run_build intel_build "${DPCPP_DIR:?}" sycl-ai "-DCMAKE_CXX_COMPILER=${GCC_CXX:?} \
   -DSYCL_COMPILER=DPCPP \
   -DSYCL_COMPILER_DIR=${DPCPP_DIR:?}"
 
   #  for oneAPI BaseKit:
   #  source /opt/intel/oneapi/setvars.sh -force
-  #  run_build intel_build "dpcpp" sycl "-DCMAKE_CXX_COMPILER=${GCC_CXX:?} -DSYCL_COMPILER=ONEAPI-DPCPP"
+  #  run_build intel_build "dpcpp" sycl-ai "-DCMAKE_CXX_COMPILER=${GCC_CXX:?} -DSYCL_COMPILER=ONEAPI-DPCPP"
 }
 
 build_hipsycl() {
-  run_build hipsycl_build "syclcc" sycl "
+  run_build hipsycl_build "syclcc" sycl-ai "
   -DSYCL_COMPILER=HIPSYCL \
   -DSYCL_COMPILER_DIR=${HIPSYCL_DIR:?}"
 }

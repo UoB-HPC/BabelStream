@@ -102,7 +102,7 @@ The source for each model's implementations are located in `./src/<model>`.
 
 Currently available models are:
 ```
-omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020-acc;sycl2020-usm;acc;raja;tbb;thrust;futhark
+omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl-ai;sycl2020-acc;sycl2020-usm;acc;raja;tbb;thrust;futhark
 ```
 
 #### Overriding default flags
@@ -127,7 +127,7 @@ For example:
         Use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`) 
 -- CXX_EXTRA_LINKER_FLAGS: 
         Append to linker flags (i.e GCC's `-Wl` or equivalent)
--- Available models:  omp;ocl;std;std20;hip;cuda;kokkos;sycl;acc;raja;tbb
+-- Available models:  omp;ocl;std;std20;hip;cuda;kokkos;sycl;sycl-ai;acc;raja;tbb
 -- Selected model  :  ocl
 -- Supported flags:
 
@@ -139,6 +139,33 @@ For example:
 Alternatively, refer to the [CI script](./src/ci-test-compile.sh), which test-compiles most of the models, and see which flags are used there.
 
 *It is recommended that you delete the `build` directory when you change any of the build flags.*
+
+#### SYCL-AI autotune options
+
+The `sycl-ai` model includes runtime autotuning support for Intel GPUs.
+
+- Dot autotune (default `ON` on Intel GPU unless dot parameters are explicitly set):
+        - `BABELSTREAM_SYCL_DOT_AUTOTUNE=0|1`
+        - `BABELSTREAM_SYCL_DOT_AUTOTUNE_TRIALS=<N>`
+- Stream-kernel autotune (`copy/mul/add/triad/nstream`, default `OFF` because gains are hardware-dependent):
+        - `BABELSTREAM_SYCL_STREAM_AUTOTUNE=0|1`
+        - `BABELSTREAM_SYCL_STREAM_AUTOTUNE_TRIALS=<N>`
+
+Manual overrides (disable the corresponding autotune decisions for those kernels):
+
+- Global stream work-group size:
+        - `BABELSTREAM_SYCL_WG_SIZE=<N>`
+- Per-kernel stream work-group size:
+        - `BABELSTREAM_SYCL_COPY_WG_SIZE=<N>`
+        - `BABELSTREAM_SYCL_MUL_WG_SIZE=<N>`
+        - `BABELSTREAM_SYCL_ADD_WG_SIZE=<N>`
+        - `BABELSTREAM_SYCL_TRIAD_WG_SIZE=<N>`
+        - `BABELSTREAM_SYCL_NSTREAM_WG_SIZE=<N>`
+- Dot kernel controls:
+        - `BABELSTREAM_SYCL_DOT_MANUAL_REDUCTION=0|1`
+        - `BABELSTREAM_SYCL_DOT_WG_SIZE=<N>`
+        - `BABELSTREAM_SYCL_DOT_GROUPS_PER_CU=<N>`
+        - `BABELSTREAM_SYCL_DOT_UNROLL=<N>`
 
 ### Spack
 
@@ -166,7 +193,7 @@ The `MODEL` variant selects one implementation of BabelStream to build.
 
 Currently available models are:
 ```
-omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020-acc;sycl2020-usm;acc;raja;tbb;thrust
+omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl-ai;sycl2020-acc;sycl2020-usm;acc;raja;tbb;thrust
 ```
 
 ### GNU Make
