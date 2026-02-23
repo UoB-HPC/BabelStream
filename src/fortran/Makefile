@@ -4,6 +4,8 @@ else ifeq ($(COMPILER),oneapi)
     include make.inc.oneapi
 else ifeq ($(COMPILER),gcc)
     include make.inc.gcc
+else ifeq ($(COMPILER),flang)
+    include make.inc.flang
 else ifeq ($(COMPILER),amd)
     include make.inc.amd
 else ifeq ($(COMPILER),arm)
@@ -13,7 +15,7 @@ else ifeq ($(COMPILER),cray)
 else ifeq ($(COMPILER),fj)
     include make.inc.fj
 else
-    $(info Set COMPILER={nvhpc,oneapi,amd,arm,cray,fj,gcc}. Default is gcc.)
+    $(info Set COMPILER={nvhpc,oneapi,amd,arm,cray,fj,flang,gcc}. Default is gcc.)
     include make.inc.gcc
     COMPILER=gcc
 endif

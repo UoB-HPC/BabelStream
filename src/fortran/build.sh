@@ -18,6 +18,9 @@ fi
 if [ $(which crayftn) ] ; then
     COMPILERS="${COMPILERS} cray"
 fi
+if [ $(which flang-new) ] ; then
+    COMPILERS="${COMPILERS} flang"
+fi
 if [ $(uname -m) == "aarch64" ] ; then
     if [ $(which armflang) ] ; then
         COMPILERS="${COMPILERS} arm"
@@ -26,14 +29,16 @@ if [ $(uname -m) == "aarch64" ] ; then
         COMPILERS="${COMPILERS} fj"
     fi
 elif [ $(uname -m) == "x86_64" ] ; then
-    if [ $(which lscpu >& /dev/null && lscpu | grep GenuineIntel | awk '{print $3}') == "GenuineIntel" ] ; then
+    if [ "$(which lscpu >& /dev/null && lscpu | grep GenuineIntel | awk '{print $3}')" == "GenuineIntel" ] ; then
         COMPILERS="${COMPILERS} oneapi"
         if [ -f /opt/intel/oneapi/setvars.sh ] ; then
             . /opt/intel/oneapi/setvars.sh >& /dev/null
         fi
     else
-        # ^ this detection can be improved
-        COMPILERS="${COMPILERS} amd"
+        if [ $(which flang) ] ; then
+            # ^ this detection can be improved
+            COMPILERS="${COMPILERS} amd"
+        fi
     fi
 fi
 

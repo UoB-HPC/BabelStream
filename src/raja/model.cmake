@@ -99,7 +99,8 @@ macro(setup)
         message(STATUS "Building using packaged Raja at `${RAJA_IN_PACKAGE}`")
         find_package(RAJA REQUIRED)
         register_link_library(RAJA)
-    
+
+        set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler -extended-lambda -arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
     else ()
         message(FATAL_ERROR "Neither `${RAJA_IN_TREE}` or `${RAJA_IN_PACKAGE}` exists")
     endif ()
@@ -111,7 +112,6 @@ macro(setup)
         set_source_files_properties(src/raja/RAJAStream.cpp PROPERTIES LANGUAGE CUDA)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)
     endif ()
-
 
     register_append_compiler_and_arch_specific_cxx_flags(
             RAJA_FLAGS_CPU

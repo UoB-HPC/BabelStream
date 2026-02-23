@@ -20,7 +20,7 @@ export ACC_NUM_CORES=${OMP_NUM_THREADS}
 
 AFFCONTROL="numactl -N 0 -m 0 -C `seq -s "," 0 $((${OMP_NUM_THREADS}-1))`"
 
-for compiler in gcc nvhpc cray oneapi arm amd fj ; do
+for compiler in gcc flang nvhpc cray oneapi arm amd fj ; do
     #if [ "x$compiler" == "xgcc" ] ; then
     #   export LD_PRELOAD=/usr/lib/gcc/aarch64-linux-gnu/11/libgomp.so
     #fi

@@ -2,10 +2,18 @@ FC	:= nvfortran
 #FCFLAGS	:= -O3 -Minform=inform -Minfo=all
 FCFLAGS	:= -O3 -Minform=warn
 
-#TARGET=gpu
-TARGET=multicore
+TARGET=gpu
+#TARGET=multicore
 
 NVARCH=$(shell which nvidia-smi > /dev/null && nvidia-smi -q | grep "Product Architecture")
+ifeq ($(findstring Hopper,$(NVARCH)),Hopper)
+    $(info Hopper detected)
+    GPU = cc90
+endif
+ifeq ($(findstring Ada,$(NVARCH)),Ada)
+    $(info Ada detected)
+    GPU = cc89
+endif
 ifeq ($(findstring Ampere,$(NVARCH)),Ampere)
     $(info Ampere detected)
     GPU = cc80
@@ -29,7 +37,8 @@ ifeq ($(shell which jetson_clocks > /dev/null  && echo 1),1)
     #GPU = cc72
 endif
 ifeq ($(GPU),)
-    $(error Your GPU architecture could not be detected. Set it manually.)
+    $(info Your GPU architecture could not be detected.)
+    GPU = ccnative
 endif
 GPUFLAG = -gpu=$(GPU)
 

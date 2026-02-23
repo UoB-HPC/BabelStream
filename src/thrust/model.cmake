@@ -18,8 +18,7 @@ register_flag_optional(BACKEND
         "
         "CUDA")
 
-      register_flag_optional(MANAGED "Enabled managed memory mode."
-        "OFF")
+register_flag_optional(MANAGED "Enabled managed memory mode." "OFF")
 
 register_flag_optional(CMAKE_CUDA_COMPILER
         "[THRUST_IMPL==CUDA] Path to the CUDA nvcc compiler"

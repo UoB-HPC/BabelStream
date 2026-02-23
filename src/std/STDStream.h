@@ -1,6 +1,5 @@
-
-// Copyright (c) 2015-16 Tom Deakin, Simon McIntosh-Smith,
-// University of Bristol HPC
+// Copyright (c) 2020 NVIDIA CORPORATION. All rights reserved.
+// Updated 2021 by University of Bristol
 //
 // For full license terms please see the LICENSE file distributed with this
 // source code
@@ -9,27 +8,35 @@
 
 #include <iostream>
 #include <stdexcept>
-
 #include "Stream.h"
 
-#include <openacc.h>
+#ifdef DATA17
+#define STDIMPL "DATA17"
+#elif DATA23
+#define STDIMPL "DATA23"
+#elif INDICES
+#define STDIMPL "INDICES"
+#else
+#error unimplemented
+#endif
 
-#define IMPLEMENTATION_STRING "OpenACC"
+#define IMPLEMENTATION_STRING "STD (" STDIMPL ")"
+
 
 template <class T>
-class ACCStream : public Stream<T>
+class STDStream : public Stream<T>
 {
+  protected:
     // Size of arrays
     intptr_t array_size;
+
     // Device side pointers
-    T* restrict a;
-    T* restrict b;
-    T* restrict c;
+    T *a, *b, *c;
 
   public:
-    ACCStream(BenchId bs, const intptr_t array_size, const int device_id,
-	      T initA, T initB, T initC);
-    ~ACCStream();
+    STDStream(BenchId bs, const intptr_t array_size, const int device_id,
+		  T initA, T initB, T initC) noexcept;
+    ~STDStream();
 
     void copy() override;
     void add() override;
@@ -41,3 +48,4 @@ class ACCStream : public Stream<T>
     void get_arrays(T const*& a, T const*& b, T const*& c) override;
     void init_arrays(T initA, T initB, T initC);
 };
+

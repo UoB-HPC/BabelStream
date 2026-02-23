@@ -75,7 +75,7 @@ std::string kernels{R"CLC(
     global const TYPE * restrict b,
     global TYPE * restrict sum,
     local TYPE * restrict wg_sum,
-    int array_size)
+    long array_size)
   {
     size_t i = get_global_id(0);
     const size_t local_i = get_local_id(0);
@@ -100,7 +100,9 @@ std::string kernels{R"CLC(
 
 
 template <class T>
-OCLStream<T>::OCLStream(const int ARRAY_SIZE, const int device_index)
+OCLStream<T>::OCLStream(BenchId bs, const intptr_t array_size, const int device_index,
+	       T initA, T initB, T initC)
+  : array_size{array_size}
 {
   if (!cached)
     getDeviceList();
@@ -166,25 +168,25 @@ OCLStream<T>::OCLStream(const int ARRAY_SIZE, const int device_index)
   add_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "add");
   triad_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "triad");
   nstream_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "nstream");
-  dot_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_int>(program, "stream_dot");
-
-  array_size = ARRAY_SIZE;
+  dot_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_long>(program, "stream_dot");
 
   // Check buffers fit on the device
   cl_ulong totalmem = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
   cl_ulong maxbuffer = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
-  if (maxbuffer < sizeof(T)*ARRAY_SIZE)
+  if (maxbuffer < sizeof(T)*array_size)
     throw std::runtime_error("Device cannot allocate a buffer big enough");
-  if (totalmem < 3*sizeof(T)*ARRAY_SIZE)
+  if (totalmem < 3*sizeof(T)*array_size)
     throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
   // Create buffers
-  d_a = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
-  d_b = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
-  d_c = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * ARRAY_SIZE);
+  d_a = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * array_size);
+  d_b = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * array_size);
+  d_c = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * array_size);
   d_sum = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(T) * dot_num_groups);
 
   sums = std::vector<T>(dot_num_groups);
+
+  init_arrays(initA, initB, initC);
 }
 
 template <class T>
@@ -278,11 +280,17 @@ void OCLStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void OCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
+void OCLStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 {
-  cl::copy(queue, d_a, a.begin(), a.end());
-  cl::copy(queue, d_b, b.begin(), b.end());
-  cl::copy(queue, d_c, c.begin(), c.end());
+  h_a.resize(array_size);
+  h_b.resize(array_size);
+  h_c.resize(array_size);
+  a = h_a.data();
+  b = h_b.data();
+  c = h_c.data();
+  cl::copy(queue, d_a, h_a.begin(), h_a.end());
+  cl::copy(queue, d_b, h_b.begin(), h_b.end());
+  cl::copy(queue, d_c, h_c.begin(), h_c.end());
 }
 
 void getDeviceList(void)

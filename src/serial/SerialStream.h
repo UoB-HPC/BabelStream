@@ -1,4 +1,5 @@
-// Copyright (c) 2020 Tom Deakin
+
+// Copyright (c) 2015-16 Tom Deakin, Simon McIntosh-Smith, Tom Lin
 // University of Bristol HPC
 //
 // For full license terms please see the LICENSE file distributed with this
@@ -7,35 +8,27 @@
 #pragma once
 
 #include <iostream>
-#include <vector>
-#if defined(MANAGED)
-#include <thrust/universal_vector.h>
-#else
-#include <thrust/device_vector.h>
-#endif
+#include <stdexcept>
 
 #include "Stream.h"
 
-#define IMPLEMENTATION_STRING "Thrust"
+
+#define IMPLEMENTATION_STRING "Serial"
 
 template <class T>
-class ThrustStream : public Stream<T>
+class SerialStream : public Stream<T>
 {
   protected:
     // Size of arrays
     intptr_t array_size;
 
-  #if defined(MANAGED)
-    thrust::universal_vector<T> a, b, c;
-  #else
-    thrust::device_vector<T> a, b, c;
-    std::vector<T> h_a, h_b, h_c;
-  #endif
+    // Device side pointers
+    T *a, *b, *c;
 
   public:
-    ThrustStream(BenchId bs, const intptr_t array_size, const int device_id,
+    SerialStream(BenchId bs, const intptr_t array_size, const int device_id,
 		 T initA, T initB, T initC);
-    ~ThrustStream() = default;
+    ~SerialStream();
 
     void copy() override;
     void add() override;
@@ -47,4 +40,3 @@ class ThrustStream : public Stream<T>
     void get_arrays(T const*& a, T const*& b, T const*& c) override;
     void init_arrays(T initA, T initB, T initC);
 };
-
