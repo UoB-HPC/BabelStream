@@ -11,6 +11,15 @@
 #define UNROLL_FACTOR 4
 #endif
 
+#include <cuda/barrier>
+#include <cuda/ptx>
+
+#include <cub/cub.cuh>
+
+using barrier = cuda::barrier<cuda::thread_scope_block>;
+namespace ptx = cuda::ptx;
+
+
 [[noreturn]] inline void cuda_error(char const* file, int line, char const* expr, cudaError_t e) {
   std::fprintf(stderr, "CUDA Error at %s:%d: %s (%d)\n  %s\n", file, line, cudaGetErrorString(e), e, expr);
   exit(e);
@@ -234,76 +243,276 @@ void CUDAStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 #endif
 }
 
+static constexpr int unroll = 4;
+static constexpr size_t buf_len = 1024;
+
+// Upper bound on the bulk-copy pipeline depth. Bounds the per-block shared-memory
+// mbarrier array, so it must be a compile-time constant.
+static constexpr int max_stages = 4;
+
+
+__device__ inline bool is_elected()
+{
+  unsigned int tid = threadIdx.x;
+  unsigned int warp_id = tid / 32;
+  unsigned int uniform_warp_id = __shfl_sync(0xFFFFFFFF, warp_id, 0); // Broadcast from lane 0.
+  return (uniform_warp_id == 0 && ptx::elect_sync(0xFFFFFFFF)); // Elect a leader thread among warp 0.
+}
+
+template <typename T>
+__global__ void copy_kernel(const T * a, T * c, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+  T a_reg[unroll];
+
+  // First: Load from global memory to registers
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        a_reg[i] = a[idx];
+    }
+
+  // Second: Store
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        c[idx] = a_reg[i];
+    }
+}
+
 template <class T>
 void CUDAStream<T>::copy()
 {
-  for_each(array_size, [a=d_a,c=d_c] __device__ (size_t i) {
-    c[i] = a[i];
-  });
+
+  size_t blocks = ceil_div(array_size/unroll, TBSIZE);
+  copy_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_c, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
+}
+
+template <typename T>
+__global__ void mul_kernel(T * b, const T * c, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+  T c_reg[unroll];
+
+  // First: Load from global memory to registers
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        c_reg[i] = c[idx];
+    }
+
+  // Second: Multiply and store
+  const T scalar = startScalar;
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        b[idx] = scalar * c_reg[i];
+    }
 }
 
 template <class T>
 void CUDAStream<T>::mul()
 {
-  for_each(array_size, [b=d_b,c=d_c] __device__ (size_t i) {
-    b[i] = startScalar * c[i];
-  });
+  size_t blocks = ceil_div(array_size/unroll, TBSIZE);
+  mul_kernel<<<blocks, TBSIZE, 0, stream>>>(d_b, d_c, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
+}
+
+template <typename T>
+__global__ void add_kernel(const T * a, const T * b, T * c, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+  T a_reg[unroll];
+  T b_reg[unroll];
+
+  // First: Load from global memory to registers
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        {
+          a_reg[i] = a[idx];
+          b_reg[i] = b[idx];
+        }
+    }
+
+  // Second: Add and store
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        c[idx] = a_reg[i] + b_reg[i];
+    }
 }
 
 template <class T>
 void CUDAStream<T>::add()
 {
-  for_each(array_size, [a=d_a,b=d_b,c=d_c] __device__ (size_t i) {
-    c[i] = a[i] + b[i];
-  });
+  size_t blocks = ceil_div(array_size/unroll, TBSIZE);
+  add_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
+}
+
+template <typename T>
+__global__ void triad_kernel(T * a, const T * b, const T * c, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+  T b_reg[unroll];
+  T c_reg[unroll];
+
+  // First: Load 2*unroll elements from global memory to registers
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+  {
+    if (offset + i * blockDim.x < array_size)
+      {
+        b_reg[i] = b[offset + i * blockDim.x];
+        c_reg[i] = c[offset + i * blockDim.x];
+      }
+  }
+
+  // Second: Add and store
+  const T scalar = startScalar;
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+  {
+    if (offset + i * blockDim.x < array_size)
+      a[offset + i * blockDim.x] = b_reg[i] + scalar * c_reg[i];
+  }
 }
 
 template <class T>
 void CUDAStream<T>::triad()
 {
-  for_each(array_size, [a=d_a,b=d_b,c=d_c] __device__ (size_t i) {
-    a[i] = b[i] + startScalar * c[i];
-  });
+  size_t blocks = ceil_div(array_size/unroll, TBSIZE);
+  triad_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
+}
+
+template <typename T>
+__global__ void nstream_kernel(T * a, const T * b, const T * c, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+  T a_reg[unroll];
+  T b_reg[unroll];
+  T c_reg[unroll];
+
+  // First: Load 3*unroll elements from global memory to registers
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        {
+          a_reg[i] = a[idx];
+          b_reg[i] = b[idx];
+          c_reg[i] = c[idx];
+        }
+    }
+
+  // Second: Compute and store
+  const T scalar = startScalar;
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        a[idx] = a_reg[i] + b_reg[i] + scalar * c_reg[i];
+    }
 }
 
 template <class T>
 void CUDAStream<T>::nstream()
 {
-  for_each(array_size, [a=d_a,b=d_b,c=d_c] __device__ (size_t i) {
-    a[i] += b[i] + startScalar * c[i];
-  });
+  size_t blocks = ceil_div(array_size/unroll, TBSIZE);
+  nstream_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
 }
+
+//#define TBSIZE_DOT 1024
 
 template <class T>
 __global__ void dot_kernel(const T * a, const T * b, T* sums, size_t array_size)
 {
-  __shared__ T smem[TBSIZE_DOT];
-  T tmp = T(0.);
-  const size_t tidx = threadIdx.x;
-  size_t i = tidx + (size_t)blockDim.x * blockIdx.x;
-  for (; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
-    tmp += a[i] * b[i];
-  }
-  smem[tidx] = tmp;
+  typedef cub::BlockReduce<T, TBSIZE> BlockReduce;
+  __shared__ typename BlockReduce::TempStorage temp_storage;
 
-  for (int offset = blockDim.x / 2; offset > 0; offset /= 2) {
-    __syncthreads();
-    if (tidx < offset) smem[tidx] += smem[tidx+offset];
-  }
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+
+  T a_reg[unroll];
+  T b_reg[unroll];
+  T partial_sum = {};
+
+  // Process with unrolling
+  for (size_t base = offset; base < array_size; base += tile_size * gridDim.x)
+    {
+      // First: Load from global memory to registers
+#pragma unroll
+      for (int u = 0; u < unroll; u++)
+        {
+          size_t idx = base + u * blockDim.x;
+          if (idx < array_size)
+            {
+              a_reg[u] = a[idx];
+              b_reg[u] = b[idx];
+            }
+          else
+            {
+              a_reg[u] = {};
+              b_reg[u] = {};
+            }
+        }
+
+      // Second: Compute dot products
+#pragma unroll
+      for (int u = 0; u < unroll; u++)
+        {
+          partial_sum += a_reg[u] * b_reg[u];
+        }
+    }
+
+  // CUB block-wide reduction
+  T block_sum = BlockReduce(temp_storage).Sum(partial_sum);
 
   // First thread writes to host memory directly from the device
-  if (tidx == 0) sums[blockIdx.x] = smem[tidx];
+  if (threadIdx.x == 0) sums[blockIdx.x] = block_sum;
+  // if (threadIdx.x == 0)
+    // atomicAdd(&sums[0], block_sum);
 }
+
 
 template <class T>
 T CUDAStream<T>::dot()
 {
-  dot_kernel<<<dot_num_blocks, TBSIZE_DOT, 0, stream>>>(d_a, d_b, sums, array_size);
+
+  dot_kernel<<<dot_num_blocks/unroll, TBSIZE, 0, stream>>>(d_a, d_b, sums, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaStreamSynchronize(stream));
 
   T sum = 0.0;
-  for (intptr_t i = 0; i < dot_num_blocks; ++i) sum += sums[i];
+  for (intptr_t i = 0; i < dot_num_blocks/unroll; ++i) sum += sums[i];
 
   return sum;
 }

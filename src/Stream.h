@@ -41,6 +41,9 @@ class Stream
     virtual void nstream() = 0;
     virtual T dot() = 0;
 
+    // Initialize arrays with the given values
+    virtual void init_arrays(T initA, T initB, T initC) = 0;
+
     // Set pointers to read from arrays
     virtual void get_arrays(T const*& a, T const*& b, T const*& c) = 0;
 };
