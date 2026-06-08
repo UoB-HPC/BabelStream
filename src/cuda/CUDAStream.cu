@@ -455,7 +455,7 @@ void CUDAStream<T>::nstream()
 template <class T>
 __global__ void dot_kernel(const T * a, const T * b, T* sums, size_t array_size)
 {
-  typedef cub::BlockReduce<T, TBSIZE> BlockReduce;
+  typedef cub::BlockReduce<T, TBSIZE_DOT> BlockReduce;
   __shared__ typename BlockReduce::TempStorage temp_storage;
 
   const size_t tile_size = blockDim.x * unroll;
@@ -507,7 +507,7 @@ template <class T>
 T CUDAStream<T>::dot()
 {
 
-  dot_kernel<<<dot_num_blocks/unroll, TBSIZE, 0, stream>>>(d_a, d_b, sums, array_size);
+  dot_kernel<<<dot_num_blocks/unroll, TBSIZE_DOT, 0, stream>>>(d_a, d_b, sums, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaStreamSynchronize(stream));
 
