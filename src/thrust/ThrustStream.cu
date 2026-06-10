@@ -41,7 +41,7 @@ static inline void synchronise()
 }
 
 template <class T>
-ThrustStream<T>::ThrustStream(const intptr_t array_size, int device)
+ThrustStream<T>::ThrustStream(BenchId selection, const intptr_t array_size, int device, T initA, T initB, T initC)
     : array_size{array_size}, impl(new Impl{vector<T>(array_size), vector<T>(array_size), vector<T>(array_size)}) {
   std::cout << "Using CUDA device: " << getDeviceName(device) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device) << std::endl;
@@ -84,11 +84,11 @@ void ThrustStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void ThrustStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
+void ThrustStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 {
-  thrust::copy(impl->a.begin(), impl->a.end(), h_a.begin());
-  thrust::copy(impl->b.begin(), impl->b.end(), h_b.begin());
-  thrust::copy(impl->c.begin(), impl->c.end(), h_c.begin());
+  a = thrust::raw_pointer_cast(impl->a.data());
+  b = thrust::raw_pointer_cast(impl->b.data());
+  c = thrust::raw_pointer_cast(impl->c.data());
 }
 
 template <class T>

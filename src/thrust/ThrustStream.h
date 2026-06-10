@@ -24,7 +24,7 @@ class ThrustStream : public Stream<T>
     intptr_t array_size;
 
   public:
-    ThrustStream(intptr_t array_size, int device);
+    ThrustStream(BenchId selection, intptr_t array_size, int device, T initA, T initB, T initC);
     ~ThrustStream();
 
     void copy() override;
