@@ -31,13 +31,8 @@ using vector =
 template <class T>
 struct ThrustStream<T>::Impl{
   vector<T> a, b, c;
+  thrust::host_vector<T> h_a, h_b, h_c;
 };
-
-template <class T>
-struct ThrustStream<T>::h_Impl{
-  thrust::host_vector<T> a, b, c;
-};
-
 
 static inline void synchronise()
 {
@@ -49,8 +44,7 @@ static inline void synchronise()
 
 template <class T>
 ThrustStream<T>::ThrustStream(BenchId selection, const intptr_t array_size, int device, T initA, T initB, T initC)
-    : array_size{array_size}, impl(new Impl{vector<T>(array_size), vector<T>(array_size), vector<T>(array_size)}),
-      h_impl(new h_Impl{}) {
+    : array_size{array_size}, impl(new Impl{vector<T>(array_size), vector<T>(array_size), vector<T>(array_size)}) {
   std::cout << "Using CUDA device: " << getDeviceName(device) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device) << std::endl;
   std::cout << "Thrust version: " << THRUST_VERSION << std::endl;
@@ -100,17 +94,17 @@ void ThrustStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
   c = thrust::raw_pointer_cast(impl->c.data());
 #else
   // No Unified memory: copy data to the host
-  h_impl->a.resize(array_size);
-  h_impl->b.resize(array_size);
-  h_impl->c.resize(array_size);
+  impl->h_a.resize(array_size);
+  impl->h_b.resize(array_size);
+  impl->h_c.resize(array_size);
 
-  thrust::copy(impl->a.begin(), impl->a.end(), h_impl->a.begin());
-  thrust::copy(impl->b.begin(), impl->b.end(), h_impl->b.begin());
-  thrust::copy(impl->c.begin(), impl->c.end(), h_impl->c.begin());
+  thrust::copy(impl->a.begin(), impl->a.end(), impl->h_a.begin());
+  thrust::copy(impl->b.begin(), impl->b.end(), impl->h_b.begin());
+  thrust::copy(impl->c.begin(), impl->c.end(), impl->h_c.begin());
 
-  a = h_impl->a.data();
-  b = h_impl->b.data();
-  c = h_impl->c.data();
+  a = impl->h_a.data();
+  b = impl->h_b.data();
+  c = impl->h_c.data();
 #endif
 }
 

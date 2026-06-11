@@ -20,9 +20,7 @@ class ThrustStream : public Stream<T>
 {
   protected:
     struct Impl;
-    struct h_Impl;
     std::unique_ptr<Impl> impl; // avoid thrust vectors leaking into non-CUDA translation units
-    std::unique_ptr<h_Impl> h_impl; // If UVM is disabled, host arrays for verification purposes
     intptr_t array_size;
 
   public:
