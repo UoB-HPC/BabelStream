@@ -3,11 +3,12 @@ register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that is supported by CMake detection, this is used for host compilation"
         "c++")
 
+# "DEFAULT" define causes a compile error in newer cuda CCCL, so we change to BABEL_DEFAULT
 register_flag_optional(MEM "Device memory mode:
-        DEFAULT   - allocate host and device memory pointers.
+        BABEL_DEFAULT   - allocate host and device memory pointers.
         MANAGED   - use CUDA Managed Memory.
         PAGEFAULT - shared memory, only host pointers allocated."
-        "DEFAULT")
+        "BABEL_DEFAULT")
 
 register_flag_optional(STRIDE "Kernel stride: GRID_STRIDE or BLOCK_STRIDE" "GRID_STRIDE")
 

@@ -18,6 +18,7 @@
 #else
 #include <thrust/device_vector.h>
 #endif
+#include <thrust/host_vector.h>
 
 template <class T>
 using vector =
@@ -30,6 +31,10 @@ using vector =
 template <class T>
 struct ThrustStream<T>::Impl{
   vector<T> a, b, c;
+#if !(defined(PAGEFAULT) || defined(MANAGED))
+  // we need separate host allocations to hold the data for get_arrays()
+  thrust::host_vector<T> h_a, h_b, h_c;
+#endif
 };
 
 static inline void synchronise()
@@ -41,7 +46,7 @@ static inline void synchronise()
 }
 
 template <class T>
-ThrustStream<T>::ThrustStream(const intptr_t array_size, int device)
+ThrustStream<T>::ThrustStream(BenchId selection, const intptr_t array_size, int device, T initA, T initB, T initC)
     : array_size{array_size}, impl(new Impl{vector<T>(array_size), vector<T>(array_size), vector<T>(array_size)}) {
   std::cout << "Using CUDA device: " << getDeviceName(device) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device) << std::endl;
@@ -84,11 +89,26 @@ void ThrustStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void ThrustStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
+void ThrustStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 {
-  thrust::copy(impl->a.begin(), impl->a.end(), h_a.begin());
-  thrust::copy(impl->b.begin(), impl->b.end(), h_b.begin());
-  thrust::copy(impl->c.begin(), impl->c.end(), h_c.begin());
+#if defined(PAGEFAULT) || defined(MANAGED)
+  a = thrust::raw_pointer_cast(impl->a.data());
+  b = thrust::raw_pointer_cast(impl->b.data());
+  c = thrust::raw_pointer_cast(impl->c.data());
+#else
+  // No Unified memory: copy data to the host
+  impl->h_a.resize(array_size);
+  impl->h_b.resize(array_size);
+  impl->h_c.resize(array_size);
+
+  thrust::copy(impl->a.begin(), impl->a.end(), impl->h_a.begin());
+  thrust::copy(impl->b.begin(), impl->b.end(), impl->h_b.begin());
+  thrust::copy(impl->c.begin(), impl->c.end(), impl->h_c.begin());
+
+  a = impl->h_a.data();
+  b = impl->h_b.data();
+  c = impl->h_c.data();
+#endif
 }
 
 template <class T>
