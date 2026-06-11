@@ -31,7 +31,10 @@ using vector =
 template <class T>
 struct ThrustStream<T>::Impl{
   vector<T> a, b, c;
+#if !(defined(PAGEFAULT) || defined(MANAGED))
+  // we need separate host allocations to hold the data for get_arrays()
   thrust::host_vector<T> h_a, h_b, h_c;
+#endif
 };
 
 static inline void synchronise()
