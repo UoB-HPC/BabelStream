@@ -49,7 +49,8 @@ static inline void synchronise()
 
 template <class T>
 ThrustStream<T>::ThrustStream(BenchId selection, const intptr_t array_size, int device, T initA, T initB, T initC)
-    : array_size{array_size}, impl(new Impl{vector<T>(array_size), vector<T>(array_size), vector<T>(array_size)}) {
+    : array_size{array_size}, impl(new Impl{vector<T>(array_size), vector<T>(array_size), vector<T>(array_size)}),
+      h_impl(new h_Impl{}) {
   std::cout << "Using CUDA device: " << getDeviceName(device) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device) << std::endl;
   std::cout << "Thrust version: " << THRUST_VERSION << std::endl;
