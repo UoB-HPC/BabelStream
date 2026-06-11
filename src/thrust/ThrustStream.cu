@@ -18,6 +18,7 @@
 #else
 #include <thrust/device_vector.h>
 #endif
+#include <thrust/host_vector.h>
 
 template <class T>
 using vector =
@@ -31,6 +32,12 @@ template <class T>
 struct ThrustStream<T>::Impl{
   vector<T> a, b, c;
 };
+
+template <class T>
+struct ThrustStream<T>::h_Impl{
+  thrust::host_vector<T> a, b, c;
+};
+
 
 static inline void synchronise()
 {
@@ -86,9 +93,24 @@ void ThrustStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void ThrustStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 {
+#if defined(PAGEFAULT) || defined(MANAGED)
   a = thrust::raw_pointer_cast(impl->a.data());
   b = thrust::raw_pointer_cast(impl->b.data());
   c = thrust::raw_pointer_cast(impl->c.data());
+#else
+  // No Unified memory: copy data to the host
+  h_impl->a.resize(array_size);
+  h_impl->b.resize(array_size);
+  h_impl->c.resize(array_size);
+
+  thrust::copy(impl->a.begin(), impl->a.end(), h_impl->a.begin());
+  thrust::copy(impl->b.begin(), impl->b.end(), h_impl->b.begin());
+  thrust::copy(impl->c.begin(), impl->c.end(), h_impl->c.begin());
+
+  a = h_impl->a.data();
+  b = h_impl->b.data();
+  c = h_impl->c.data();
+#endif
 }
 
 template <class T>
