@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 
 	adiak::value("BABELSTREAM version", "4.0");
 	adiak::value("num_times", num_times);
-	adiak::value("elements", ARRAY_SIZE);
+	adiak::value("elements", array_size);
 
 	CALI_MARK_FUNCTION_BEGIN;
 #endif  
