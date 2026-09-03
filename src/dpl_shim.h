@@ -1,11 +1,6 @@
 #pragma once
 
-#include <cstdlib>
 #include <cstddef>
-
-#ifndef ALIGNMENT
-#define ALIGNMENT (2*1024*1024) // 2MB
-#endif
 
 #ifdef USE_ONEDPL
 
@@ -58,11 +53,5 @@ static constexpr auto exe_policy = std::execution::par_unseq;
 #endif
 
 #ifdef USE_STD_PTR_ALLOC_DEALLOC
-
-template<typename T>
-T *alloc_raw(size_t size) { return (T *) aligned_alloc(ALIGNMENT, sizeof(T) * size); }
-
-template<typename T>
-void dealloc_raw(T *ptr) { free(ptr); }
-
+#include "Alloc.h"
 #endif

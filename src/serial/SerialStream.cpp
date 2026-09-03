@@ -5,12 +5,8 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
-#include <cstdlib>  // For aligned_alloc
 #include "SerialStream.h"
-
-#ifndef ALIGNMENT
-#define ALIGNMENT (2*1024*1024) // 2MB
-#endif
+#include "Alloc.h"
 
 template <class T>
 SerialStream<T>::SerialStream(BenchId bs, const intptr_t array_size, const int device_id,
@@ -18,9 +14,9 @@ SerialStream<T>::SerialStream(BenchId bs, const intptr_t array_size, const int d
   : array_size{array_size}
 {
   // Allocate on the host
-  this->a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-  this->b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-  this->c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+  this->a = alloc_raw<T>(array_size);
+  this->b = alloc_raw<T>(array_size);
+  this->c = alloc_raw<T>(array_size);
 
   init_arrays(initA, initB, initC);
 }
@@ -28,9 +24,9 @@ SerialStream<T>::SerialStream(BenchId bs, const intptr_t array_size, const int d
 template <class T>
 SerialStream<T>::~SerialStream()
 {
-  free(a);
-  free(b);
-  free(c);
+  dealloc_raw(a);
+  dealloc_raw(b);
+  dealloc_raw(c);
 }
 
 template <class T>
