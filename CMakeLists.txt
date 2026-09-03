@@ -184,12 +184,6 @@ else ()
     message(STATUS "Selected model  :  ${MODEL}")
 endif ()
 
-if (MODEL STREQUAL "sycl2020")
-    message(FATAL_ERROR "
-    Model sycl2020 has been renamed to sycl2020-acc, and a new sycl2020-usm model is now available.
-    Please use sycl2020-acc for SYCL2020 style accessors and sycl2020-usm for USM")
-endif ()
-
 # load the $MODEL.cmake file and setup the correct IMPL_* based on $MODEL
 load_model(${MODEL})
 

@@ -14,15 +14,7 @@
 
 #include <sycl/sycl.hpp>
 
-#ifdef SYCL2020ACC
-#define SYCLIMPL "Accessors"
-#elif SYCL2020USM
-#define SYCLIMPL "USM"
-#else
-#error unimplemented
-#endif
-
-#define IMPLEMENTATION_STRING "SYCL2020 " SYCLIMPL
+#define IMPLEMENTATION_STRING "SYCL2020 "
 
 template <class T>
 class SYCLStream : public Stream<T>
@@ -30,6 +22,7 @@ class SYCLStream : public Stream<T>
   protected:
     // Size of arrays
     size_t array_size;
+    bool use_shared_alloc;
 
     // SYCL objects
     // Queue is a pointer because we allow device selection
@@ -37,7 +30,9 @@ class SYCLStream : public Stream<T>
 
     // Buffers
     T *a, *b, *c, *sum{};
-    sycl::buffer<T> d_a, d_b, d_c, d_sum;
+
+    // used to implement get_arrays for device USM
+    std::vector<T> hostA, hostB, hostC;
 
   public:
 
@@ -52,8 +47,8 @@ class SYCLStream : public Stream<T>
     void nstream() override;
     T    dot() override;
 
-    void get_arrays(T const*& a, T const*& b, T const*& c) override;    
-    void init_arrays(T initA, T initB, T initC);
+    void get_arrays(T const*& a, T const*& b, T const*& c) override;
+    void init_arrays(T initA, T initB, T initC) override;
 };
 
 // Populate the devices list

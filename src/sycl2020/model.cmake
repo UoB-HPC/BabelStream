@@ -24,15 +24,8 @@ register_flag_optional(MEM "Device memory mode:
         PAGEFAULT - shared memory, only host pointers allocated."
         "DEFAULT")
 
-register_flag_optional(SYCL_ACCESS
-  "Data access method:
-     - ACCESSOR
-     - USM"
-  "ACCESSOR")
-
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)
-    register_definitions(${SYCL_ACCESS})
     if (${SYCL_COMPILER} STREQUAL "AdaptiveCpp")
         set(adaptivecpp_DIR ${SYCL_COMPILER_DIR}/lib/cmake/adaptivecpp)
 
