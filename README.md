@@ -42,6 +42,7 @@ BabelStream is currently implemented in the following parallel programming model
 - TBB
 - Thrust (via CUDA or HIP)
 - Futhark
+- Vulkan
 
 This project also contains implementations in alternative languages with different build systems:
 * Julia - [JuliaStream.jl](./src/julia/JuliaStream.jl)
@@ -102,7 +103,7 @@ The source for each model's implementations are located in `./src/<model>`.
 
 Currently available models are:
 ```
-omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020-acc;sycl2020-usm;acc;raja;tbb;thrust;futhark
+omp;ocl;std-data;std-indices;std-ranges;hip;cuda;kokkos;sycl;sycl2020-acc;sycl2020-usm;acc;raja;tbb;thrust;futhark;vulkan
 ```
 
 #### Overriding default flags
