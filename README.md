@@ -2,7 +2,7 @@
 
 <img src="babelstream.png?raw=true" alt="logo" height="300" align="right" />
 
-[![CI](https://github.com/UoB-HPC/BabelStream/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/UoB-HPC/BabelStream/actions/workflows/main.yaml)
+[![CI](https://github.com/UoB-HPC/BabelStream/actions/workflows/linux.yml/badge.svg?branch=main)](https://github.com/UoB-HPC/BabelStream/actions/workflows/linux.yml)
 
 Measure memory transfer rates to/from global device memory on GPUs.
 This benchmark is similar in spirit, and based on, the STREAM benchmark [1] for CPUs.
@@ -136,7 +136,7 @@ For example:
 ...
 ```
 
-Alternatively, refer to the [CI script](./src/ci-test-compile.sh), which test-compiles most of the models, and see which flags are used there.
+Alternatively, refer to the [CI matrix](./.github/workflows/linux.yml), which test-compiles most of the models, and see which flags are used there.
 
 *It is recommended that you delete the `build` directory when you change any of the build flags.*
 

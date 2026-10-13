@@ -267,3 +267,10 @@ if (COMMAND setup_target)
 endif ()
 
 install(TARGETS ${EXE_NAME} DESTINATION bin)
+
+include(CTest)
+if (BUILD_TESTING)
+    add_test(NAME ${MODEL_LOWER}-stream
+             COMMAND $<TARGET_FILE:${EXE_NAME}> --arraysize 16777216 --numtimes 8)
+    set_tests_properties(${MODEL_LOWER}-stream PROPERTIES TIMEOUT 60)
+endif ()
