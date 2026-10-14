@@ -45,11 +45,11 @@ register_flag_optional(USE_ONEDPL
         "OFF")
 
 register_flag_optional(STDIMPL
-  "Implementation strategy (default = DATA20):
+  "Implementation strategy (default = DATA17):
      DATA17  - Parallel algorithms over data (requires C++17).
-     DATA23  - (default) Parallel algorithms over data (requires C++20).
+     DATA23  - Parallel algorithms over data using ranges (requires C++23).
      INDICES - Parallel algorithms over indices (requires C++20)."
-  "DATA20"
+  "DATA17"
 )
 
 register_flag_optional(AMDGPU_TARGET_OFFLOAD

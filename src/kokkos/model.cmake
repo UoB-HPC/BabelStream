@@ -18,7 +18,7 @@ set(KOKKOS_FLAGS_CPU_INTEL -qopt-streaming-stores=always)
 
 macro(setup)
 
-    set(CMAKE_CXX_STANDARD 17) # Kokkos 4+ requires CXX >= 17
+    set(CMAKE_CXX_STANDARD 20) # Kokkos 5+ requires CXX >= 20
     cmake_policy(SET CMP0074 NEW) #see https://github.com/kokkos/kokkos/blob/master/BUILD.md
 
     message("KOKKOS_IN_PACKAGE=${KOKKOS_IN_PACKAGE}")

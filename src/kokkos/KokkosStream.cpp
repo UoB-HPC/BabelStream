@@ -17,9 +17,9 @@ KokkosStream<T>::KokkosStream(BenchId bs, const intptr_t array_size, const int d
   d_a = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_a"), array_size);
   d_b = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_b"), array_size);
   d_c = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_c"), array_size);
-  hm_a = new typename Kokkos::View<T*>::HostMirror();
-  hm_b = new typename Kokkos::View<T*>::HostMirror();
-  hm_c = new typename Kokkos::View<T*>::HostMirror();
+  hm_a = new typename Kokkos::View<T*>::host_mirror_type();
+  hm_b = new typename Kokkos::View<T*>::host_mirror_type();
+  hm_c = new typename Kokkos::View<T*>::host_mirror_type();
   *hm_a = create_mirror_view(*d_a);
   *hm_b = create_mirror_view(*d_b);
   *hm_c = create_mirror_view(*d_c);

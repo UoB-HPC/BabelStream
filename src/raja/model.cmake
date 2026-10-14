@@ -48,7 +48,7 @@ macro(setup)
 
         message(STATUS "Building using in-tree RAJA source at `${RAJA_IN_TREE}`")
 
-        set(CMAKE_CXX_STANDARD 14)
+        set(CMAKE_CXX_STANDARD 20)
         # don't build anything that isn't the RAJA library itself, by default their cmake def builds everything, whyyy?
         set(ENABLE_TESTS OFF CACHE BOOL "")
         set(ENABLE_EXAMPLES OFF CACHE BOOL "")

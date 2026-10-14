@@ -25,9 +25,9 @@ class KokkosStream : public Stream<T>
     typename Kokkos::View<T*>* d_a;
     typename Kokkos::View<T*>* d_b;
     typename Kokkos::View<T*>* d_c;
-    typename Kokkos::View<T*>::HostMirror* hm_a;
-    typename Kokkos::View<T*>::HostMirror* hm_b;
-    typename Kokkos::View<T*>::HostMirror* hm_c;
+    typename Kokkos::View<T*>::host_mirror_type* hm_a;
+    typename Kokkos::View<T*>::host_mirror_type* hm_b;
+    typename Kokkos::View<T*>::host_mirror_type* hm_c;
 
   public:
 

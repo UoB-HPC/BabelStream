@@ -108,10 +108,10 @@ impl<T: Default + Clone, D, A: AllocatorType> StreamData<T, D, A> {
         extern crate libc;
         let free_ts = move |xs: Vec<T, A>| {
           // make sure we don't call dealloc for vec anymore
-          // XXX it's important we don't free xs.as_mut_ptr() here and use xs.into_raw_parts_with_alloc()
+          // XXX it's important we don't free xs.as_mut_ptr() here and use xs.into_raw_parts_with_allocator()
           // as that function handles drops semantic for us
           // if we free the the raw ptr directly, the compiler will still drop the vec and then segfault
-          let (ptr, _, _, _) = xs.into_raw_parts_with_alloc();
+          let (ptr, _, _, _) = xs.into_raw_parts_with_allocator();
           libc::free(ptr as *mut libc::c_void);
         };
         free_ts(self.a);
