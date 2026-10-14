@@ -99,7 +99,7 @@ function check_solutions(
     begin
       gold_sum = gold_a * gold_b * data.size
       error = abs((dot - gold_sum) / gold_sum)
-      failed = error > 1.0e-8
+      failed = error > eps(T) * 1.0e7
       if failed
         println("Validation failed on sum. Error $error \nSum was $dot but should be $gold_sum")
       end

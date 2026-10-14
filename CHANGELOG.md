@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
 - Upgrade to Kokkos 5 (#215)
 - Bump all Rust dependencies and migrate to stable Rust
 - Fix Rust `dot` validation in single precision, which always failed (#20)
+- Bump all Julia dependencies and require Julia 1.12
+- Fix Julia `dot` validation in single precision (#20), and the oneAPI.jl and KernelAbstractions.jl (CPU) `dot` kernels
 
 
 ## [v5.0] - 2023-10-12
