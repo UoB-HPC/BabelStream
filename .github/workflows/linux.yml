@@ -23,11 +23,11 @@ jobs:
           clang-17-serial, clang-17-omp, clang-18-serial, clang-18-omp, clang-19-serial, clang-19-omp,
           clang-20-serial, clang-20-omp, clang-21-serial, clang-21-omp,
 
-          oneapi-sycl2020,
+          oneapi-sycl2020-acc, oneapi-sycl2020-usm,
 
           nvhpc-serial, nvhpc-omp, nvhpc-acc,
 
-          adaptivecpp-sycl2020,
+          adaptivecpp-sycl2020-acc, adaptivecpp-sycl2020-usm,
 
           cuda, cuda-tuned, thrust, rocm-hip,
 
@@ -85,18 +85,18 @@ jobs:
           - {variant: "gcc-13-raja", model: "raja", raja_ref: "v2026.07.1", cmake_args: "-DRAJA_IN_TREE=/opt/raja -DENABLE_OPENMP=ON", model_packages: "git", toolchain: *gcc_13}
           # FIXME: empty OpenCL_LIBRARY default defeats find_library
           - {variant: "gcc-13-ocl", model: "ocl", model_packages: "pocl-opencl-icd ocl-icd-opencl-dev", toolchain: *gcc_13}
-          # FIXME: MODEL=sycl2020 is unregistered on main (#228), fixed by PR 226
-          - {variant: "oneapi-sycl2020", model: "sycl2020", cmake_args: "-DSYCL_COMPILER=ONEAPI-ICPX", model_packages: "pocl-opencl-icd", toolchain: &oneapi {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
+          - {variant: "oneapi-sycl2020-acc", model: "sycl2020-acc", cmake_args: "-DSYCL_COMPILER=ONEAPI-ICPX", model_packages: "pocl-opencl-icd", toolchain: &oneapi {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
               cc: "/opt/intel/oneapi/compiler/2025.3/bin/icx", cxx: "/opt/intel/oneapi/compiler/2025.3/bin/icpx", packages: "intel-oneapi-dpcpp-cpp-2025.3",
               apt_key: "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB", apt_source: "https://apt.repos.intel.com/oneapi
                 all main", env_script: "/opt/intel/oneapi/setvars.sh"}}
+          - {variant: "oneapi-sycl2020-usm", model: "sycl2020-usm", cmake_args: "-DSYCL_COMPILER=ONEAPI-ICPX", model_packages: "pocl-opencl-icd", toolchain: *oneapi}
           - {variant: "nvhpc-serial", model: "serial", toolchain: &nvhpc {image: "nvcr.io/nvidia/nvhpc:26.5-devel-cuda13.2-ubuntu24.04", cc: "nvc", cxx: "nvc++", native_flags: "-tp=native", cleanup_disk: true}}
           - {variant: "nvhpc-omp", model: "omp", toolchain: *nvhpc}
           - {variant: "nvhpc-acc", model: "acc", cmake_args: "-DTARGET_DEVICE=multicore", toolchain: *nvhpc}
-          # FIXME: dot() never zeroes sum without initialize_to_identity
-          - {variant: "adaptivecpp-sycl2020", model: "sycl2020", cmake_args: "-DSYCL_COMPILER=AdaptiveCpp -DSYCL_COMPILER_DIR=/opt/adaptivecpp", toolchain: &adaptivecpp {
+          - {variant: "adaptivecpp-sycl2020-acc", model: "sycl2020-acc", cmake_args: "-DSYCL_COMPILER=AdaptiveCpp -DSYCL_COMPILER_DIR=/opt/adaptivecpp", toolchain: &adaptivecpp {
               image: "docker.io/library/ubuntu:24.04", cc: "clang-18", cxx: "clang++-18", packages: "clang-18 llvm-18-dev libclang-18-dev libclang-cpp18-dev libomp-18-dev lld-18 python3",
               source_url: "https://github.com/AdaptiveCpp/AdaptiveCpp/archive/refs/tags/v25.10.0.tar.gz", sha256: "334b16ebff373bd2841f83332c2ae9a45ec192f2cf964d5fdfe94e1140776059"}}
+          - {variant: "adaptivecpp-sycl2020-usm", model: "sycl2020-usm", cmake_args: "-DSYCL_COMPILER=AdaptiveCpp -DSYCL_COMPILER_DIR=/opt/adaptivecpp", toolchain: *adaptivecpp}
           - {variant: "cuda", model: "cuda", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=sm_80", toolchain: &cuda {image: "docker.io/library/ubuntu:24.04",
               cc: "gcc", cxx: "g++", packages: "cuda-nvcc-13-2", arm_apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/3bf863cc.pub",
               arm_apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/ /",
