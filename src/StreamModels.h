@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 
-#if defined(CUDA)
+#if defined(CUDA) || defined(CUDA_PIPELINED)
 #include "CUDAStream.h"
 #elif defined(STD)
 #include "STDStream.h"
@@ -35,7 +35,7 @@
 
 template <typename T, typename...Args>
 std::unique_ptr<Stream<T>> make_stream(Args... args) {
-#if defined(CUDA)
+#if defined(CUDA) || defined(CUDA_PIPELINED)
   // Use the CUDA implementation
   return std::make_unique<CUDAStream<T>>(args...);
 

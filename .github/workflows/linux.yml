@@ -29,7 +29,7 @@ jobs:
 
           adaptivecpp-sycl2020,
 
-          cuda, thrust, rocm-hip,
+          cuda, cuda-pipelined, thrust, rocm-hip,
 
           futhark, futhark-ubuntu,
         ]
@@ -98,10 +98,11 @@ jobs:
               image: "docker.io/library/ubuntu:24.04", cc: "clang-18", cxx: "clang++-18", packages: "clang-18 llvm-18-dev libclang-18-dev libclang-cpp18-dev libomp-18-dev lld-18 python3",
               source_url: "https://github.com/AdaptiveCpp/AdaptiveCpp/archive/refs/tags/v25.10.0.tar.gz", sha256: "334b16ebff373bd2841f83332c2ae9a45ec192f2cf964d5fdfe94e1140776059"}}
           - {variant: "cuda", model: "cuda", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=sm_80", toolchain: &cuda {image: "docker.io/library/ubuntu:24.04",
-              cc: "gcc", cxx: "g++", packages: "cuda-nvcc-13-2 cuda-nvml-dev-13-2", arm_apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/3bf863cc.pub",
+              cc: "gcc", cxx: "g++", packages: "cuda-nvcc-13-2", arm_apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/3bf863cc.pub",
               arm_apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/ /",
               apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub", apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/
                 /"}}
+          - {variant: "cuda-pipelined", model: "cuda-pipelined", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=sm_80", model_packages: "cuda-nvml-dev-13-2", toolchain: *cuda}
           - {variant: "thrust", model: "thrust", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=80", toolchain: *cuda}
           - {variant: "rocm-hip", model: "hip", skip_tests: true, cmake_args: "-DCXX_EXTRA_FLAGS=--offload-arch=gfx90a", toolchain: {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04", cc: "gcc", cxx: "/opt/rocm/bin/hipcc",
               packages: "hip-dev rocm-device-libs", apt_key: "https://repo.radeon.com/rocm/rocm.gpg.key", apt_source: "https://repo.radeon.com/rocm/apt/7.2.4/ noble main"}}
