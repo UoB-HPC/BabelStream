@@ -125,13 +125,15 @@ jobs:
         with:
           persist-credentials: false
       - name: Setup project
-        run: rustup install nightly
+        run: rustup update stable
       - name: Compile project
-        run: cargo +nightly build --release
+        run: cargo +stable build --release
       - name: Test project
-        run: cargo +nightly test --release
+        run: cargo +stable test --release
       - name: Test run project
         run: ./target/release/rust-stream --arraysize 2048
+      - name: Test run project (float)
+        run: ./target/release/rust-stream --arraysize 2048 --float
 
   java:
     name: java / ${{ matrix.architecture }}

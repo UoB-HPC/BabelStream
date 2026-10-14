@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
 - Fix `sycl2020-acc` and `sycl2020-usm` `dot` with AdaptiveCpp, which accumulated across calls
 - Fix `ocl` not finding the OpenCL library unless `OpenCL_LIBRARY` was set
 - Upgrade to Kokkos 5 (#215)
+- Bump all Rust dependencies and migrate to stable Rust
+- Fix Rust `dot` validation in single precision, which always failed (#20)
 
 
 ## [v5.0] - 2023-10-12

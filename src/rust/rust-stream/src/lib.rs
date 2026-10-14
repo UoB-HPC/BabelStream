@@ -1,22 +1,18 @@
-#![feature(allocator_api)]
-#![feature(vec_into_raw_parts)]
-
-use std::alloc::System;
 use std::env;
 use std::fmt::{Debug, Display};
 use std::iter::Sum;
 use std::mem::size_of;
 use std::time::Duration;
 
+use clap::Parser;
 use num_traits::abs;
-use structopt::StructOpt;
 use tabular::{Row, Table};
 
 use crate::arc_stream::ArcDevice;
 use crate::crossbeam_stream::CrossbeamDevice;
 use crate::plain_stream::SerialDevice;
 use crate::rayon_stream::RayonDevice;
-use crate::stream::{AllocatorType, ArrayType, RustStream, StreamData};
+use crate::stream::{ArrayType, RustStream, StreamData};
 use crate::unsafe_stream::UnsafeDevice;
 
 mod arc_stream;
@@ -26,43 +22,44 @@ mod rayon_stream;
 mod stream;
 mod unsafe_stream;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
+#[command(version)]
 struct Options {
   /// List available devices
-  #[structopt(long)]
+  #[arg(long)]
   list: bool,
   /// Select device at <device>
-  #[structopt(long, default_value = "0")]
+  #[arg(long, default_value_t = 0)]
   device: usize,
   /// Run the test <numtimes> times (NUM >= 2)
-  #[structopt(long, short = "n", default_value = "100")]
+  #[arg(long, short = 'n', default_value_t = 100)]
   numtimes: usize,
   /// Use <arraysize> elements in the array
-  #[structopt(long, short = "s", default_value = "33554432")]
+  #[arg(long, short = 's', default_value_t = 33554432)]
   arraysize: usize,
   /// Use floats (rather than doubles)
-  #[structopt(long)]
+  #[arg(long)]
   float: bool,
   /// Only run triad
-  #[structopt(long)]
+  #[arg(long)]
   triad_only: bool,
   /// Only run nstream
-  #[structopt(long)]
+  #[arg(long)]
   nstream_only: bool,
   /// Output as csv table
-  #[structopt(long)]
+  #[arg(long)]
   csv: bool,
   /// Use MiB=2^20 for bandwidth calculation (default MB=10^6)
-  #[structopt(long)]
+  #[arg(long)]
   mibibytes: bool,
-  /// Use libc malloc instead of the Rust's allocator for benchmark array allocation
-  #[structopt(name = "malloc", long)]
+  /// Use libc calloc instead of the Rust allocator for benchmark array allocation
+  #[arg(long)]
   malloc: bool,
   /// Initialise each benchmark array at allocation time on the main thread
-  #[structopt(name = "init", long)]
+  #[arg(long)]
   init: bool,
   /// Pin threads to distinct cores, this has NO effect in Rayon devices
-  #[structopt(long)]
+  #[arg(long)]
   pin: bool,
 }
 
@@ -73,8 +70,8 @@ enum Benchmark {
   NStream,
 }
 
-fn check_solution<T: ArrayType + Display + Sum + Into<f64>, D, A: AllocatorType>(
-  benchmark: Benchmark, numtimes: usize, vec: &StreamData<T, D, A>, dot_sum: Option<T>,
+fn check_solution<T: ArrayType + Display + Sum + Into<f64>, D>(
+  benchmark: Benchmark, numtimes: usize, vec: &StreamData<T, D>, dot_sum: Option<T>,
 ) -> bool {
   let (mut gold_a, mut gold_b, mut gold_c) = vec.init;
   for _ in 0..numtimes {
@@ -94,7 +91,7 @@ fn check_solution<T: ArrayType + Display + Sum + Into<f64>, D, A: AllocatorType>
     };
   }
   let tolerance = T::epsilon().into() * 100.0f64;
-  let validate_xs = |name: &str, xs: &Vec<T, A>, from: T| {
+  let validate_xs = |name: &str, xs: &[T], from: T| {
     let error = (xs.iter().map(|x| abs(*x - from)).sum::<T>()).into() / xs.len() as f64;
     let fail = error > tolerance;
     if fail {
@@ -108,7 +105,7 @@ fn check_solution<T: ArrayType + Display + Sum + Into<f64>, D, A: AllocatorType>
   let dot_ok = dot_sum.map_or(true, |sum| {
     let gold_sum = (gold_a * gold_b).into() * vec.size as f64;
     let error = abs((sum.into() - gold_sum) / gold_sum);
-    let fail = error > 1.0e-8;
+    let fail = error > T::epsilon().into() * 1.0e7;
     if fail {
       eprintln!(
         "Validation failed on sum. Error {} \nSum was {} but should be {}",
@@ -121,10 +118,10 @@ fn check_solution<T: ArrayType + Display + Sum + Into<f64>, D, A: AllocatorType>
   a_ok && b_ok && c_ok && dot_ok
 }
 
-fn run_cpu<T: ArrayType + Sync + Send + Sum + Into<f64> + Display, D, A: AllocatorType>(
-  option: &Options, mut stream: StreamData<T, D, A>,
+fn run_cpu<T: ArrayType + Sync + Send + Sum + Into<f64> + Display, D>(
+  option: &Options, mut stream: StreamData<T, D>,
 ) -> bool
-where StreamData<T, D, A>: RustStream<T> {
+where StreamData<T, D>: RustStream<T> {
   let benchmark = match (option.nstream_only, option.triad_only) {
     (true, false) => Benchmark::NStream,
     (false, true) => Benchmark::Triad,
@@ -324,19 +321,18 @@ static DOUBLE_INIT_SCALAR: f64 = START_SCALAR as f64;
 static DOUBLE_INIT: (f64, f64, f64) = (START_A as f64, START_B as f64, START_C as f64);
 
 pub fn run(args: &Vec<String>) -> bool {
-  let opt: Options = Options::from_iter(args);
+  let opt: Options = Options::parse_from(args);
 
   if opt.numtimes < 2 {
     panic!("numtimes must be >= 2")
   }
 
-  let alloc = System;
   let alloc_name = if opt.malloc { "libc-malloc" } else { "rust-system" };
 
-  fn mk_data<T: ArrayType, D, A: AllocatorType>(
-    opt: &Options, init: (T, T, T), scalar: T, dev: D, alloc: A,
-  ) -> StreamData<T, D, A> {
-    StreamData::new_in(opt.arraysize, scalar, init, dev, alloc, opt.malloc, opt.init)
+  fn mk_data<T: ArrayType, D>(
+    opt: &Options, init: (T, T, T), scalar: T, dev: D,
+  ) -> StreamData<T, D> {
+    StreamData::new(opt.arraysize, scalar, init, dev, opt.malloc, opt.init)
   }
 
   let num_thread_key = "BABELSTREAM_NUM_THREADS";
@@ -379,9 +375,9 @@ pub fn run(args: &Vec<String>) -> bool {
       }
     }
     if opt.float {
-      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev, alloc))
+      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev))
     } else {
-      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev, alloc))
+      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev))
     }
   };
 
@@ -390,11 +386,11 @@ pub fn run(args: &Vec<String>) -> bool {
       println!("Using {} thread, pin={}, alloc={}", ncores, opt.pin, alloc_name);
     }
     if opt.float {
-      let dev = ArcDevice::<f32, _>::new(ncores, opt.pin, alloc);
-      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev, alloc))
+      let dev = ArcDevice::<f32>::new(ncores, opt.pin);
+      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev))
     } else {
-      let dev = ArcDevice::<f64, _>::new(ncores, opt.pin, alloc);
-      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev, alloc))
+      let dev = ArcDevice::<f64>::new(ncores, opt.pin);
+      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev))
     }
   };
 
@@ -404,10 +400,10 @@ pub fn run(args: &Vec<String>) -> bool {
     }
     if opt.float {
       let dev = UnsafeDevice::<f32>::new(ncores, opt.pin);
-      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev, alloc))
+      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev))
     } else {
       let dev = UnsafeDevice::<f64>::new(ncores, opt.pin);
-      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev, alloc))
+      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev))
     }
   };
 
@@ -417,9 +413,9 @@ pub fn run(args: &Vec<String>) -> bool {
       println!("Using {} thread(s), pin={}, alloc={}", ncores, opt.pin, alloc_name)
     }
     if opt.float {
-      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev, alloc))
+      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev))
     } else {
-      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev, alloc))
+      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev))
     }
   };
 
@@ -429,9 +425,9 @@ pub fn run(args: &Vec<String>) -> bool {
       println!("Using 1 thread, pin={}, alloc={}", opt.pin, alloc_name);
     }
     if opt.float {
-      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev, alloc))
+      run_cpu(&opt, mk_data(&opt, FLOAT_INIT, FLOAT_INIT_SCALAR, dev))
     } else {
-      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev, alloc))
+      run_cpu(&opt, mk_data(&opt, DOUBLE_INIT, DOUBLE_INIT_SCALAR, dev))
     }
   };
 

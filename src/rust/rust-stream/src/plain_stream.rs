@@ -1,4 +1,4 @@
-use crate::stream::{AllocatorType, ArrayType, RustStream, StreamData};
+use crate::stream::{ArrayType, RustStream, StreamData};
 use core_affinity::CoreId;
 
 pub struct SerialDevice {
@@ -6,7 +6,7 @@ pub struct SerialDevice {
 }
 
 // single threaded version
-impl<T: ArrayType, A: AllocatorType> RustStream<T> for StreamData<T, SerialDevice, A> {
+impl<T: ArrayType> RustStream<T> for StreamData<T, SerialDevice> {
   fn init_arrays(&mut self) {
     if self.device.pin {
       core_affinity::set_for_current(
