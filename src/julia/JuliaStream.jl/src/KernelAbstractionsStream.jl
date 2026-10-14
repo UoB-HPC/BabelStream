@@ -109,7 +109,7 @@ function init_arrays!(
   init::Tuple{T,T,T},
 ) where {T,C}
   if context.backend == cpu
-    Threads.@threads for i = 1:data.size
+    Threads.@threads :static for i = 1:data.size
       @inbounds data.a[i] = init[1]
       @inbounds data.b[i] = init[2]
       @inbounds data.c[i] = init[3]
