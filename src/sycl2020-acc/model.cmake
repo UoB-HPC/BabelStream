@@ -22,7 +22,7 @@ register_flag_optional(SYCL_COMPILER_DIR
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)
     if (${SYCL_COMPILER} STREQUAL "AdaptiveCpp")
-        set(adaptivecpp_DIR ${SYCL_COMPILER_DIR}/lib/cmake/adaptivecpp)
+        set(AdaptiveCpp_DIR ${SYCL_COMPILER_DIR}/lib/cmake/AdaptiveCpp)
 
         if (NOT EXISTS "${AdaptiveCpp_DIR}")
             message(WARNING "Falling back to AdaptiveCpp < 0.9.0 CMake structure")

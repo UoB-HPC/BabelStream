@@ -25,8 +25,10 @@ register_flag_optional(CUDA_EXTRA_FLAGS
 macro(setup)
 
     # XXX CMake 3.18 supports CMAKE_CUDA_ARCHITECTURES/CUDA_ARCHITECTURES but we support older CMakes
+    # CUDA_ARCH is passed to nvcc directly, so turn CMake's architecture flags off
     if(POLICY CMP0104)
-        cmake_policy(SET CMP0104 OLD)
+        cmake_policy(SET CMP0104 NEW)
+        set(CMAKE_CUDA_ARCHITECTURES OFF)
     endif()
 
     enable_language(CUDA)
