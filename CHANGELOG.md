@@ -3,11 +3,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- New `cuda-tuned` model for CUDA kernels tuned by NVIDIA: generic parallel-for with grid- or block-stride loops (`STRIDE`), configurable unrolling (`UNROLL_FACTOR`), and peak bandwidth reporting via NVML
+- `MEM=PAGEFAULT` for `sycl2020-usm` and `omp`, relying on GPU page faults (#217)
+
 ### Removed
 - Remove support for ComputeCpp compiler
 
 ### Changed
 - Removed std-data/std-indices memory management workaround for AdaptiveCpp
+- Thrust now uses CCCL via `find_package(CCCL)`, with optional `FETCH_CCCL`, and requires C++17 (#206)
+- `cuda` and `hip` accept any array size, which no longer has to be a multiple of 1024, and use 64-bit indexing
+- Fix `sycl2020-acc` and `sycl2020-usm` `dot` with AdaptiveCpp, which accumulated across calls
 
 
 ## [v5.0] - 2023-10-12

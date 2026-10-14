@@ -18,8 +18,8 @@ void getDeviceList(void);
 
 template <class T>
 SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int device_index,
-			  T initA, T initB, T initC)
-  : array_size(array_size)
+                          T initA, T initB, T initC)
+: array_size {size_t(array_size)}
 {
   if (!cached)
     getDeviceList();
@@ -28,9 +28,6 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
     throw std::runtime_error("Invalid device index");
 
   sycl::device dev = devices[device_index];
-  hostA.resize(array_size);
-  hostB.resize(array_size);
-  hostC.resize(array_size);
 
   // Print out device information
   std::cout << "Using SYCL device " << getDeviceName(device_index) << std::endl;
@@ -45,7 +42,7 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
     }
   }
 
-  auto async_handler = [&](sycl::exception_list l)
+  queue = std::make_unique<sycl::queue>(dev, sycl::async_handler{[&](sycl::exception_list l)
   {
     bool error = false;
     for(auto e: l)
@@ -64,27 +61,18 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
     {
       throw std::runtime_error("SYCL errors detected");
     }
-  };
-  queue = std::make_unique<sycl::queue>(dev, async_handler, sycl::property::queue::in_order());
+  }});
 
-  // Allocate memory
 #if defined(PAGEFAULT)
   a = (T*)aligned_alloc(ALIGNMENT, array_size * sizeof(T));
   b = (T*)aligned_alloc(ALIGNMENT, array_size * sizeof(T));
   c = (T*)aligned_alloc(ALIGNMENT, array_size * sizeof(T));
   sum = (T*)aligned_alloc(ALIGNMENT, ALIGNMENT);
-
 #else
-  use_shared_alloc =
-        queue->get_device().has(sycl::aspect::usm_shared_allocations);
-  a = use_shared_alloc ? sycl::malloc_shared<T>(array_size, *queue) :
-                         sycl::malloc_device<T>(array_size, *queue);
-  b = use_shared_alloc ? sycl::malloc_shared<T>(array_size, *queue) :
-                         sycl::malloc_device<T>(array_size, *queue);
-  c = use_shared_alloc ? sycl::malloc_shared<T>(array_size, *queue) :
-                         sycl::malloc_device<T>(array_size, *queue);
-  sum = use_shared_alloc ? sycl::malloc_shared<T>(1, *queue) :
-                           sycl::malloc_device<T>(1, *queue);
+  a = sycl::malloc_shared<T>(array_size, *queue);
+  b = sycl::malloc_shared<T>(array_size, *queue);
+  c = sycl::malloc_shared<T>(array_size, *queue);
+  sum = sycl::malloc_shared<T>(1, *queue);
 #endif
 
   // No longer need list of devices
@@ -102,10 +90,10 @@ SYCLStream<T>::~SYCLStream() {
  free(c);
  free(sum);
 #else
-  sycl::free(a, *queue);
-  sycl::free(b, *queue);
-  sycl::free(c, *queue);
-  sycl::free(sum, *queue);
+ sycl::free(a, *queue);
+ sycl::free(b, *queue);
+ sycl::free(c, *queue);
+ sycl::free(sum, *queue);
 #endif
 }
 
@@ -114,7 +102,7 @@ void SYCLStream<T>::copy()
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [c=c,a=a](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, c = this->c, a = this->a](sycl::id<1> idx)
     {
       c[idx] = a[idx];
     });
@@ -128,7 +116,7 @@ void SYCLStream<T>::mul()
   const T scalar = startScalar;
   queue->submit([&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=,b=b,c=c](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, b = this->b, c = this->c](sycl::id<1> idx)
     {
       b[idx] = scalar * c[idx];
     });
@@ -141,7 +129,7 @@ void SYCLStream<T>::add()
 {
   queue->submit([&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [c=c,a=a,b=b](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, c = this->c, a = this->a, b = this->b](sycl::id<1> idx)
     {
       c[idx] = a[idx] + b[idx];
     });
@@ -155,7 +143,7 @@ void SYCLStream<T>::triad()
   const T scalar = startScalar;
   queue->submit([&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=,a=a,b=b,c=c](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
     {
       a[idx] = b[idx] + scalar * c[idx];
     });
@@ -167,9 +155,10 @@ template <class T>
 void SYCLStream<T>::nstream()
 {
   const T scalar = startScalar;
+
   queue->submit([&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=,a=a,b=b,c=c](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
     {
       a[idx] += b[idx] + scalar * c[idx];
     });
@@ -180,37 +169,27 @@ void SYCLStream<T>::nstream()
 template <class T>
 T SYCLStream<T>::dot()
 {
+  // Zero the result explicitly as initialize_to_identity is not supported everywhere
+  queue->fill(sum, T{}, 1).wait();
   queue->submit([&](sycl::handler &cgh)
   {
     cgh.parallel_for(sycl::range<1>{array_size},
-      // Reduction object, to perform summation - initialises the result to zero
-      // AdaptiveCpp doesn't sypport the initialize_to_identity property yet
-#if defined(__HIPSYCL__) || defined(__OPENSYCL__) || defined(__ADAPTIVECPP__)
       sycl::reduction(sum, sycl::plus<T>()),
-#else
-      sycl::reduction(sum, sycl::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
-#endif
-      [a=a,b=b](sycl::id<1> idx, auto& sum)
+      [a = this->a, b = this->b](sycl::id<1> idx, auto& sum)
       {
         sum += a[idx] * b[idx];
       });
-  });
-  if (use_shared_alloc) {
-    queue->wait();
-    return *sum;
-  }
 
-  T hostSum;
-  queue->copy(sum, &hostSum, 1);
+  });
   queue->wait();
-  return hostSum;
+  return *sum;
 }
 
 template <class T>
 void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 {
 #if defined(PAGEFAULT)
-  for (int i = 0; i < array_size; i++)
+  for (size_t i = 0; i < array_size; i++)
   {
     a[i] = initA;
     b[i] = initB;
@@ -219,13 +198,14 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 #else
   queue->submit([&](sycl::handler &cgh)
   {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=,a=a,b=b,c=c](sycl::id<1> idx)
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
     {
       a[idx] = initA;
       b[idx] = initB;
       c[idx] = initC;
     });
   });
+
   queue->wait();
 #endif
 }
@@ -233,20 +213,10 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void SYCLStream<T>::get_arrays(T const*& h_a, T const*& h_b, T const*& h_c)
 {
-  if (use_shared_alloc) {
-    h_a = &a[0];
-    h_b = &b[0];
-    h_c = &c[0];
-  } else {
-    queue->copy(a, hostA.data(), array_size);
-    queue->copy(b, hostB.data(), array_size);
-    queue->copy(c, hostC.data(), array_size);
-    queue->wait();
-
-    h_a = hostA.data();
-    h_b = hostB.data();
-    h_c = hostC.data();
-  }
+  queue->wait();
+  h_a = a;
+  h_b = b;
+  h_c = c;
 }
 
 void getDeviceList(void)

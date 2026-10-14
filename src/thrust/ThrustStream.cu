@@ -1,14 +1,41 @@
-// Copyright (c) 2020 Tom Deakin
-// University of Bristol HPC
+// Copyright (c) 2020 Tom Deakin, 2025 Bernhard Manfred Gruber
+// University of Bristol HPC, NVIDIA
 //
 // For full license terms please see the LICENSE file distributed with this
 // source code
+
+// Thrust fails to compile if the following macro is defined:
+#undef THRUST
 
 #include "ThrustStream.h"
 #include <thrust/inner_product.h>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/zip_function.h>
+
+#if defined(MANAGED)
+#include <thrust/universal_vector.h>
+#else
+#include <thrust/device_vector.h>
+#endif
+#include <thrust/host_vector.h>
+
+template <class T>
+using vector =
+#if defined(MANAGED)
+  thrust::universal_vector<T>;
+#else
+  thrust::device_vector<T>;
+#endif
+
+template <class T>
+struct ThrustStream<T>::Impl{
+  vector<T> a, b, c;
+#if !(defined(PAGEFAULT) || defined(MANAGED))
+  // we need separate host allocations to hold the data for get_arrays()
+  thrust::host_vector<T> h_a, h_b, h_c;
+#endif
+};
 
 static inline void synchronise()
 {
@@ -19,9 +46,8 @@ static inline void synchronise()
 }
 
 template <class T>
-ThrustStream<T>::ThrustStream(BenchId bs, const intptr_t array_size, const int device,
-			      T initA, T initB, T initC)
-    : array_size{array_size}, a(array_size), b(array_size), c(array_size) {
+ThrustStream<T>::ThrustStream(BenchId selection, const intptr_t array_size, int device, T initA, T initB, T initC)
+    : array_size{array_size}, impl(new Impl{vector<T>(array_size), vector<T>(array_size), vector<T>(array_size)}) {
   std::cout << "Using CUDA device: " << getDeviceName(device) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device) << std::endl;
   std::cout << "Thrust version: " << THRUST_VERSION << std::endl;
@@ -51,38 +77,44 @@ ThrustStream<T>::ThrustStream(BenchId bs, const intptr_t array_size, const int d
 }
 
 template <class T>
+ThrustStream<T>::~ThrustStream() = default;
+
+template <class T>
 void ThrustStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  thrust::fill(a.begin(), a.end(), initA);
-  thrust::fill(b.begin(), b.end(), initB);
-  thrust::fill(c.begin(), c.end(), initC);
+  thrust::fill(impl->a.begin(), impl->a.end(), initA);
+  thrust::fill(impl->b.begin(), impl->b.end(), initB);
+  thrust::fill(impl->c.begin(), impl->c.end(), initC);
   synchronise();
 }
 
 template <class T>
-void ThrustStream<T>::get_arrays(T const*& a_, T const*& b_, T const*& c_)
+void ThrustStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 {
-  #if defined(MANAGED)
-  a_ = &*a.data();
-  b_ = &*b.data();
-  c_ = &*c.data();
-  #else
-  h_a.resize(array_size);
-  h_b.resize(array_size);
-  h_c.resize(array_size);
-  thrust::copy(a.begin(), a.end(), h_a.begin());
-  thrust::copy(b.begin(), b.end(), h_b.begin());
-  thrust::copy(c.begin(), c.end(), h_c.begin());
-  a_ = h_a.data();
-  b_ = h_b.data();
-  c_ = h_c.data();
-  #endif
+#if defined(PAGEFAULT) || defined(MANAGED)
+  a = thrust::raw_pointer_cast(impl->a.data());
+  b = thrust::raw_pointer_cast(impl->b.data());
+  c = thrust::raw_pointer_cast(impl->c.data());
+#else
+  // No Unified memory: copy data to the host
+  impl->h_a.resize(array_size);
+  impl->h_b.resize(array_size);
+  impl->h_c.resize(array_size);
+
+  thrust::copy(impl->a.begin(), impl->a.end(), impl->h_a.begin());
+  thrust::copy(impl->b.begin(), impl->b.end(), impl->h_b.begin());
+  thrust::copy(impl->c.begin(), impl->c.end(), impl->h_c.begin());
+
+  a = impl->h_a.data();
+  b = impl->h_b.data();
+  c = impl->h_c.data();
+#endif
 }
 
 template <class T>
 void ThrustStream<T>::copy()
 {
-  thrust::copy(a.begin(), a.end(),c.begin());
+  thrust::copy(impl->a.begin(), impl->a.end(),impl->c.begin());
   synchronise();
 }
 
@@ -91,9 +123,9 @@ void ThrustStream<T>::mul()
 {
   const T scalar = startScalar;
   thrust::transform(
-      c.begin(),
-      c.end(),
-      b.begin(),
+      impl->c.begin(),
+      impl->c.end(),
+      impl->b.begin(),
       [=] __device__ __host__ (const T &ci){
         return ci * scalar;
       }
@@ -105,10 +137,10 @@ template <class T>
 void ThrustStream<T>::add()
 {
   thrust::transform(
-      a.begin(),
-      a.end(),
-      b.begin(),
-      c.begin(),
+      impl->a.begin(),
+      impl->a.end(),
+      impl->b.begin(),
+      impl->c.begin(),
       [] __device__ __host__ (const T& ai, const T& bi){
         return ai + bi;
       }
@@ -121,10 +153,10 @@ void ThrustStream<T>::triad()
 {
   const T scalar = startScalar;
   thrust::transform(
-      b.begin(),
-      b.end(),
-      c.begin(),
-      a.begin(),
+      impl->b.begin(),
+      impl->b.end(),
+      impl->c.begin(),
+      impl->a.begin(),
       [=] __device__ __host__ (const T& bi, const T& ci){
         return bi + scalar * ci;
       }
@@ -137,9 +169,9 @@ void ThrustStream<T>::nstream()
 {
   const T scalar = startScalar;
   thrust::transform(
-      thrust::make_zip_iterator(thrust::make_tuple(a.begin(), b.begin(), c.begin())),
-      thrust::make_zip_iterator(thrust::make_tuple(a.end(), b.end(), c.end())),
-      a.begin(),
+      thrust::make_zip_iterator(impl->a.begin(), impl->b.begin(), impl->c.begin()),
+      thrust::make_zip_iterator(impl->a.end(), impl->b.end(), impl->c.end()),
+      impl->a.begin(),
       thrust::make_zip_function(
           [=] __device__ __host__ (const T& ai, const T& bi, const T& ci){
             return ai + bi + scalar * ci;
@@ -151,7 +183,7 @@ void ThrustStream<T>::nstream()
 template <class T>
 T ThrustStream<T>::dot()
 {
-  return thrust::inner_product(a.begin(), a.end(), b.begin(), T{});
+  return thrust::inner_product(impl->a.begin(), impl->a.end(), impl->b.begin(), T{});
 }
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA || \
@@ -167,7 +199,7 @@ T ThrustStream<T>::dot()
 # error Unsupported compiler for Thrust
 #endif
 
-void check_error(void)
+void check_error()
 {
   IMPL_FN__(Error_t) err =  IMPL_FN__(GetLastError());
   if (err !=  IMPL_FN__(Success))
@@ -177,7 +209,7 @@ void check_error(void)
   }
 }
 
-void listDevices(void)
+void listDevices()
 {
   // Get number of devices
   int count;
@@ -225,7 +257,7 @@ std::string getDeviceDriver(const int device)
 
 #else
 
-void listDevices(void)
+void listDevices()
 {
   std::cout << "0: CPU" << std::endl;
 }
