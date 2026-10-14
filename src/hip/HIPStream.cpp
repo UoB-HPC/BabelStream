@@ -100,12 +100,18 @@ HIPStream<T>::~HIPStream()
   hipHostFree(sums);
   check_error();
 
+#if defined(PAGEFAULT)
+  free(d_a);
+  free(d_b);
+  free(d_c);
+#else
   hipFree(d_a);
   check_error();
   hipFree(d_b);
   check_error();
   hipFree(d_c);
   check_error();
+#endif
 }
 
 
