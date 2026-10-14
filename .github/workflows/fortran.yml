@@ -1,4 +1,4 @@
-name: Build
+name: Fortran
 
 on:
   workflow_call:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  fortran:
     name: ${{ matrix.architecture }}
     runs-on: ${{ matrix.architecture == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     timeout-minutes: 120
@@ -24,27 +24,18 @@ jobs:
 
     env:
       CI_BUILD_DIR: build/ci/${{ matrix.variant }}-${{ matrix.architecture }}
-      CI_MODEL: ${{ matrix.model }}
+      CI_COMPILER: ${{ matrix.compiler }}
+      CI_IMPL: ${{ matrix.implementation }}
       CI_IMAGE: ${{ matrix.toolchain.image }}
-      CC: ${{ matrix.toolchain.cc }}
-      CXX: ${{ matrix.toolchain.cxx }}
-      CI_PACKAGES: ${{ matrix.toolchain.packages }} ${{ matrix.model_packages }}
-      CI_APT_KEY: ${{ matrix.architecture == 'aarch64' && matrix.toolchain.arm_apt_key || matrix.toolchain.apt_key }}
-      CI_APT_SOURCE: ${{ matrix.architecture == 'aarch64' && matrix.toolchain.arm_apt_source || matrix.toolchain.apt_source }}
+      FC: ${{ matrix.toolchain.fc }}
+      CI_PACKAGES: ${{ matrix.toolchain.packages }}
+      CI_APT_KEY: ${{ matrix.toolchain.apt_key }}
+      CI_APT_SOURCE: ${{ matrix.toolchain.apt_source }}
       CI_ENV_SCRIPT: ${{ matrix.toolchain.env_script }}
-      CI_NATIVE_CXX_FLAGS: ${{ matrix.toolchain.native_flags || (matrix.architecture == 'aarch64' && '-mcpu=native' || '-march=native -mtune=native') }}
-      CI_NATIVE_CUDA_FLAGS: ${{ matrix.toolchain.native_cuda && (matrix.architecture == 'aarch64' && '-Xcompiler=-mcpu=native' || '-Xcompiler=-march=native,-mtune=native') || '' }}
-      CI_KOKKOS_REF: ${{ matrix.kokkos_ref }}
-      CI_RAJA_REF: ${{ matrix.raja_ref }}
-      CI_FUTHARK_REF: ${{ matrix.futhark_ref }}
-      CI_FUTHARK_SHA256: ${{ matrix.futhark_sha256 }}
-      CI_ADAPTIVECPP_SOURCE_URL: ${{ matrix.toolchain.source_url }}
-      CI_ADAPTIVECPP_SHA256: ${{ matrix.toolchain.sha256 }}
-      CI_CMAKE_ARGS: ${{ matrix.cmake_args }}
-      BUILD_TESTING: ${{ matrix.skip_tests && 'OFF' || 'ON' }}
-      CMAKE_BUILD_PARALLEL_LEVEL: "2"
-      ONEAPI_DEVICE_SELECTOR: opencl:cpu
-      ACPP_VISIBILITY_MASK: omp
+      CI_MAKE_ARGS: ${{ matrix.make_args }}
+      CI_SKIP_RUN: ${{ matrix.skip_run && '1' || '' }}
+      OMP_NUM_THREADS: "2"
+      ACC_NUM_CORES: "2"
       NVIDIA_VISIBLE_DEVICES: void
 
     steps:
@@ -72,7 +63,7 @@ jobs:
             echo "$cli_dir" >> "$GITHUB_PATH"
           fi
 
-      - name: Configure, build and test in toolchain container
+      - name: Build and run in toolchain container
         run: |
           engine=podman
           if command -v docker >/dev/null 2>&1; then engine=docker; fi
@@ -83,17 +74,11 @@ jobs:
           "$engine" run --rm "${container_options[@]}" \
             --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" --workdir "$GITHUB_WORKSPACE" \
             --env DEBIAN_FRONTEND=noninteractive \
-            --env CC --env CXX --env CI_BUILD_DIR --env CI_MODEL \
+            --env FC --env CI_BUILD_DIR --env CI_COMPILER --env CI_IMPL \
             --env CI_PACKAGES --env CI_APT_KEY --env CI_APT_SOURCE --env CI_ENV_SCRIPT \
-            --env ACT --env CI_NATIVE_CXX_FLAGS --env CI_NATIVE_CUDA_FLAGS \
-            --env CI_KOKKOS_REF --env CI_RAJA_REF \
-            --env CI_FUTHARK_REF --env CI_FUTHARK_SHA256 \
-            --env CI_ADAPTIVECPP_SOURCE_URL --env CI_ADAPTIVECPP_SHA256 \
-            --env CI_CMAKE_ARGS \
-            --env BUILD_TESTING --env CMAKE_BUILD_PARALLEL_LEVEL \
-            --env ONEAPI_DEVICE_SELECTOR --env ACPP_VISIBILITY_MASK \
-            --env NVIDIA_VISIBLE_DEVICES \
-            "$CI_IMAGE" bash -lc 'bash .github/ci/install.sh && bash .github/ci/build.sh'
+            --env CI_MAKE_ARGS --env CI_SKIP_RUN \
+            --env OMP_NUM_THREADS --env ACC_NUM_CORES --env NVIDIA_VISIBLE_DEVICES \
+            "$CI_IMAGE" bash -lc 'bash .github/ci/install.sh && bash .github/ci/fortran-build.sh'
 
       - name: Upload failure logs
         if: failure() && !env.ACT

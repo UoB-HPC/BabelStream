@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Fix Julia `dot` validation in single precision (#20), and the oneAPI.jl and KernelAbstractions.jl (CPU) `dot` kernels
 - Fix Java, Scala, and Fortran `dot` validation in single precision (#20)
 - Fix Scala `nstream`; Scala and Fortran now fail on validation errors
+- Fortran validation tolerance is relative to the value, and flang builds without `GPUARCH`
 
 
 ## [v5.0] - 2023-10-12

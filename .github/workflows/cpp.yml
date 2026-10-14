@@ -1,0 +1,108 @@
+name: C++
+
+on:
+  workflow_call:
+    inputs:
+      configuration:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  cpp:
+    name: ${{ matrix.architecture }}
+    runs-on: ${{ matrix.architecture == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        architecture: ${{ fromJSON(inputs.configuration).toolchain.architectures || fromJSON('["x86_64", "aarch64"]') }}
+        include: ${{ fromJSON(format('[{0}]', inputs.configuration)) }}
+
+    env:
+      CI_BUILD_DIR: build/ci/${{ matrix.variant }}-${{ matrix.architecture }}
+      CI_MODEL: ${{ matrix.model }}
+      CI_IMAGE: ${{ matrix.toolchain.image }}
+      CC: ${{ matrix.toolchain.cc }}
+      CXX: ${{ matrix.toolchain.cxx }}
+      CI_PACKAGES: ${{ matrix.toolchain.packages }} ${{ matrix.model_packages }}
+      CI_APT_KEY: ${{ matrix.architecture == 'aarch64' && matrix.toolchain.arm_apt_key || matrix.toolchain.apt_key }}
+      CI_APT_SOURCE: ${{ matrix.architecture == 'aarch64' && matrix.toolchain.arm_apt_source || matrix.toolchain.apt_source }}
+      CI_ENV_SCRIPT: ${{ matrix.toolchain.env_script }}
+      CI_NATIVE_CXX_FLAGS: ${{ matrix.toolchain.native_flags || (matrix.architecture == 'aarch64' && '-mcpu=native' || '-march=native -mtune=native') }}
+      CI_NATIVE_CUDA_FLAGS: ${{ matrix.toolchain.native_cuda && (matrix.architecture == 'aarch64' && '-Xcompiler=-mcpu=native' || '-Xcompiler=-march=native,-mtune=native') || '' }}
+      CI_KOKKOS_REF: ${{ matrix.kokkos_ref }}
+      CI_RAJA_REF: ${{ matrix.raja_ref }}
+      CI_FUTHARK_REF: ${{ matrix.futhark_ref }}
+      CI_FUTHARK_SHA256: ${{ matrix.futhark_sha256 }}
+      CI_ADAPTIVECPP_SOURCE_URL: ${{ matrix.toolchain.source_url }}
+      CI_ADAPTIVECPP_SHA256: ${{ matrix.toolchain.sha256 }}
+      CI_CMAKE_ARGS: ${{ matrix.cmake_args }}
+      BUILD_TESTING: ${{ matrix.skip_tests && 'OFF' || 'ON' }}
+      CMAKE_BUILD_PARALLEL_LEVEL: "2"
+      ONEAPI_DEVICE_SELECTOR: opencl:cpu
+      ACPP_VISIBILITY_MASK: omp
+      NVIDIA_VISIBLE_DEVICES: void
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Free disk for NVHPC image
+        if: matrix.toolchain.cleanup_disk && !env.ACT
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/.ghcup /usr/local/share/powershell
+
+      - name: Install container client if needed
+        run: |
+          if ! command -v docker >/dev/null 2>&1 && ! command -v podman >/dev/null 2>&1; then
+            cli_dir="$RUNNER_TEMP/container-cli"
+            mkdir -p "$cli_dir"
+            as_root=()
+            if command -v sudo >/dev/null 2>&1; then as_root=(sudo); fi
+            "${as_root[@]}" apt-get -o Acquire::Retries=5 update
+            (cd "$cli_dir" && apt-get -o Acquire::Retries=5 download docker.io)
+            dpkg-deb --fsys-tarfile "$cli_dir"/docker.io_*.deb |
+              tar -x -C "$cli_dir" --strip-components=3 ./usr/bin/docker
+            echo "$cli_dir" >> "$GITHUB_PATH"
+          fi
+
+      - name: Configure, build and test in toolchain container
+        run: |
+          engine=podman
+          if command -v docker >/dev/null 2>&1; then engine=docker; fi
+          container_options=()
+          if [[ -n ${ACT:-} ]]; then
+            container_options+=(--security-opt label=disable)
+          fi
+          "$engine" run --rm "${container_options[@]}" \
+            --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" --workdir "$GITHUB_WORKSPACE" \
+            --env DEBIAN_FRONTEND=noninteractive \
+            --env CC --env CXX --env CI_BUILD_DIR --env CI_MODEL \
+            --env CI_PACKAGES --env CI_APT_KEY --env CI_APT_SOURCE --env CI_ENV_SCRIPT \
+            --env ACT --env CI_NATIVE_CXX_FLAGS --env CI_NATIVE_CUDA_FLAGS \
+            --env CI_KOKKOS_REF --env CI_RAJA_REF \
+            --env CI_FUTHARK_REF --env CI_FUTHARK_SHA256 \
+            --env CI_ADAPTIVECPP_SOURCE_URL --env CI_ADAPTIVECPP_SHA256 \
+            --env CI_CMAKE_ARGS \
+            --env BUILD_TESTING --env CMAKE_BUILD_PARALLEL_LEVEL \
+            --env ONEAPI_DEVICE_SELECTOR --env ACPP_VISIBILITY_MASK \
+            --env NVIDIA_VISIBLE_DEVICES \
+            "$CI_IMAGE" bash -lc 'bash .github/ci/install.sh && bash .github/ci/cpp-build.sh'
+
+      - name: Upload failure logs
+        if: failure() && !env.ACT
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs-${{ matrix.variant }}-${{ matrix.architecture }}
+          path: |
+            build/ci/**/CMakeCache.txt
+            build/ci/**/CMakeFiles/CMakeConfigureLog.yaml
+            build/ci/**/Testing/Temporary/**
+            build/ci/**/tests/**
+          if-no-files-found: ignore

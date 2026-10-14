@@ -443,15 +443,15 @@ module BabelStreamUtil
 
             epsi = epsilon(real(0,kind=StreamRealKind)) * 100.0d0
 
-            if (errA .gt. epsi) then
+            if (errA .gt. epsi * abs(goldA)) then
                 write(*,'(a38,e20.12)') "Validation failed on A. Average error ", errA
                 failed = .true.
             end if
-            if (errB .gt. epsi) then
+            if (errB .gt. epsi * abs(goldB)) then
                 write(*,'(a38,e20.12)') "Validation failed on B. Average error ", errB
                 failed = .true.
             end if
-            if (errC .gt. epsi) then
+            if (errC .gt. epsi * abs(goldC)) then
                 write(*,'(a38,e20.12)') "Validation failed on C. Average error ", errC
                 failed = .true.
             end if

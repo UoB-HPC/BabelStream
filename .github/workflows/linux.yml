@@ -6,7 +6,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  cpp:
     name: ${{ matrix.variant }}
     strategy:
       fail-fast: false
@@ -106,7 +106,95 @@ jobs:
               cmake_args: "-DFUTHARK_COMPILER=/opt/futhark/bin/futhark -DFUTHARK_BACKEND=multicore", model_packages: "xz-utils", toolchain: {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
               cc: "gcc", cxx: "g++"}}
           - {variant: "futhark-ubuntu", model: "futhark", cmake_args: "-DFUTHARK_COMPILER=/usr/bin/futhark -DFUTHARK_BACKEND=multicore", model_packages: "futhark", toolchain: {image: "docker.io/library/ubuntu:26.04", cc: "gcc", cxx: "g++"}}
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/cpp.yml
+    with:
+      configuration: ${{ toJSON(matrix) }}
+
+  fortran:
+    name: ${{ matrix.variant }}
+    strategy:
+      fail-fast: false
+      max-parallel: 32
+      matrix:
+        # prettier-ignore
+        variant: [
+          gfortran-15-sequential, gfortran-15-array, gfortran-15-doconcurrent, gfortran-15-openmp,
+          gfortran-15-openmpworkshare, gfortran-15-openmptaskloop, gfortran-15-openmptarget,
+          gfortran-15-openmptargetloop, gfortran-15-openacc, gfortran-15-openaccarray, gfortran-14-array,
+          gfortran-14-openmp, gfortran-13-array, gfortran-13-openmp, gfortran-12-array, gfortran-12-openmp,
+          gfortran-11-array, gfortran-11-openmp, gfortran-10-array, gfortran-10-openmp, gfortran-9-array,
+          gfortran-9-openmp, flang-22-sequential, flang-22-array, flang-22-doconcurrent, flang-22-openmpworkshare,
+          flang-22-openmptarget, flang-22-openmptargetloop, flang-21-sequential, flang-21-array,
+          flang-21-doconcurrent, flang-21-openmp, flang-21-openmpworkshare, flang-21-openmptarget,
+          flang-21-openmptargetloop,
+          nvfortran-sequential, nvfortran-array, nvfortran-doconcurrent, nvfortran-openmp, nvfortran-openmpworkshare,
+          nvfortran-openmptarget, nvfortran-openmptargetloop, nvfortran-openacc, nvfortran-openaccarray,
+          nvfortran-cuda, nvfortran-cudakernel, ifx-sequential, ifx-array, ifx-doconcurrent, ifx-openmp,
+          ifx-openmpworkshare, ifx-openmptaskloop, ifx-openmptarget, ifx-openmptargetloop,
+        ]
+        # prettier-ignore
+        include:
+          - {variant: "gfortran-15-sequential", compiler: "gcc", implementation: "Sequential", toolchain: &gfortran_15 {image: "docker.io/library/ubuntu:26.04", fc: "gfortran-15", packages: "gfortran-15"}}
+          - {variant: "gfortran-15-array", compiler: "gcc", implementation: "Array", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-doconcurrent", compiler: "gcc", implementation: "DoConcurrent", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openmpworkshare", compiler: "gcc", implementation: "OpenMPWorkshare", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openmptaskloop", compiler: "gcc", implementation: "OpenMPTaskloop", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openmptarget", compiler: "gcc", implementation: "OpenMPTarget", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openmptargetloop", compiler: "gcc", implementation: "OpenMPTargetLoop", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openacc", compiler: "gcc", implementation: "OpenACC", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openaccarray", compiler: "gcc", implementation: "OpenACCArray", toolchain: *gfortran_15}
+          # DoConcurrent needs gfortran 15, and older versions only run Array and OpenMP
+          - {variant: "gfortran-14-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_14 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-14", packages: "gfortran-14"}}
+          - {variant: "gfortran-14-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_14}
+          - {variant: "gfortran-13-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_13 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-13", packages: "gfortran-13"}}
+          - {variant: "gfortran-13-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_13}
+          - {variant: "gfortran-12-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_12 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-12", packages: "gfortran-12"}}
+          - {variant: "gfortran-12-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_12}
+          - {variant: "gfortran-11-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_11 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-11", packages: "gfortran-11"}}
+          - {variant: "gfortran-11-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_11}
+          - {variant: "gfortran-10-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_10 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-10", packages: "gfortran-10"}}
+          - {variant: "gfortran-10-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_10}
+          - {variant: "gfortran-9-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_9 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-9", packages: "gfortran-9"}}
+          - {variant: "gfortran-9-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_9}
+          # flang has no OpenACC and fails OpenMPTaskloop; 22 also fails OpenMP (omp.simd)
+          - {variant: "flang-22-sequential", compiler: "flang", implementation: "Sequential", toolchain: &flang_22 {image: "docker.io/library/ubuntu:26.04", fc: "flang-22", packages: "flang-22 libomp-22-dev libclang-rt-22-dev"}}
+          - {variant: "flang-22-array", compiler: "flang", implementation: "Array", toolchain: *flang_22}
+          - {variant: "flang-22-doconcurrent", compiler: "flang", implementation: "DoConcurrent", toolchain: *flang_22}
+          - {variant: "flang-22-openmpworkshare", compiler: "flang", implementation: "OpenMPWorkshare", toolchain: *flang_22}
+          - {variant: "flang-22-openmptarget", compiler: "flang", implementation: "OpenMPTarget", toolchain: *flang_22}
+          - {variant: "flang-22-openmptargetloop", compiler: "flang", implementation: "OpenMPTargetLoop", toolchain: *flang_22}
+          - {variant: "flang-21-sequential", compiler: "flang", implementation: "Sequential", toolchain: &flang_21 {image: "docker.io/library/ubuntu:26.04", fc: "flang-21", packages: "flang-21 libomp-21-dev libclang-rt-21-dev"}}
+          - {variant: "flang-21-array", compiler: "flang", implementation: "Array", toolchain: *flang_21}
+          - {variant: "flang-21-doconcurrent", compiler: "flang", implementation: "DoConcurrent", toolchain: *flang_21}
+          - {variant: "flang-21-openmp", compiler: "flang", implementation: "OpenMP", toolchain: *flang_21}
+          - {variant: "flang-21-openmpworkshare", compiler: "flang", implementation: "OpenMPWorkshare", toolchain: *flang_21}
+          - {variant: "flang-21-openmptarget", compiler: "flang", implementation: "OpenMPTarget", toolchain: *flang_21}
+          - {variant: "flang-21-openmptargetloop", compiler: "flang", implementation: "OpenMPTargetLoop", toolchain: *flang_21}
+          # nvfortran runs multicore; CUDA Fortran only compiles, there is no GPU
+          - {variant: "nvfortran-sequential", compiler: "nvhpc", implementation: "Sequential", make_args: "TARGET=multicore", toolchain: &nvfortran {image: "nvcr.io/nvidia/nvhpc:26.5-devel-cuda13.2-ubuntu24.04", fc: "nvfortran", cleanup_disk: true}}
+          - {variant: "nvfortran-array", compiler: "nvhpc", implementation: "Array", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-doconcurrent", compiler: "nvhpc", implementation: "DoConcurrent", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openmp", compiler: "nvhpc", implementation: "OpenMP", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openmpworkshare", compiler: "nvhpc", implementation: "OpenMPWorkshare", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openmptarget", compiler: "nvhpc", implementation: "OpenMPTarget", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openmptargetloop", compiler: "nvhpc", implementation: "OpenMPTargetLoop", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openacc", compiler: "nvhpc", implementation: "OpenACC", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openaccarray", compiler: "nvhpc", implementation: "OpenACCArray", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-cuda", compiler: "nvhpc", implementation: "CUDA", make_args: "GPU=cc80", skip_run: true, toolchain: *nvfortran}
+          - {variant: "nvfortran-cudakernel", compiler: "nvhpc", implementation: "CUDAKernel", make_args: "GPU=cc80", skip_run: true, toolchain: *nvfortran}
+          # ifx has no OpenACC support
+          - {variant: "ifx-sequential", compiler: "oneapi", implementation: "Sequential", toolchain: &ifx {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04", fc: "ifx", packages: "intel-oneapi-compiler-fortran-2025.3",
+              apt_key: "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB", apt_source: "https://apt.repos.intel.com/oneapi
+                all main", env_script: "/opt/intel/oneapi/setvars.sh"}}
+          - {variant: "ifx-array", compiler: "oneapi", implementation: "Array", toolchain: *ifx}
+          - {variant: "ifx-doconcurrent", compiler: "oneapi", implementation: "DoConcurrent", toolchain: *ifx}
+          - {variant: "ifx-openmp", compiler: "oneapi", implementation: "OpenMP", toolchain: *ifx}
+          - {variant: "ifx-openmpworkshare", compiler: "oneapi", implementation: "OpenMPWorkshare", toolchain: *ifx}
+          - {variant: "ifx-openmptaskloop", compiler: "oneapi", implementation: "OpenMPTaskloop", toolchain: *ifx}
+          - {variant: "ifx-openmptarget", compiler: "oneapi", implementation: "OpenMPTarget", toolchain: *ifx}
+          - {variant: "ifx-openmptargetloop", compiler: "oneapi", implementation: "OpenMPTargetLoop", toolchain: *ifx}
+    uses: ./.github/workflows/fortran.yml
     with:
       configuration: ${{ toJSON(matrix) }}
 

@@ -5,7 +5,7 @@ apt_options=(-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::http
 curl_options=(--fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 30 --connect-timeout 30)
 
 apt-get "${apt_options[@]}" update
-apt-get "${apt_options[@]}" install -y --no-install-recommends cmake ninja-build g++ curl ca-certificates gpg
+apt-get "${apt_options[@]}" install -y --no-install-recommends cmake ninja-build make g++ curl ca-certificates gpg
 
 if [[ -n ${CI_APT_SOURCE:-} ]]; then
   printf 'Downloading repository key: %s\n' "$CI_APT_KEY"
@@ -68,6 +68,14 @@ if [[ -n ${CI_FUTHARK_REF:-} ]]; then
   rm -rf "$futhark_build"
 fi
 
-"$CC" --version
-"$CXX" --version
+if [[ -n ${CI_ENV_SCRIPT:-} ]]; then
+  set +u # Vendor environment scripts may reference unset variables.
+  # shellcheck disable=SC1090
+  source "$CI_ENV_SCRIPT"
+  set -u
+fi
+
+for compiler in "${CC:-}" "${CXX:-}" "${FC:-}"; do
+  if [[ -n $compiler ]]; then "$compiler" --version; fi
+done
 cmake --version
