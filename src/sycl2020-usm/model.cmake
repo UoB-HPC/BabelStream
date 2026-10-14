@@ -20,8 +20,9 @@ register_flag_optional(SYCL_COMPILER_DIR
         "")
 
 register_flag_optional(MEM "Device memory mode:
-        DEFAULT   - allocate host and device memory pointers.
-        PAGEFAULT - shared memory, only host pointers allocated."
+        DEFAULT   - device USM, copied to the host for verification.
+        MANAGED   - shared USM.
+        PAGEFAULT - system allocations, relies on GPU page faults."
         "DEFAULT")
 
 macro(setup)
