@@ -3,11 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- New `cuda-tuned` model for CUDA kernels tuned by NVIDIA: generic parallel-for with grid- or block-stride loops (`STRIDE`), configurable unrolling (`UNROLL_FACTOR`), and peak bandwidth reporting via NVML
+
 ### Removed
 - Remove support for ComputeCpp compiler
 
 ### Changed
 - Removed std-data/std-indices memory management workaround for AdaptiveCpp
+- Thrust now uses CCCL via `find_package(CCCL)`, with optional `FETCH_CCCL`, and requires C++17 (#206)
+- `cuda` and `hip` accept any array size, which no longer has to be a multiple of 1024, and use 64-bit indexing
 
 
 ## [v5.0] - 2023-10-12

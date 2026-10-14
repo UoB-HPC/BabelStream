@@ -30,8 +30,8 @@
 #include <adiak.hpp>
 #endif
 
-// Default size of 2^28
-intptr_t array_size = 268435456;
+// Default size of 2^25
+intptr_t array_size = 33554432;
 size_t num_times = 100;
 size_t deviceIndex = 0;
 bool use_float = false;
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 
 	adiak::value("BABELSTREAM version", "4.0");
 	adiak::value("num_times", num_times);
-	adiak::value("elements", ARRAY_SIZE);
+	adiak::value("elements", array_size);
 
 	CALI_MARK_FUNCTION_BEGIN;
 #endif  

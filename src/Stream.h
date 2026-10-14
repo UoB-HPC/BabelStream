@@ -41,7 +41,7 @@ class Stream
     virtual void nstream() = 0;
     virtual T dot() = 0;
 
-    // Initialize arrays with the given values
+    // Reinitialize arrays to their starting values before a benchmark run.
     virtual void init_arrays(T initA, T initB, T initC) = 0;
 
     // Set pointers to read from arrays

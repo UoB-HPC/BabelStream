@@ -32,7 +32,7 @@ endmacro()
 set(EXE_NAME babelstream)
 
 # for chrono, make_unique, and some basic CXX features, models can overwrite this if required
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 
 if (NOT CMAKE_BUILD_TYPE)
     message("No CMAKE_BUILD_TYPE specified, defaulting to 'Release'")
@@ -164,6 +164,7 @@ register_model(ocl OCL OCLStream.cpp)
 register_model(std STD STDStream.cpp)
 register_model(hip HIP HIPStream.cpp)
 register_model(cuda CUDA CUDAStream.cu)
+register_model(cuda-tuned CUDA_TUNED CUDAStream.cu)
 register_model(kokkos KOKKOS KokkosStream.cpp)
 register_model(sycl SYCL SYCLStream.cpp)
 register_model(sycl2020 SYCL2020 SYCLStream2020.cpp)
@@ -267,3 +268,10 @@ if (COMMAND setup_target)
 endif ()
 
 install(TARGETS ${EXE_NAME} DESTINATION bin)
+
+include(CTest)
+if (BUILD_TESTING)
+    add_test(NAME ${MODEL_LOWER}-stream
+             COMMAND $<TARGET_FILE:${EXE_NAME}> --arraysize 16777216 --numtimes 8)
+    set_tests_properties(${MODEL_LOWER}-stream PROPERTIES TIMEOUT 60)
+endif ()

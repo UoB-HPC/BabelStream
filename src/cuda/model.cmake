@@ -3,16 +3,11 @@ register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that is supported by CMake detection, this is used for host compilation"
         "c++")
 
-# "DEFAULT" define causes a compile error in newer cuda CCCL, so we change to BABEL_DEFAULT
 register_flag_optional(MEM "Device memory mode:
-        BABEL_DEFAULT   - allocate host and device memory pointers.
+        DEFAULT   - allocate host and device memory pointers.
         MANAGED   - use CUDA Managed Memory.
         PAGEFAULT - shared memory, only host pointers allocated."
-        "BABEL_DEFAULT")
-
-register_flag_optional(STRIDE "Kernel stride: GRID_STRIDE or BLOCK_STRIDE" "GRID_STRIDE")
-
-register_flag_optional(UNROLL_FACTOR "Kernel unroll factor:" "4")
+        "DEFAULT")
 
 
 register_flag_required(CMAKE_CUDA_COMPILER
@@ -36,17 +31,11 @@ macro(setup)
 
     enable_language(CUDA)
     register_definitions(${MEM})
-    register_definitions(${STRIDE})
 
     # add -forward-unknown-to-host-compiler for compatibility reasons
-    # add --extended-lambda for device-lambdas
-    set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler" "-arch=${CUDA_ARCH}"
-      "--extended-lambda" "-DUNROLL_FACTOR=${UNROLL_FACTOR}" ${CUDA_EXTRA_FLAGS})
+    set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler" "-arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
     string(REPLACE ";" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
-    # Link against the NVIDIA Management Library for device information
-    register_link_library("nvidia-ml")
-    
     # CMake defaults to -O2 for CUDA at Release, let's wipe that and use the global RELEASE_FLAG
     # appended later
     wipe_gcc_style_optimisation_flags(CMAKE_CUDA_FLAGS_${BUILD_TYPE})
