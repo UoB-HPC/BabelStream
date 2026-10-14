@@ -14,27 +14,10 @@
 #include "Stream.h"
 
 #define IMPLEMENTATION_STRING "HIP"
-#define DOT_READ_DWORDS_PER_LANE 4
-
 
 template <class T>
 class HIPStream : public Stream<T>
 {
-  // Make sure that either:
-  //    DOT_READ_DWORDS_PER_LANE is less than sizeof(T), in which case we default to 1 element
-  //    or
-  //    DOT_READ_DWORDS_PER_LANE is divisible by sizeof(T)
-  static_assert((DOT_READ_DWORDS_PER_LANE * sizeof(unsigned int) < sizeof(T)) ||
-                (DOT_READ_DWORDS_PER_LANE * sizeof(unsigned int) % sizeof(T) == 0),
-                "DOT_READ_DWORDS_PER_LANE not divisible by sizeof(element_type)");
-
-  // Take into account the datatype size
-  // That is, for 4 DOT_READ_DWORDS_PER_LANE, this is 2 FP64 elements
-  // and 4 FP32 elements
-  static constexpr unsigned int dot_elements_per_lane{
-    (DOT_READ_DWORDS_PER_LANE * sizeof(unsigned int)) < sizeof(T) ? 1 : (
-     DOT_READ_DWORDS_PER_LANE * sizeof(unsigned int) / sizeof(T))};
-
   protected:
     // Size of arrays
     intptr_t array_size;
