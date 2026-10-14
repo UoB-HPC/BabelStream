@@ -76,8 +76,10 @@ public class Main {
         description = "Use MiB=2^20 for bandwidth calculation (default MB=10^6)")
     public boolean mibibytes = false;
 
-    @Parameter(names = "--dot-tolerance", description = "Tolerance for dot kernel verification")
-    public double dotTolerance = 1.0e-8;
+    @Parameter(
+        names = "--dot-tolerance",
+        description = "Tolerance for dot kernel verification (default: epsilon * 1e7)")
+    public Double dotTolerance = null;
 
     public boolean isVerboseBenchmark() {
       return !list && !csv;
@@ -318,7 +320,11 @@ public class Main {
                           times(finalGoldA, finalGoldB),
                           from(config.evidence, config.options.arraysize));
                   double error = Math.abs(divide(minus(actual, goldSum), goldSum).doubleValue());
-                  boolean failed = error > config.options.dotTolerance;
+                  double dotTolerance =
+                      config.options.dotTolerance != null
+                          ? config.options.dotTolerance
+                          : config.ulp.doubleValue() * 1.0e7;
+                  boolean failed = error > dotTolerance;
                   if (failed) {
                     System.err.printf(
                         "Validation failed on sum. Error %s \nSum was %s but should be %s%n",

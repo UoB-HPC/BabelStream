@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
 - Fix Rust `dot` validation in single precision, which always failed (#20)
 - Bump all Julia dependencies and require Julia 1.12
 - Fix Julia `dot` validation in single precision (#20), and the oneAPI.jl and KernelAbstractions.jl (CPU) `dot` kernels
+- Fix Java, Scala, and Fortran `dot` validation in single precision (#20)
+- Fix Scala `nstream`; Scala and Fortran now fail on validation errors
 
 
 ## [v5.0] - 2023-10-12

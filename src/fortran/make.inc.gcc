@@ -18,7 +18,7 @@ else
      endif
 endif
 
-DOCONCURRENT_FLAG   = -ftree-parallelize-loops=4
+DOCONCURRENT_FLAG   = -ftree-parallelize-loops=4 -std=f2023
 ARRAY_FLAG          =
 OPENMP_FLAG         = -fopenmp
 OPENACC_FLAG        = -fopenacc

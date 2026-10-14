@@ -29,7 +29,7 @@ class ParStream[@specialized(Float, Double) A: Fractional: ClassTag](val config:
   override inline def mul(): Unit     = for i <- indices do b(i) = scalar * c(i)
   override inline def add(): Unit     = for i <- indices do c(i) = a(i) + b(i)
   override inline def triad(): Unit   = for i <- indices do a(i) = b(i) + scalar * c(i)
-  override inline def nstream(): Unit = for i <- indices do a(i) = b(i) * scalar * c(i)
+  override inline def nstream(): Unit = for i <- indices do a(i) = a(i) + b(i) + scalar * c(i)
   override inline def dot(): A =
     indices.aggregate[A](0.fractional)((acc, i) => acc + (a(i) * b(i)), _ + _)
 

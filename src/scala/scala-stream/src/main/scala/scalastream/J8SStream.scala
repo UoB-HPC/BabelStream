@@ -30,7 +30,7 @@ class J8SStream[@specialized(Float, Double) A: Fractional: ClassTag](val config:
   override inline def mul(): Unit     = stream.forEach(i => b(i) = scalar * c(i))
   override inline def add(): Unit     = stream.forEach(i => c(i) = a(i) + b(i))
   override inline def triad(): Unit   = stream.forEach(i => a(i) = b(i) + scalar * c(i))
-  override inline def nstream(): Unit = stream.forEach(i => a(i) = b(i) * scalar * c(i))
+  override inline def nstream(): Unit = stream.forEach(i => a(i) = a(i) + b(i) + scalar * c(i))
   override inline def dot(): A =
     // horrible special-case for double, there isn't a mapToFloat so we give up on that
     val cls = classTag[A].runtimeClass
