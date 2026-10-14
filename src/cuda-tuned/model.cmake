@@ -27,6 +27,7 @@ register_flag_optional(CUDA_EXTRA_FLAGS
 
 
 macro(setup)
+    set(CMAKE_CXX_STANDARD 17)
 
     # XXX CMake 3.18 supports CMAKE_CUDA_ARCHITECTURES/CUDA_ARCHITECTURES but we support older CMakes
     if(POLICY CMP0104)
@@ -34,7 +35,10 @@ macro(setup)
     endif()
 
     enable_language(CUDA)
-    register_definitions(${MEM})
+    # DEFAULT is the fallback in the source, and a DEFAULT macro clashes with CCCL headers
+    if (NOT MEM STREQUAL "DEFAULT")
+        register_definitions(${MEM})
+    endif ()
     register_definitions(${STRIDE})
 
     # add -forward-unknown-to-host-compiler for compatibility reasons

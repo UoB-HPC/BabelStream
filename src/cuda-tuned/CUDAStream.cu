@@ -11,14 +11,7 @@
 #define UNROLL_FACTOR 4
 #endif
 
-#include <cuda/barrier>
-#include <cuda/ptx>
-
 #include <cub/cub.cuh>
-
-using barrier = cuda::barrier<cuda::thread_scope_block>;
-namespace ptx = cuda::ptx;
-
 
 [[noreturn]] inline void cuda_error(char const* file, int line, char const* expr, cudaError_t e) {
   std::fprintf(stderr, "CUDA Error at %s:%d: %s (%d)\n  %s\n", file, line, cudaGetErrorString(e), e, expr);
@@ -244,20 +237,6 @@ void CUDAStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 }
 
 static constexpr int unroll = 4;
-static constexpr size_t buf_len = 1024;
-
-// Upper bound on the bulk-copy pipeline depth. Bounds the per-block shared-memory
-// mbarrier array, so it must be a compile-time constant.
-static constexpr int max_stages = 4;
-
-
-__device__ inline bool is_elected()
-{
-  unsigned int tid = threadIdx.x;
-  unsigned int warp_id = tid / 32;
-  unsigned int uniform_warp_id = __shfl_sync(0xFFFFFFFF, warp_id, 0); // Broadcast from lane 0.
-  return (uniform_warp_id == 0 && ptx::elect_sync(0xFFFFFFFF)); // Elect a leader thread among warp 0.
-}
 
 template <typename T>
 __global__ void copy_kernel(const T * a, T * c, size_t array_size)
@@ -289,7 +268,7 @@ template <class T>
 void CUDAStream<T>::copy()
 {
 
-  size_t blocks = ceil_div(array_size/unroll, TBSIZE);
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
   copy_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_c, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaStreamSynchronize(stream));
@@ -325,7 +304,7 @@ __global__ void mul_kernel(T * b, const T * c, size_t array_size)
 template <class T>
 void CUDAStream<T>::mul()
 {
-  size_t blocks = ceil_div(array_size/unroll, TBSIZE);
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
   mul_kernel<<<blocks, TBSIZE, 0, stream>>>(d_b, d_c, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaStreamSynchronize(stream));
@@ -364,7 +343,7 @@ __global__ void add_kernel(const T * a, const T * b, T * c, size_t array_size)
 template <class T>
 void CUDAStream<T>::add()
 {
-  size_t blocks = ceil_div(array_size/unroll, TBSIZE);
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
   add_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaStreamSynchronize(stream));
@@ -402,7 +381,7 @@ __global__ void triad_kernel(T * a, const T * b, const T * c, size_t array_size)
 template <class T>
 void CUDAStream<T>::triad()
 {
-  size_t blocks = ceil_div(array_size/unroll, TBSIZE);
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
   triad_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaStreamSynchronize(stream));
@@ -444,13 +423,11 @@ __global__ void nstream_kernel(T * a, const T * b, const T * c, size_t array_siz
 template <class T>
 void CUDAStream<T>::nstream()
 {
-  size_t blocks = ceil_div(array_size/unroll, TBSIZE);
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
   nstream_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaStreamSynchronize(stream));
 }
-
-//#define TBSIZE_DOT 1024
 
 template <class T>
 __global__ void dot_kernel(const T * a, const T * b, T* sums, size_t array_size)
@@ -498,8 +475,6 @@ __global__ void dot_kernel(const T * a, const T * b, T* sums, size_t array_size)
 
   // First thread writes to host memory directly from the device
   if (threadIdx.x == 0) sums[blockIdx.x] = block_sum;
-  // if (threadIdx.x == 0)
-    // atomicAdd(&sums[0], block_sum);
 }
 
 
