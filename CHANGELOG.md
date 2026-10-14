@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Removed std-data/std-indices memory management workaround for AdaptiveCpp
+- Thrust now uses CCCL via `find_package(CCCL)`, with optional `FETCH_CCCL` (#206)
+- Fix Thrust build against the current `Stream` interface and for non-managed memory (#222)
 
 
 ## [v5.0] - 2023-10-12
