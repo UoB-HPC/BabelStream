@@ -21,6 +21,10 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
                           T initA, T initB, T initC)
 : array_size {size_t(array_size)}
 {
+  hostA.resize(array_size);
+  hostB.resize(array_size);
+  hostC.resize(array_size);
+
   if (!cached)
     getDeviceList();
 
@@ -61,7 +65,7 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
     {
       throw std::runtime_error("SYCL errors detected");
     }
-  }});
+  }}, sycl::property::queue::in_order());
 
 #if defined(PAGEFAULT)
   a = (T*)aligned_alloc(ALIGNMENT, array_size * sizeof(T));
@@ -69,10 +73,16 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
   c = (T*)aligned_alloc(ALIGNMENT, array_size * sizeof(T));
   sum = (T*)aligned_alloc(ALIGNMENT, ALIGNMENT);
 #else
-  a = sycl::malloc_shared<T>(array_size, *queue);
-  b = sycl::malloc_shared<T>(array_size, *queue);
-  c = sycl::malloc_shared<T>(array_size, *queue);
-  sum = sycl::malloc_shared<T>(1, *queue);
+  use_shared_alloc =
+        queue->get_device().has(sycl::aspect::usm_shared_allocations);
+  a = use_shared_alloc ? sycl::malloc_shared<T>(array_size, *queue) :
+                         sycl::malloc_device<T>(array_size, *queue);
+  b = use_shared_alloc ? sycl::malloc_shared<T>(array_size, *queue) :
+                         sycl::malloc_device<T>(array_size, *queue);
+  c = use_shared_alloc ? sycl::malloc_shared<T>(array_size, *queue) :
+                         sycl::malloc_device<T>(array_size, *queue);
+  sum = use_shared_alloc ? sycl::malloc_shared<T>(1, *queue) :
+                           sycl::malloc_device<T>(1, *queue);
 #endif
 
   // No longer need list of devices
@@ -181,8 +191,15 @@ T SYCLStream<T>::dot()
       });
 
   });
+  if (use_shared_alloc) {
+    queue->wait();
+    return *sum;
+  }
+
+  T hostSum;
+  queue->copy(sum, &hostSum, 1);
   queue->wait();
-  return *sum;
+  return hostSum;
 }
 
 template <class T>
@@ -213,10 +230,21 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void SYCLStream<T>::get_arrays(T const*& h_a, T const*& h_b, T const*& h_c)
 {
-  queue->wait();
-  h_a = a;
-  h_b = b;
-  h_c = c;
+  if (use_shared_alloc) {
+    queue->wait();
+    h_a = a;
+    h_b = b;
+    h_c = c;
+  } else {
+    queue->copy(a, hostA.data(), array_size);
+    queue->copy(b, hostB.data(), array_size);
+    queue->copy(c, hostC.data(), array_size);
+    queue->wait();
+
+    h_a = hostA.data();
+    h_b = hostB.data();
+    h_c = hostC.data();
+  }
 }
 
 void getDeviceList(void)

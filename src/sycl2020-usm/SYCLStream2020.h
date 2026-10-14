@@ -22,6 +22,7 @@ class SYCLStream : public Stream<T>
   protected:
     // Size of arrays
     size_t array_size;
+    bool use_shared_alloc;
 
     // SYCL objects
     // Queue is a pointer because we allow device selection
@@ -32,6 +33,9 @@ class SYCLStream : public Stream<T>
     T *b{};
     T *c{};
     T *sum{};
+
+    // used to implement get_arrays for device USM
+    std::vector<T> hostA, hostB, hostC;
 
   public:
 
