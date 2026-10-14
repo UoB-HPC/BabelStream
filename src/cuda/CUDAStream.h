@@ -10,6 +10,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
+#include <cstdint>
 
 #include "Stream.h"
 
