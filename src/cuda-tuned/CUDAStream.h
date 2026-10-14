@@ -14,7 +14,7 @@
 
 #include "Stream.h"
 
-#define IMPLEMENTATION_STRING "CUDA (pipelined)"
+#define IMPLEMENTATION_STRING "CUDA (tuned)"
 
 #define TBSIZE 256
 #define TBSIZE_DOT 1024

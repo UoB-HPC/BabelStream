@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- New `cuda-pipelined` model for NVIDIA-tuned CUDA kernels: generic parallel-for with grid- or block-stride loops (`STRIDE`), configurable unrolling (`UNROLL_FACTOR`), and peak bandwidth reporting via NVML
+- New `cuda-tuned` model for CUDA kernels tuned by NVIDIA: generic parallel-for with grid- or block-stride loops (`STRIDE`), configurable unrolling (`UNROLL_FACTOR`), and peak bandwidth reporting via NVML
 
 ### Removed
 - Remove support for ComputeCpp compiler

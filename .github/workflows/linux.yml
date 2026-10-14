@@ -29,7 +29,7 @@ jobs:
 
           adaptivecpp-sycl2020,
 
-          cuda, cuda-pipelined, thrust, rocm-hip,
+          cuda, cuda-tuned, thrust, rocm-hip,
 
           futhark, futhark-ubuntu,
         ]
@@ -102,7 +102,7 @@ jobs:
               arm_apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/ /",
               apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub", apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/
                 /"}}
-          - {variant: "cuda-pipelined", model: "cuda-pipelined", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=sm_80", model_packages: "cuda-nvml-dev-13-2", toolchain: *cuda}
+          - {variant: "cuda-tuned", model: "cuda-tuned", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=sm_80", model_packages: "cuda-nvml-dev-13-2", toolchain: *cuda}
           - {variant: "thrust", model: "thrust", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=80", toolchain: *cuda}
           - {variant: "rocm-hip", model: "hip", skip_tests: true, cmake_args: "-DCXX_EXTRA_FLAGS=--offload-arch=gfx90a", toolchain: {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04", cc: "gcc", cxx: "/opt/rocm/bin/hipcc",
               packages: "hip-dev rocm-device-libs", apt_key: "https://repo.radeon.com/rocm/rocm.gpg.key", apt_source: "https://repo.radeon.com/rocm/apt/7.2.4/ noble main"}}
