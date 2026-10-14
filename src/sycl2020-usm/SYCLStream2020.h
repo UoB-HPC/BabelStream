@@ -33,6 +33,9 @@ class SYCLStream : public Stream<T>
     T *c{};
     T *sum{};
 
+    // Host copies for verification with device USM
+    std::vector<T> hostA, hostB, hostC;
+
   public:
 
     SYCLStream(BenchId bs, const intptr_t array_size, const int device_id,

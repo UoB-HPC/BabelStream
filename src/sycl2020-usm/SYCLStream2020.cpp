@@ -32,6 +32,13 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
   // Print out device information
   std::cout << "Using SYCL device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+#if defined(MANAGED)
+  std::cout << "Memory: MANAGED" << std::endl;
+#elif defined(PAGEFAULT)
+  std::cout << "Memory: PAGEFAULT" << std::endl;
+#else
+  std::cout << "Memory: DEFAULT" << std::endl;
+#endif
 
   // Check device can support FP64 if needed
   if (sizeof(T) == sizeof(double))
@@ -41,6 +48,11 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
       throw std::runtime_error("Device does not support double precision, please use --float");
     }
   }
+
+#if defined(MANAGED)
+  if (!dev.has(sycl::aspect::usm_shared_allocations))
+    throw std::runtime_error("Device does not support shared USM, please use MEM=DEFAULT");
+#endif
 
   queue = std::make_unique<sycl::queue>(dev, sycl::async_handler{[&](sycl::exception_list l)
   {
@@ -61,18 +73,23 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
     {
       throw std::runtime_error("SYCL errors detected");
     }
-  }});
+  }}, sycl::property::queue::in_order());
 
 #if defined(PAGEFAULT)
   a = (T*)aligned_alloc(ALIGNMENT, array_size * sizeof(T));
   b = (T*)aligned_alloc(ALIGNMENT, array_size * sizeof(T));
   c = (T*)aligned_alloc(ALIGNMENT, array_size * sizeof(T));
   sum = (T*)aligned_alloc(ALIGNMENT, ALIGNMENT);
-#else
+#elif defined(MANAGED)
   a = sycl::malloc_shared<T>(array_size, *queue);
   b = sycl::malloc_shared<T>(array_size, *queue);
   c = sycl::malloc_shared<T>(array_size, *queue);
   sum = sycl::malloc_shared<T>(1, *queue);
+#else
+  a = sycl::malloc_device<T>(array_size, *queue);
+  b = sycl::malloc_device<T>(array_size, *queue);
+  c = sycl::malloc_device<T>(array_size, *queue);
+  sum = sycl::malloc_device<T>(1, *queue);
 #endif
 
   // No longer need list of devices
@@ -181,8 +198,15 @@ T SYCLStream<T>::dot()
       });
 
   });
+#if defined(PAGEFAULT) || defined(MANAGED)
   queue->wait();
   return *sum;
+#else
+  T hostSum;
+  queue->copy(sum, &hostSum, 1);
+  queue->wait();
+  return hostSum;
+#endif
 }
 
 template <class T>
@@ -213,10 +237,26 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void SYCLStream<T>::get_arrays(T const*& h_a, T const*& h_b, T const*& h_c)
 {
+#if defined(PAGEFAULT) || defined(MANAGED)
+  // Host-accessible memory: return pointers to it
   queue->wait();
   h_a = a;
   h_b = b;
   h_c = c;
+#else
+  // Device USM: copy data to the host
+  hostA.resize(array_size);
+  hostB.resize(array_size);
+  hostC.resize(array_size);
+  queue->copy(a, hostA.data(), array_size);
+  queue->copy(b, hostB.data(), array_size);
+  queue->copy(c, hostC.data(), array_size);
+  queue->wait();
+
+  h_a = hostA.data();
+  h_b = hostB.data();
+  h_c = hostC.data();
+#endif
 }
 
 void getDeviceList(void)
