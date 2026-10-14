@@ -17,12 +17,12 @@ std::vector<device> devices;
 void getDeviceList(void);
 
 template <class T>
-SYCLStream<T>::SYCLStream(const intptr_t ARRAY_SIZE, const int device_index)
+SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int device_index,
+			  T initA, T initB, T initC)
+  : array_size(array_size)
 {
   if (!cached)
     getDeviceList();
-
-  array_size = ARRAY_SIZE;
 
   if (device_index >= devices.size())
     throw std::runtime_error("Invalid device index");
@@ -79,6 +79,8 @@ SYCLStream<T>::SYCLStream(const intptr_t ARRAY_SIZE, const int device_index)
   d_b = new buffer<T>(array_size);
   d_c = new buffer<T>(array_size);
   d_sum = new buffer<T>(dot_num_groups);
+
+  init_arrays(initA, initB, initC);
 }
 
 template <class T>
@@ -238,17 +240,14 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void SYCLStream<T>::read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
+void SYCLStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 {
   auto _a = d_a->template get_access<access::mode::read>();
   auto _b = d_b->template get_access<access::mode::read>();
   auto _c = d_c->template get_access<access::mode::read>();
-  for (int i = 0; i < array_size; i++)
-  {
-    a[i] = _a[i];
-    b[i] = _b[i];
-    c[i] = _c[i];
-  }
+  a = &_a[0];
+  b = &_b[0];
+  c = &_c[0];
 }
 
 void getDeviceList(void)

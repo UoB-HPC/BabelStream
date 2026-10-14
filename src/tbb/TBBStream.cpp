@@ -20,15 +20,16 @@
 #endif
 
 template <class T>
-TBBStream<T>::TBBStream(const intptr_t ARRAY_SIZE, int device)
-  : partitioner(), range(0, (size_t)ARRAY_SIZE),
+TBBStream<T>::TBBStream(BenchId bs, const intptr_t array_size, const int device,
+			T initA, T initB, T initC)
+  : partitioner(), range(0, (size_t)array_size),
 #ifdef USE_VECTOR
-   a(ARRAY_SIZE), b(ARRAY_SIZE), c(ARRAY_SIZE)
+   a(array_size), b(array_size), c(array_size)
 #else
-   array_size(ARRAY_SIZE),
-   a((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE)),
-   b((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE)),
-   c((T *) aligned_alloc(ALIGNMENT, sizeof(T) * ARRAY_SIZE))
+   array_size(array_size),
+   a((T *) aligned_alloc(ALIGNMENT, sizeof(T) * array_size)),
+   b((T *) aligned_alloc(ALIGNMENT, sizeof(T) * array_size)),
+   c((T *) aligned_alloc(ALIGNMENT, sizeof(T) * array_size))
 #endif
 {
   if(device != 0){
@@ -36,6 +37,8 @@ TBBStream<T>::TBBStream(const intptr_t ARRAY_SIZE, int device)
   }
   std::cout << "Using TBB partitioner: " PARTITIONER_NAME << std::endl;
   std::cout << "Backing storage typeid: " << typeid(a).name() << std::endl;
+
+  init_arrays(initA, initB, initC);
 }
 
 
@@ -54,12 +57,17 @@ void TBBStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void TBBStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
+void TBBStream<T>::get_arrays(T const*& h_a, T const*& h_b, T const*& h_c)
 {
-  // Element-wise copy.
-  std::copy(BEGIN(a), END(a), h_a.begin());
-  std::copy(BEGIN(b), END(b), h_b.begin());
-  std::copy(BEGIN(c), END(c), h_c.begin());
+#ifdef USE_VECTOR
+  h_a = a.data();
+  h_b = b.data();
+  h_c = c.data();
+#else
+  h_a = a;
+  h_b = b;
+  h_c = c;
+#endif
 }
 
 template <class T>

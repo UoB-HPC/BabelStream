@@ -8,21 +8,23 @@
 #include "KokkosStream.hpp"
 
 template <class T>
-KokkosStream<T>::KokkosStream(
-        const intptr_t ARRAY_SIZE, const int device_index)
-    : array_size(ARRAY_SIZE)
+KokkosStream<T>::KokkosStream(BenchId bs, const intptr_t array_size, const int device_index,
+			      T initA, T initB, T initC)
+    : array_size(array_size)
 {
   Kokkos::initialize(Kokkos::InitializationSettings().set_device_id(device_index));
 
-  d_a = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_a"), ARRAY_SIZE);
-  d_b = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_b"), ARRAY_SIZE);
-  d_c = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_c"), ARRAY_SIZE);
+  d_a = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_a"), array_size);
+  d_b = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_b"), array_size);
+  d_c = new Kokkos::View<T*>(Kokkos::ViewAllocateWithoutInitializing("d_c"), array_size);
   hm_a = new typename Kokkos::View<T*>::HostMirror();
   hm_b = new typename Kokkos::View<T*>::HostMirror();
   hm_c = new typename Kokkos::View<T*>::HostMirror();
   *hm_a = create_mirror_view(*d_a);
   *hm_b = create_mirror_view(*d_b);
   *hm_c = create_mirror_view(*d_c);
+
+  init_arrays(initA, initB, initC);
 }
 
 template <class T>
@@ -47,18 +49,14 @@ void KokkosStream<T>::init_arrays(T initA, T initB, T initC)
 }
 
 template <class T>
-void KokkosStream<T>::read_arrays(
-        std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
+void KokkosStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 {
   deep_copy(*hm_a, *d_a);
   deep_copy(*hm_b, *d_b);
   deep_copy(*hm_c, *d_c);
-  for(intptr_t ii = 0; ii < array_size; ++ii)
-  {
-    a[ii] = (*hm_a)(ii);
-    b[ii] = (*hm_b)(ii);
-    c[ii] = (*hm_c)(ii);
-  }
+  a = hm_a->data();
+  b = hm_b->data();
+  c = hm_c->data();
 }
 
 template <class T>

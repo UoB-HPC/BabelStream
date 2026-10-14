@@ -1,9 +1,9 @@
-FC	:= flang-new
+FC	?= flang-new
 FCFLAGS	:= -O3
 
 DOCONCURRENT_FLAG   =
 ARRAY_FLAG          =
-OPENMP_FLAG         = -fopenmp
+OPENMP_FLAG         = -fopenmp --offload-arch=${GPUARCH} -DUSE_OMP_GET_WTIME
 OPENACC_FLAG        =
 CUDA_FLAG           =
 SEQUENTIAL_FLAG     =

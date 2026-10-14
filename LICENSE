@@ -14,9 +14,7 @@
 *     with the following limitations:
 *     3a. In order to be referred to as "BabelStream benchmark results",
 *         published results must be in conformance to the BabelStream
-*         Run Rules published at
-*         http://github.com/UoB-HPC/BabelStream/wiki/Run-Rules
-*         and incorporated herein by reference.
+*         Run Rules incorporated herein by reference.
 *         The copyright holders retain the
 *         right to determine conformity with the Run Rules.
 *     3b. Results based on modified source code or on runs not in
@@ -32,4 +30,21 @@
 *  4. Use of this program or creation of derived works based on this
 *     program constitutes acceptance of these licensing restrictions.
 *  5. Absolutely no warranty is expressed or implied.
+*———————————————————————————————————-------------------------------------------
+* Run Rules:
+*
+* In order to generate a valid BabelStream result measuring
+* *main memory bandwidth*, you should obey the following rules:
+*
+* 1. The array size must be large enough that increasing the array size does not
+* drastically change the reported bandwidth. If you satisfy this you will no
+* longer be affected by any cache effects.
+*
+* 2. Each kernel should take a few milliseconds. The resolution of the host timer
+* is probably in milliseconds so each kernel execution should be longer than the
+* timer resolution. Increase the array size if the kernels are too fast. You are
+* unlikely to break this rule if you follow rule 1.
+*
+* If you see a single BabelStream result, expect this to be the largest bandwidth
+* reported by the benchmark unless stated otherwise.
 *———————————————————————————————————-------------------------------------------

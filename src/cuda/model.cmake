@@ -9,6 +9,7 @@ register_flag_optional(MEM "Device memory mode:
         PAGEFAULT - shared memory, only host pointers allocated."
         "DEFAULT")
 
+
 register_flag_required(CMAKE_CUDA_COMPILER
         "Path to the CUDA nvcc compiler")
 

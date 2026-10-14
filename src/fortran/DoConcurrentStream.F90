@@ -130,7 +130,7 @@ module DoConcurrentStream
 #ifdef CRAY_THREAD_DOCONCURRENT
             do i=1,N
 #else
-            do concurrent (i=1:N) !shared(A,B)
+            do concurrent (i=1:N) reduce(+:s) !shared(A,B)
 #endif
                s = s + A(i) * B(i)
             end do

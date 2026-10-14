@@ -4,7 +4,7 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif ()
 
-project(BabelStream VERSION 5.0 LANGUAGES CXX C)
+project(BabelStream VERSION 6.0 LANGUAGES CXX C)
 
 # uncomment for debugging build issues:
 #set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -44,9 +44,18 @@ if ((NOT BUILD_TYPE STREQUAL RELEASE) AND (NOT BUILD_TYPE STREQUAL DEBUG))
     message(FATAL_ERROR "Only Release or Debug is supported, got `${CMAKE_BUILD_TYPE}`")
 endif ()
 
+option(BUILD_NATIVE "Builds for the current systems CPU and GPU architecture." ON)
+
 # setup some defaults flags for everything
 set(DEFAULT_DEBUG_FLAGS -O2 -fno-omit-frame-pointer)
-set(DEFAULT_RELEASE_FLAGS -O3 -march=native)
+set(DEFAULT_RELEASE_FLAGS -O3)
+if (BUILD_NATIVE)
+  if(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+    set(DEFAULT_RELEASE_FLAGS ${DEFAULT_RELEASE_FLAGS} -mcpu=native)
+  else()
+    set(DEFAULT_RELEASE_FLAGS ${DEFAULT_RELEASE_FLAGS} -march=native)
+  endif()
+endif()
 
 macro(hint_flag FLAG DESCRIPTION)
     if (NOT DEFINED ${FLAG})
@@ -80,6 +89,9 @@ option(USE_TBB "Enable the oneTBB library for *supported* models. Enabling this 
 option(FETCH_TBB "Fetch (download) the oneTBB library for *supported* models. This uses CMake's
                   FetchContent feature. Specify version by setting FETCH_TBB_VERSION" OFF)
 set(FETCH_TBB_VERSION "v2021.10.0" CACHE STRING "Specify version of oneTBB to use if FETCH_TBB is ON")
+
+option(ENABLE_CALIPER "Enable Caliper/Adiak support" FALSE)
+
 
 if (FETCH_TBB)
     FetchContent_Declare(
@@ -146,17 +158,16 @@ endif ()
 include(cmake/register_models.cmake)
 
 # register out models <model_name> <preprocessor_def_name> <source files...>
+register_model(serial SERIAL SerialStream.cpp)
 register_model(omp OMP OMPStream.cpp)
 register_model(ocl OCL OCLStream.cpp)
-register_model(std-data STD_DATA STDDataStream.cpp)
-register_model(std-indices STD_INDICES STDIndicesStream.cpp)
-register_model(std-ranges STD_RANGES STDRangesStream.cpp)
+register_model(std STD STDStream.cpp)
 register_model(hip HIP HIPStream.cpp)
 register_model(cuda CUDA CUDAStream.cu)
+register_model(cuda-tuned CUDA_TUNED CUDAStream.cu)
 register_model(kokkos KOKKOS KokkosStream.cpp)
 register_model(sycl SYCL SYCLStream.cpp)
-register_model(sycl2020-acc SYCL2020 SYCLStream2020.cpp)
-register_model(sycl2020-usm SYCL2020 SYCLStream2020.cpp)
+register_model(sycl2020 SYCL2020 SYCLStream2020.cpp)
 register_model(acc ACC ACCStream.cpp)
 # defining RAJA collides with the RAJA namespace so USE_RAJA
 register_model(raja USE_RAJA RAJAStream.cpp)
@@ -231,6 +242,14 @@ add_executable(${EXE_NAME} ${IMPL_SOURCES} src/main.cpp)
 target_link_libraries(${EXE_NAME} PUBLIC ${LINK_LIBRARIES})
 target_compile_definitions(${EXE_NAME} PUBLIC ${IMPL_DEFINITIONS})
 target_include_directories(${EXE_NAME} PUBLIC ${IMPL_DIRECTORIES})
+#add_executable(main ${IMPL_SOURCES} src/main.cpp)
+
+if (ENABLE_CALIPER)
+    find_package(caliper REQUIRED)
+    find_package(adiak REQUIRED)
+    add_compile_definitions(ENABLE_CALIPER)
+    target_link_libraries(${EXE_NAME} PUBLIC caliper adiak::adiak)
+endif()
 
 if (CXX_EXTRA_LIBRARIES)
     target_link_libraries(${EXE_NAME} PUBLIC ${CXX_EXTRA_LIBRARIES})
@@ -249,3 +268,10 @@ if (COMMAND setup_target)
 endif ()
 
 install(TARGETS ${EXE_NAME} DESTINATION bin)
+
+include(CTest)
+if (BUILD_TESTING)
+    add_test(NAME ${MODEL_LOWER}-stream
+             COMMAND $<TARGET_FILE:${EXE_NAME}> --arraysize 16777216 --numtimes 8)
+    set_tests_properties(${MODEL_LOWER}-stream PROPERTIES TIMEOUT 60)
+endif ()
