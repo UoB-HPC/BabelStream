@@ -87,8 +87,8 @@ jobs:
           - {variant: "futhark-ubuntu", model: "futhark", cmake_args: "-DFUTHARK_COMPILER=/usr/bin/futhark -DFUTHARK_BACKEND=multicore", model_packages: "futhark", toolchain: {image: "docker.io/library/ubuntu:26.04", cc: "gcc", cxx: "g++"}}
 
           ### GPU, compile only ###
-          - {variant: "gcc-15-omp-nvptx", model: "omp", skip_tests: true, cmake_args: "-DOFFLOAD=ON -DOFFLOAD_FLAGS=-fopenmp;-foffload=nvptx-none;-foffload-options=nvptx-none=-misa=sm_80 -DCXX_EXTRA_FLAGS=-fcf-protection=none", toolchain: &gcc_15_offload {architectures: [x86_64], image: "docker.io/library/ubuntu:26.04", cc: "gcc-15", cxx: "g++-15", packages: "g++-15 gcc-15-offload-nvptx gcc-15-offload-amdgcn"}}
-          - {variant: "gcc-15-omp-amdgcn", model: "omp", skip_tests: true, cmake_args: "-DOFFLOAD=ON -DOFFLOAD_FLAGS=-fopenmp;-foffload=amdgcn-amdhsa;-foffload-options=amdgcn-amdhsa=-march=gfx90a -DCXX_EXTRA_FLAGS=-fcf-protection=none", toolchain: *gcc_15_offload}
+          - {variant: "gcc-15-omp-nvptx", model: "omp", skip_tests: true, cmake_args: "-DOFFLOAD=NVIDIA:sm_80", toolchain: &gcc_15_offload {architectures: [x86_64], image: "docker.io/library/ubuntu:26.04", cc: "gcc-15", cxx: "g++-15", packages: "g++-15 gcc-15-offload-nvptx gcc-15-offload-amdgcn"}}
+          - {variant: "gcc-15-omp-amdgcn", model: "omp", skip_tests: true, cmake_args: "-DOFFLOAD=AMD:gfx90a", toolchain: *gcc_15_offload}
           - {variant: "nvhpc-omp-gpu", model: "omp", skip_tests: true, cmake_args: "-DOFFLOAD=ON -DOFFLOAD_FLAGS=-mp=gpu;-gpu=cc80", toolchain: *nvhpc}
           - {variant: "nvhpc-acc-gpu", model: "acc", skip_tests: true, cmake_args: "-DTARGET_DEVICE=gpu -DCUDA_ARCH=cc80", toolchain: *nvhpc}
           - {variant: "nvhpc-std-data-gpu", model: "std-data", skip_tests: true, cmake_args: "-DNVHPC_OFFLOAD=cc80", toolchain: *nvhpc}
@@ -118,6 +118,7 @@ jobs:
           - {variant: "thrust-fetch-cccl", model: "thrust", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=80 -DFETCH_CCCL=ON", model_packages: "git", toolchain: *cuda}
           - {variant: "rocm-hip", model: "hip", skip_tests: true, cmake_args: "-DCXX_EXTRA_FLAGS=--offload-arch=gfx90a", toolchain: &rocm {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04", cc: "gcc", cxx: "/opt/rocm/bin/hipcc",
               packages: "hip-dev rocm-device-libs", apt_key: "https://repo.radeon.com/rocm/rocm.gpg.key", apt_source: "https://repo.radeon.com/rocm/apt/7.2.4/ noble main"}}
+          - {variant: "rocm-omp", model: "omp", skip_tests: true, cmake_args: "-DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DOFFLOAD=AMD:gfx90a", toolchain: *rocm}
           - {variant: "rocm-std-data", model: "std-data", skip_tests: true, cmake_args: "-DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DAMDGPU_TARGET_OFFLOAD=gfx90a", model_packages: "rocthrust-dev", toolchain: *rocm}
           - {variant: "rocm-std-indices", model: "std-indices", skip_tests: true, cmake_args: "-DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DAMDGPU_TARGET_OFFLOAD=gfx90a", model_packages: "rocthrust-dev", toolchain: *rocm}
           - {variant: "rocm-std-ranges", model: "std-ranges", skip_tests: true, cmake_args: "-DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DAMDGPU_TARGET_OFFLOAD=gfx90a", model_packages: "rocthrust-dev", toolchain: *rocm}
