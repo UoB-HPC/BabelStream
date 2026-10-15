@@ -22,6 +22,10 @@ cmake -S . -B "$CI_BUILD_DIR" -G Ninja \
   "-DCMAKE_C_COMPILER=$CC" "-DCMAKE_CXX_COMPILER=$CXX" \
   "-DMODEL=$CI_MODEL" "${native_flags[@]}" "${model_flags[@]}"
 cmake --build "$CI_BUILD_DIR"
+if [[ $BUILD_TESTING == OFF ]]; then
+  readelf -SW "$CI_BUILD_DIR"/*-stream | grep -Eq '(\.(nv_fatbin|hip_fatbin|gnu\.offload_funcs|tgtimg)|llvm_offload_entries)' ||
+    { echo "no device code in the binary"; exit 1; }
+fi
 if [[ $BUILD_TESTING == ON ]]; then
   ctest --test-dir "$CI_BUILD_DIR" --output-on-failure --no-tests=error
 fi

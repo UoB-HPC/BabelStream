@@ -22,6 +22,10 @@ for precision in double float; do
   echo "::group::$CI_IMPL ($precision)"
   make -C "$build_dir" "COMPILER=$CI_COMPILER" "IMPLEMENTATION=$CI_IMPL" "FC=$FC" \
     "EXTRA_FCFLAGS=$extra_flags" "${make_args[@]}"
+  if [[ -n ${CI_SKIP_RUN:-} ]]; then
+    readelf -SW "$build_dir/BabelStream.$CI_COMPILER.$CI_IMPL" | grep -Eq '\.(nv_fatbin|gnu\.offload_funcs)' ||
+      { echo "no device code in the binary"; exit 1; }
+  fi
   if [[ -z ${CI_SKIP_RUN:-} ]]; then
     exe="$build_dir/BabelStream.$CI_COMPILER.$CI_IMPL"
     for mode in "" --triad-only --nstream-only; do
