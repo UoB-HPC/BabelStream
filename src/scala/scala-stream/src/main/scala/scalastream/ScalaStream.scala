@@ -344,8 +344,8 @@ object App:
         val results = stream.runTriad(opt.numtimes)
         val read    = stream.runReadArrays()
         showInit(init, read)
-        val totalBytes = 3 * arrayBytes * opt.numtimes
-        val bandwidth  = megaScale * (totalBytes / results.seconds)
+        val totalBytes = 3L * arrayBytes * opt.numtimes
+        val bandwidth  = gigaScale * (totalBytes / results.seconds)
         println(f"Runtime (seconds): ${results.seconds}%.5f")
         println(f"Bandwidth ($gigaSuffix/s): $bandwidth%.3f ")
 

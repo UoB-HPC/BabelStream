@@ -253,10 +253,10 @@ public class Main {
           SimpleImmutableEntry<Duration, Data<T>> read = stream.runReadArrays();
           showInit(totalBytes, megaScale, opt, init, read.getKey());
           ok = checkSolutions(read.getValue(), config, Optional.empty());
-          int triadTotalBytes = 3 * arrayBytes * opt.numtimes;
-          double bandwidth = megaScale * (triadTotalBytes / durationToSeconds(triadResult));
-          System.out.printf("Runtime (seconds): %.5f", durationToSeconds(triadResult));
-          System.out.printf("Bandwidth (%s/s): %.3f ", gigaSuffix, bandwidth);
+          long triadTotalBytes = 3L * arrayBytes * opt.numtimes;
+          double bandwidth = gigaScale * (triadTotalBytes / durationToSeconds(triadResult));
+          System.out.printf("Runtime (seconds): %.5f%n", durationToSeconds(triadResult));
+          System.out.printf("Bandwidth (%s/s): %.3f %n", gigaSuffix, bandwidth);
           break;
         }
       default:

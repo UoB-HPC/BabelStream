@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - Fix Java, Scala, and Fortran `dot` validation in single precision (#20)
 - Fix Scala `nstream`; Scala and Fortran now fail on validation errors
 - Fortran validation tolerance is relative to the value, and flang builds without `GPUARCH`
+- Fix Julia output formatting (#194), and `--triad-only` bandwidth in Julia, Scala, and Java
 
 
 ## [v5.0] - 2023-10-12
