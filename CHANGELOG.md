@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - New `cuda-tuned` model for CUDA kernels tuned by NVIDIA: generic parallel-for with grid- or block-stride loops (`STRIDE`), configurable unrolling (`UNROLL_FACTOR`), and peak bandwidth reporting via NVML
 - `MEM=PAGEFAULT` for `sycl2020-usm` and `omp`, relying on GPU page faults (#217)
+- `ocl` memory capacity checks can be disabled with `OCL_DISABLE_MEMORY_CHECK` (#183)
 - `cuda` supports clang as the CUDA compiler via `CUDA_CLANG_DRIVER=ON` (#191)
 
 ### Removed
