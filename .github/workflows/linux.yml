@@ -29,7 +29,7 @@ jobs:
 
           adaptivecpp-sycl2020-acc, adaptivecpp-sycl2020-usm,
 
-          cuda, cuda-clang, cuda-tuned, thrust, rocm-hip,
+          cuda, cuda-clang, cuda-clang-21, cuda-tuned, thrust, rocm-hip,
 
           futhark, futhark-ubuntu,
         ]
@@ -98,8 +98,14 @@ jobs:
               arm_apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/ /",
               apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub", apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/
                 /"}}
-          - {variant: "cuda-clang", model: "cuda", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=clang++-18 -DCUDA_CLANG_DRIVER=ON -DCUDA_ARCH=sm_80", toolchain: {image: "docker.io/library/ubuntu:24.04",
+          # FIXME enable aarch64, clang 18's nvptx device pass trips on glibc's SVE types (fixed by clang >= 19, see cuda-clang-21)
+          - {variant: "cuda-clang", model: "cuda", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=clang++-18 -DCUDA_CLANG_DRIVER=ON -DCUDA_ARCH=sm_80", toolchain: {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
               cc: "clang-18", cxx: "clang++-18", packages: "clang-18 cuda-nvcc-12-6 cuda-cudart-dev-12-6 libcurand-dev-12-6", arm_apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/3bf863cc.pub",
+              arm_apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/ /",
+              apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub", apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/
+                /"}}
+          - {variant: "cuda-clang-21", model: "cuda", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=clang++-21 -DCUDA_CLANG_DRIVER=ON -DCUDA_ARCH=sm_80", toolchain: {image: "docker.io/library/ubuntu:26.04",
+              cc: "clang-21", cxx: "clang++-21", packages: "clang-21 clang-tools-21 libstdc++-16-dev cuda-nvcc-12-6 cuda-cudart-dev-12-6 libcurand-dev-12-6", arm_apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/3bf863cc.pub",
               arm_apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/ /",
               apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub", apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/
                 /"}}
