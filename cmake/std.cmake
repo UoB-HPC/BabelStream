@@ -44,14 +44,6 @@ register_flag_optional(USE_ONEDPL
                    This requires the DPC++ compiler (other SYCL compilers are untested), required SYCL flags are added automatically."
         "OFF")
 
-register_flag_optional(STDIMPL
-  "Implementation strategy (default = DATA17):
-     DATA17  - Parallel algorithms over data (requires C++17).
-     DATA23  - Parallel algorithms over data using ranges (requires C++23).
-     INDICES - Parallel algorithms over indices (requires C++20)."
-  "DATA17"
-)
-
 register_flag_optional(AMDGPU_TARGET_OFFLOAD
         "Enable offloading support (via the non-standard `-stdpar`) for
          Clang/LLVM. The values are AMDGPU processors (https://www.llvm.org/docs/AMDGPUUsage.html#processors)
@@ -67,14 +59,7 @@ register_flag_optional(AMDGPU_TARGET_OFFLOAD
         "")
 
 macro(setup)
-    register_definitions(${STDIMPL})
-    if (${STDIMPL} STREQUAL "DATA17")
-      set(CMAKE_CXX_STANDARD 17)
-    elseif (${STDIMPL} STREQUAL "INDICES")
-      set(CMAKE_CXX_STANDARD 20)
-    elseif (${STDIMPL} STREQUAL "DATA23")
-      set(CMAKE_CXX_STANDARD 23)
-    endif ()
+    set(CMAKE_CXX_STANDARD ${STD_CXX_STANDARD})
     if (NVHPC_OFFLOAD)
         set(NVHPC_FLAGS -stdpar=gpu -gpu=${NVHPC_OFFLOAD})
         # propagate flags to linker so that it links with the gpu stuff as well

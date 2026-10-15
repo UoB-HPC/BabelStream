@@ -16,16 +16,17 @@ jobs:
         variant: [
           gcc-9-serial, gcc-9-omp, gcc-10-serial, gcc-10-omp, gcc-11-serial, gcc-11-omp, gcc-12-serial, gcc-12-omp,
           gcc-13-serial, gcc-13-omp, gcc-14-serial, gcc-14-omp, gcc-15-serial, gcc-15-omp, gcc-13-omp-target,
-          gcc-13-std, gcc-13-std-indices, gcc-13-std-onedpl, gcc-13-tbb, gcc-13-kokkos, gcc-13-kokkos-5, gcc-13-raja, gcc-13-ocl,
+          gcc-13-std-data, gcc-13-std-indices, gcc-13-std-data-onedpl, gcc-13-std-ranges, gcc-13-tbb, gcc-13-kokkos, gcc-13-kokkos-5, gcc-13-raja, gcc-13-ocl,
 
           clang-11-serial, clang-11-omp, clang-12-serial, clang-12-omp, clang-13-serial, clang-13-omp,
           clang-14-serial, clang-14-omp, clang-15-serial, clang-15-omp, clang-16-serial, clang-16-omp,
           clang-17-serial, clang-17-omp, clang-18-serial, clang-18-omp, clang-19-serial, clang-19-omp,
           clang-20-serial, clang-20-omp, clang-21-serial, clang-21-omp,
 
-          oneapi-sycl2020-acc, oneapi-sycl2020-usm,
+          oneapi-sycl2020-acc, oneapi-sycl2020-usm, oneapi-std-data, oneapi-std-indices, oneapi-std-ranges,
 
           nvhpc-serial, nvhpc-omp, nvhpc-acc,
+          nvhpc-std-data-gpu, nvhpc-std-indices-gpu, nvhpc-std-ranges-gpu, nvhpc-std-data-multicore,
 
           adaptivecpp-sycl2020-acc, adaptivecpp-sycl2020-usm,
 
@@ -73,9 +74,10 @@ jobs:
           - {variant: "clang-21-serial", model: "serial", toolchain: &clang_21 {image: "docker.io/library/ubuntu:26.04", cc: "clang-21", cxx: "clang++-21", packages: "clang-21 libstdc++-16-dev"}}
           - {variant: "clang-21-omp", model: "omp", cmake_args: *clang_omp_flags, model_packages: "libomp-21-dev", toolchain: *clang_21}
           - {variant: "gcc-13-omp-target", model: "omp", cmake_args: "-DOFFLOAD=ON -DOFFLOAD_FLAGS=-fopenmp", toolchain: *gcc_13}
-          - {variant: "gcc-13-std", model: "std", cmake_args: "-DUSE_TBB=ON", model_packages: "libtbb-dev", toolchain: *gcc_13}
-          - {variant: "gcc-13-std-indices", model: "std", cmake_args: "-DSTDIMPL=INDICES -DUSE_TBB=ON", model_packages: "libtbb-dev", toolchain: *gcc_13}
-          - {variant: "gcc-13-std-onedpl", model: "std", cmake_args: "-DSTDIMPL=DATA17 -DUSE_ONEDPL=OPENMP -DFETCH_ONEDPL=ON", model_packages: "git", toolchain: *gcc_13}
+          - {variant: "gcc-13-std-data", model: "std-data", cmake_args: "-DUSE_TBB=ON", model_packages: "libtbb-dev", toolchain: *gcc_13}
+          - {variant: "gcc-13-std-indices", model: "std-indices", cmake_args: "-DUSE_TBB=ON", model_packages: "libtbb-dev", toolchain: *gcc_13}
+          - {variant: "gcc-13-std-data-onedpl", model: "std-data", cmake_args: "-DUSE_ONEDPL=OPENMP -DFETCH_ONEDPL=ON", model_packages: "git", toolchain: *gcc_13}
+          - {variant: "gcc-13-std-ranges", model: "std-ranges", cmake_args: "-DUSE_TBB=ON", model_packages: "libtbb-dev", toolchain: *gcc_13}
           - {variant: "gcc-13-tbb", model: "tbb", model_packages: "libtbb-dev", toolchain: *gcc_13}
           - {variant: "gcc-13-kokkos", model: "kokkos", kokkos_ref: "4.7.04", cmake_args: "-DKOKKOS_IN_TREE=/opt/kokkos -DKokkos_ENABLE_SERIAL=ON", model_packages: "git", toolchain: *gcc_13}
           - {variant: "gcc-13-kokkos-5", model: "kokkos", kokkos_ref: "5.2.2", cmake_args: "-DKOKKOS_IN_TREE=/opt/kokkos -DKokkos_ENABLE_SERIAL=ON", model_packages: "git", toolchain: *gcc_13}
@@ -86,9 +88,16 @@ jobs:
               apt_key: "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB", apt_source: "https://apt.repos.intel.com/oneapi
                 all main", env_script: "/opt/intel/oneapi/setvars.sh"}}
           - {variant: "oneapi-sycl2020-usm", model: "sycl2020-usm", cmake_args: "-DSYCL_COMPILER=ONEAPI-ICPX", model_packages: "pocl-opencl-icd", toolchain: *oneapi}
+          - {variant: "oneapi-std-data", model: "std-data", cmake_args: "-DUSE_ONEDPL=DPCPP -DFETCH_ONEDPL=ON", model_packages: "git pocl-opencl-icd", toolchain: *oneapi}
+          - {variant: "oneapi-std-indices", model: "std-indices", cmake_args: "-DUSE_ONEDPL=DPCPP -DFETCH_ONEDPL=ON", model_packages: "git pocl-opencl-icd", toolchain: *oneapi}
+          - {variant: "oneapi-std-ranges", model: "std-ranges", cmake_args: "-DUSE_ONEDPL=DPCPP -DFETCH_ONEDPL=ON", model_packages: "git pocl-opencl-icd", toolchain: *oneapi}
           - {variant: "nvhpc-serial", model: "serial", toolchain: &nvhpc {image: "nvcr.io/nvidia/nvhpc:26.5-devel-cuda13.2-ubuntu24.04", cc: "nvc", cxx: "nvc++", native_flags: "-tp=native", cleanup_disk: true}}
           - {variant: "nvhpc-omp", model: "omp", toolchain: *nvhpc}
           - {variant: "nvhpc-acc", model: "acc", cmake_args: "-DTARGET_DEVICE=multicore", toolchain: *nvhpc}
+          - {variant: "nvhpc-std-data-gpu", model: "std-data", skip_tests: true, cmake_args: "-DNVHPC_OFFLOAD=cc80", toolchain: *nvhpc}
+          - {variant: "nvhpc-std-indices-gpu", model: "std-indices", skip_tests: true, cmake_args: "-DNVHPC_OFFLOAD=cc80", toolchain: *nvhpc}
+          - {variant: "nvhpc-std-ranges-gpu", model: "std-ranges", skip_tests: true, cmake_args: "-DNVHPC_OFFLOAD=cc80", toolchain: *nvhpc}
+          - {variant: "nvhpc-std-data-multicore", model: "std-data", cmake_args: "-DNVHPC_MULTICORE=ON", toolchain: *nvhpc}
           - {variant: "adaptivecpp-sycl2020-acc", model: "sycl2020-acc", cmake_args: "-DSYCL_COMPILER=AdaptiveCpp -DSYCL_COMPILER_DIR=/opt/adaptivecpp", toolchain: &adaptivecpp {
               image: "docker.io/library/ubuntu:24.04", cc: "clang-18", cxx: "clang++-18", packages: "clang-18 llvm-18-dev libclang-18-dev libclang-cpp18-dev libomp-18-dev lld-18 python3",
               source_url: "https://github.com/AdaptiveCpp/AdaptiveCpp/archive/refs/tags/v25.10.0.tar.gz", sha256: "334b16ebff373bd2841f83332c2ae9a45ec192f2cf964d5fdfe94e1140776059"}}

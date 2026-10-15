@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
 - Removed std-data/std-indices memory management workaround for AdaptiveCpp
 - Thrust now uses CCCL via `find_package(CCCL)`, with optional `FETCH_CCCL`, and requires C++17 (#206)
 - `cuda` and `hip` accept any array size, which no longer has to be a multiple of 1024, and use 64-bit indexing
+- `std-ranges` builds with hipstdpar and the oneDPL SYCL backend, and the default `FETCH_ONEDPL_VERSION` is `oneDPL-release-2022.14.0`
+- Fix `FETCH_ONEDPL` probing the compiler with C++14, which broke `-fsycl` detection for oneDPL (#210)
 - `sycl2020-usm` defaults to device USM (`MEM=DEFAULT`), matching `cuda` and `hip`; shared USM moves to `MEM=MANAGED` (#226)
 - Fix `sycl2020-acc` and `sycl2020-usm` `dot` with AdaptiveCpp, which accumulated across calls
 - Fix `ocl` not finding the OpenCL library unless `OpenCL_LIBRARY` was set
