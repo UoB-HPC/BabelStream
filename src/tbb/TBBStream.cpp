@@ -37,6 +37,15 @@ TBBStream<T>::TBBStream(BenchId bs, const intptr_t array_size, const int device,
   init_arrays(initA, initB, initC);
 }
 
+template <class T>
+TBBStream<T>::~TBBStream()
+{
+#ifndef USE_VECTOR
+  dealloc_raw(a);
+  dealloc_raw(b);
+  dealloc_raw(c);
+#endif
+}
 
 template <class T>
 void TBBStream<T>::init_arrays(T initA, T initB, T initC)

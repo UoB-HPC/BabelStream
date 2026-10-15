@@ -49,7 +49,7 @@ class TBBStream : public Stream<T>
   public:
     TBBStream(BenchId bs, const intptr_t array_size, const int device_id,
 	      T initA, T initB, T initC);
-    ~TBBStream() = default;
+    ~TBBStream();
 
     void copy() override;
     void add() override;
