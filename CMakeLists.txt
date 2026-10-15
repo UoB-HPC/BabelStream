@@ -16,8 +16,8 @@ include(FetchContent)
 
 FetchContent_Declare(
         opencl_header
-        URL https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v2021.06.30.zip
-        URL_HASH MD5=af7ab7918a6a11c60370c8651a9f0192
+        URL https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v2026.05.29.zip
+        URL_HASH MD5=602be2021f6ce73754bf59a33ddc4664
 )
 
 macro(setup_opencl_header_includes)
@@ -88,7 +88,7 @@ option(USE_TBB "Enable the oneTBB library for *supported* models. Enabling this 
 
 option(FETCH_TBB "Fetch (download) the oneTBB library for *supported* models. This uses CMake's
                   FetchContent feature. Specify version by setting FETCH_TBB_VERSION" OFF)
-set(FETCH_TBB_VERSION "v2021.10.0" CACHE STRING "Specify version of oneTBB to use if FETCH_TBB is ON")
+set(FETCH_TBB_VERSION "v2023.1.0" CACHE STRING "Specify version of oneTBB to use if FETCH_TBB is ON")
 
 option(ENABLE_CALIPER "Enable Caliper/Adiak support" FALSE)
 
@@ -102,6 +102,7 @@ if (FETCH_TBB)
     # Don't fail builds on waring (TBB has -Wall while not being free of warnings from unused symbols...)
     set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
     set(TBB_STRICT OFF)
+    set(TBB_TEST OFF)
     # Not using FetchContent_MakeAvailable (CMake>= 3.14) because we need EXCLUDE_FROM_ALL
     FetchContent_GetProperties(TBB)
     if (NOT TBB_POPULATED)

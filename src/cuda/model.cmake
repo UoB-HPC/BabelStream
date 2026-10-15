@@ -21,6 +21,10 @@ register_flag_optional(CUDA_CLANG_DRIVER
         "Set to ON when CMAKE_CUDA_COMPILER is clang++, this replaces the nvcc-specific flags (requires CMake >= 3.18)"
         "OFF")
 
+register_flag_optional(ACPP_PCUDA_DRIVER
+        "Set to ON to compile with AdaptiveCpp's PCUDA frontend, set CMAKE_CXX_COMPILER to acpp, CMAKE_CUDA_COMPILER and CUDA_ARCH are unused"
+        "OFF")
+
 register_flag_optional(CUDA_EXTRA_FLAGS
         "Additional CUDA flags passed to the CUDA compiler, this is appended after `CUDA_ARCH`"
         "")
@@ -37,24 +41,31 @@ macro(setup)
 
     register_definitions(${MEM})
 
-    if (CUDA_CLANG_DRIVER)
-        if (CMAKE_VERSION VERSION_LESS "3.18.0")
-            message(FATAL_ERROR "Using clang as the CUDA compiler requires CMake >= 3.18")
-        endif ()
-        set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "--cuda-gpu-arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
+    if (ACPP_PCUDA_DRIVER)
+        set(CMAKE_CXX_STANDARD 17)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --acpp-pcuda --acpp-pcuda-chevron-launch ${CUDA_EXTRA_FLAGS}")
+        set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE CXX)
+        message(STATUS "PCUDA flags: ${CMAKE_CXX_FLAGS}")
     else ()
-        # add -forward-unknown-to-host-compiler for compatibility reasons
-        set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler" "-arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
+        if (CUDA_CLANG_DRIVER)
+            if (CMAKE_VERSION VERSION_LESS "3.18.0")
+                message(FATAL_ERROR "Using clang as the CUDA compiler requires CMake >= 3.18")
+            endif ()
+            set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "--cuda-gpu-arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
+        else ()
+            # add -forward-unknown-to-host-compiler for compatibility reasons
+            set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler" "-arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
+        endif ()
+        string(REPLACE ";" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+
+        # the flags must be set first as compiler detection already needs the architecture
+        enable_language(CUDA)
+
+        # CMake defaults to -O2 for CUDA at Release, let's wipe that and use the global RELEASE_FLAG
+        # appended later
+        wipe_gcc_style_optimisation_flags(CMAKE_CUDA_FLAGS_${BUILD_TYPE})
+
+        message(STATUS "CUDA compiler flags: ${CMAKE_CUDA_FLAGS} ${CMAKE_CUDA_FLAGS_${BUILD_TYPE}}")
     endif ()
-    string(REPLACE ";" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-
-    # the flags must be set first as compiler detection already needs the architecture
-    enable_language(CUDA)
-
-    # CMake defaults to -O2 for CUDA at Release, let's wipe that and use the global RELEASE_FLAG
-    # appended later
-    wipe_gcc_style_optimisation_flags(CMAKE_CUDA_FLAGS_${BUILD_TYPE})
-
-    message(STATUS "CUDA compiler flags: ${CMAKE_CUDA_FLAGS} ${CMAKE_CUDA_FLAGS_${BUILD_TYPE}}")
 endmacro()
 
