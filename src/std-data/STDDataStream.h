@@ -25,7 +25,7 @@ class STDDataStream : public Stream<T>
 
   public:
     STDDataStream(BenchId bs, const intptr_t array_size, const int device_id,
-		  T initA, T initB, T initC) noexcept;
+		  T initA, T initB, T initC);
     ~STDDataStream();
 
     void copy() override;

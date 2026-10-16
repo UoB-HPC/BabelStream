@@ -5,11 +5,7 @@
 // source code
 
 #include "TBBStream.hpp"
-#include <cstdlib>
-
-#ifndef ALIGNMENT
-#define ALIGNMENT (2*1024*1024) // 2MB
-#endif
+#include "Alloc.h"
 
 #ifdef USE_VECTOR
 #define BEGIN(x) (x).begin()
@@ -27,9 +23,9 @@ TBBStream<T>::TBBStream(BenchId bs, const intptr_t array_size, const int device,
    a(array_size), b(array_size), c(array_size)
 #else
    array_size(array_size),
-   a((T *) aligned_alloc(ALIGNMENT, sizeof(T) * array_size)),
-   b((T *) aligned_alloc(ALIGNMENT, sizeof(T) * array_size)),
-   c((T *) aligned_alloc(ALIGNMENT, sizeof(T) * array_size))
+   a(alloc_raw<T>(array_size)),
+   b(alloc_raw<T>(array_size)),
+   c(alloc_raw<T>(array_size))
 #endif
 {
   if(device != 0){
@@ -41,6 +37,15 @@ TBBStream<T>::TBBStream(BenchId bs, const intptr_t array_size, const int device,
   init_arrays(initA, initB, initC);
 }
 
+template <class T>
+TBBStream<T>::~TBBStream()
+{
+#ifndef USE_VECTOR
+  dealloc_raw(a);
+  dealloc_raw(b);
+  dealloc_raw(c);
+#endif
+}
 
 template <class T>
 void TBBStream<T>::init_arrays(T initA, T initB, T initC)

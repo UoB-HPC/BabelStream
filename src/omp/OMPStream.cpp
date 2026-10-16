@@ -5,15 +5,11 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
-#include <cstdlib>  // For aligned_alloc
 #include "OMPStream.h"
+#include "Alloc.h"
 
 #if defined(PAGEFAULT)
 #pragma omp requires unified_shared_memory
-#endif
-
-#ifndef ALIGNMENT
-#define ALIGNMENT (2*1024*1024) // 2MB
 #endif
 
 template <class T>
@@ -22,9 +18,9 @@ OMPStream<T>::OMPStream(BenchId bs, const intptr_t array_size, const int device,
   : array_size(array_size)
 {
   // Allocate on the host
-  this->a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-  this->b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-  this->c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+  this->a = alloc_raw<T>(array_size);
+  this->b = alloc_raw<T>(array_size);
+  this->c = alloc_raw<T>(array_size);
 
 #ifdef OMP_TARGET_GPU
   omp_set_default_device(device);
@@ -53,9 +49,9 @@ OMPStream<T>::~OMPStream()
   #pragma omp target exit data map(release: a[0:array_size], b[0:array_size], c[0:array_size])
   {}
 #endif
-  free(a);
-  free(b);
-  free(c);
+  dealloc_raw(a);
+  dealloc_raw(b);
+  dealloc_raw(c);
 }
 
 template <class T>

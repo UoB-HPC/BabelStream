@@ -5,15 +5,11 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
-#include <cstdlib>  // For aligned_alloc
 #include <stdexcept>
 #include "RAJAStream.hpp"
+#include "Alloc.h"
 
 using RAJA::forall;
-
-#ifndef ALIGNMENT
-#define ALIGNMENT (2*1024*1024) // 2MB
-#endif
 
 template <class T>
 RAJAStream<T>::RAJAStream(BenchId bs, const intptr_t array_size, const int device_index,
@@ -22,9 +18,9 @@ RAJAStream<T>::RAJAStream(BenchId bs, const intptr_t array_size, const int devic
 {
 
 #ifdef RAJA_TARGET_CPU
-  d_a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-  d_b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-  d_c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
+  d_a = alloc_raw<T>(array_size);
+  d_b = alloc_raw<T>(array_size);
+  d_c = alloc_raw<T>(array_size);
 #else
   cudaMallocManaged((void**)&d_a, sizeof(T)*array_size, cudaMemAttachGlobal);
   cudaMallocManaged((void**)&d_b, sizeof(T)*array_size, cudaMemAttachGlobal);
@@ -39,9 +35,9 @@ template <class T>
 RAJAStream<T>::~RAJAStream()
 {
 #ifdef RAJA_TARGET_CPU
-  free(d_a);
-  free(d_b);
-  free(d_c);
+  dealloc_raw(d_a);
+  dealloc_raw(d_b);
+  dealloc_raw(d_c);
 #else
   cudaFree(d_a);
   cudaFree(d_b);
