@@ -21,6 +21,7 @@ else
 endif
 
 FCFLAGS += -DVERSION_STRING="5.0"
+FCFLAGS += $(EXTRA_FCFLAGS)
 #FCFLAGS += -DUSE_INT32
 
 ifeq ($(IMPLEMENTATION),DoConcurrent)

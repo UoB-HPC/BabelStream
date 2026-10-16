@@ -23,7 +23,7 @@ class PlainStream[@specialized(Float, Double) A: Fractional: ClassTag](val confi
   override inline def mul(): Unit     = for i <- indices do b(i) = scalar * c(i)
   override inline def add(): Unit     = for i <- indices do c(i) = a(i) + b(i)
   override inline def triad(): Unit   = for i <- indices do a(i) = b(i) + (scalar * c(i))
-  override inline def nstream(): Unit = for i <- indices do a(i) = b(i) * scalar * c(i)
+  override inline def nstream(): Unit = for i <- indices do a(i) = a(i) + b(i) + scalar * c(i)
   override inline def dot(): A =
     var acc: A = 0.fractional
     for i <- indices do acc = acc + (a(i) * b(i))

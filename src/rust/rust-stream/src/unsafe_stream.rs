@@ -1,10 +1,9 @@
 extern crate core_affinity;
 
-use std::alloc::Allocator;
 use std::iter::Sum;
 use std::ops::Range;
 
-use crate::stream::{AllocatorType, ArrayType, RustStream, StreamData};
+use crate::stream::{ArrayType, RustStream, StreamData};
 
 use self::core_affinity::CoreId;
 
@@ -13,11 +12,12 @@ struct UnsafeData<T>(*mut T, usize);
 
 impl<T: ArrayType> UnsafeData<T> {
   fn empty() -> UnsafeData<T> { UnsafeData(([] as [T; 0]).as_mut_ptr(), 0) }
-  fn new<A: Allocator>(xs: &mut Vec<T, A>) -> UnsafeData<T> {
-    UnsafeData(xs.as_mut_ptr(), xs.len())
-  }
+  fn new(xs: &mut [T]) -> UnsafeData<T> { UnsafeData(xs.as_mut_ptr(), xs.len()) }
 
-  fn get_slice(&self) -> &mut [T] { unsafe { std::slice::from_raw_parts_mut(self.0, self.1) } }
+  // callers on different threads must only touch disjoint ranges
+  unsafe fn get_slice<'a>(self) -> &'a mut [T] {
+    unsafe { std::slice::from_raw_parts_mut(self.0, self.1) }
+  }
 }
 
 unsafe impl<T> Send for UnsafeData<T> {}
@@ -70,9 +70,7 @@ impl<T: ArrayType> UnsafeDevice<T> {
 }
 
 // Unsafe threaded version, it should be semantically equal to the single threaded version
-impl<T: 'static + ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send> RustStream<T>
-  for StreamData<T, UnsafeDevice<T>, A>
-{
+impl<T: 'static + ArrayType + Sync + Send + Sum> RustStream<T> for StreamData<T, UnsafeDevice<T>> {
   fn init_arrays(&mut self) {
     self.device.data.a = UnsafeData::new(&mut self.a);
     self.device.data.b = UnsafeData::new(&mut self.b);
@@ -90,9 +88,9 @@ impl<T: 'static + ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send>
           if pin {
             core_affinity::set_for_current(core);
           }
-          let a = data.a.get_slice();
-          let b = data.b.get_slice();
-          let c = data.c.get_slice();
+          let a = unsafe { data.a.get_slice() };
+          let b = unsafe { data.b.get_slice() };
+          let c = unsafe { data.c.get_slice() };
           for i in r {
             a[i] = init.0;
             b[i] = init.1;
@@ -118,8 +116,8 @@ impl<T: 'static + ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send>
           if pin {
             core_affinity::set_for_current(core);
           }
-          let a = data.a.get_slice();
-          let c = data.c.get_slice();
+          let a = unsafe { data.a.get_slice() };
+          let c = unsafe { data.c.get_slice() };
           for i in r {
             c[i] = a[i];
           }
@@ -144,8 +142,8 @@ impl<T: 'static + ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send>
           if pin {
             core_affinity::set_for_current(core);
           }
-          let b = data.b.get_slice();
-          let c = data.c.get_slice();
+          let b = unsafe { data.b.get_slice() };
+          let c = unsafe { data.c.get_slice() };
           for i in r {
             b[i] = scalar * c[i];
           }
@@ -169,9 +167,9 @@ impl<T: 'static + ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send>
           if pin {
             core_affinity::set_for_current(core);
           }
-          let a = data.a.get_slice();
-          let b = data.b.get_slice();
-          let c = data.c.get_slice();
+          let a = unsafe { data.a.get_slice() };
+          let b = unsafe { data.b.get_slice() };
+          let c = unsafe { data.c.get_slice() };
           for i in r {
             c[i] = a[i] + b[i];
           }
@@ -196,9 +194,9 @@ impl<T: 'static + ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send>
           if pin {
             core_affinity::set_for_current(core);
           }
-          let a = data.a.get_slice();
-          let b = data.b.get_slice();
-          let c = data.c.get_slice();
+          let a = unsafe { data.a.get_slice() };
+          let b = unsafe { data.b.get_slice() };
+          let c = unsafe { data.c.get_slice() };
           for i in r {
             a[i] = b[i] + scalar * c[i]
           }
@@ -223,9 +221,9 @@ impl<T: 'static + ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send>
           if pin {
             core_affinity::set_for_current(core);
           }
-          let a = data.a.get_slice();
-          let b = data.b.get_slice();
-          let c = data.c.get_slice();
+          let a = unsafe { data.a.get_slice() };
+          let b = unsafe { data.b.get_slice() };
+          let c = unsafe { data.c.get_slice() };
           for i in r {
             a[i] += b[i] + scalar * c[i]
           }
@@ -249,8 +247,8 @@ impl<T: 'static + ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send>
           if pin {
             core_affinity::set_for_current(core);
           }
-          let a = data.a.get_slice();
-          let b = data.b.get_slice();
+          let a = unsafe { data.a.get_slice() };
+          let b = unsafe { data.b.get_slice() };
           let mut p = T::default();
           for i in r {
             p += a[i] * b[i];

@@ -41,5 +41,5 @@ class OMPStream : public Stream<T>
     T dot() override;
 
     void get_arrays(T const*& a, T const*& b, T const*& c) override;
-    void init_arrays(T initA, T initB, T initC);
+    void init_arrays(T initA, T initB, T initC) override;
 };

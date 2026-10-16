@@ -12,6 +12,10 @@
 #include <sstream>
 #include <cstdint>
 
+#ifdef __ACPP_PCUDA__
+#include <cuda_runtime.h>
+#endif
+
 #include "Stream.h"
 
 #define IMPLEMENTATION_STRING "CUDA"

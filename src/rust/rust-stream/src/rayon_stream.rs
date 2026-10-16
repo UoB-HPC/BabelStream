@@ -3,16 +3,14 @@ use std::iter::Sum;
 use rayon::prelude::*;
 use rayon::ThreadPool;
 
-use crate::stream::{AllocatorType, ArrayType, RustStream, StreamData};
+use crate::stream::{ArrayType, RustStream, StreamData};
 
 pub struct RayonDevice {
   pub(crate) pool: ThreadPool,
 }
 
 //  Rayon version, it should be semantically equal to the single threaded version
-impl<T: ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send> RustStream<T>
-  for StreamData<T, RayonDevice, A>
-{
+impl<T: ArrayType + Sync + Send + Sum> RustStream<T> for StreamData<T, RayonDevice> {
   fn init_arrays(&mut self) {
     let init = self.init;
     self.a.par_iter_mut().for_each(|v| *v = init.0);

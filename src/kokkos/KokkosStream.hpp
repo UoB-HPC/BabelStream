@@ -25,9 +25,9 @@ class KokkosStream : public Stream<T>
     typename Kokkos::View<T*>* d_a;
     typename Kokkos::View<T*>* d_b;
     typename Kokkos::View<T*>* d_c;
-    typename Kokkos::View<T*>::HostMirror* hm_a;
-    typename Kokkos::View<T*>::HostMirror* hm_b;
-    typename Kokkos::View<T*>::HostMirror* hm_c;
+    typename Kokkos::View<T*>::host_mirror_type* hm_a;
+    typename Kokkos::View<T*>::host_mirror_type* hm_b;
+    typename Kokkos::View<T*>::host_mirror_type* hm_c;
 
   public:
 
@@ -43,6 +43,6 @@ class KokkosStream : public Stream<T>
     T dot() override;
 
     void get_arrays(T const*& a, T const*& b, T const*& c) override;
-    void init_arrays(T initA, T initB, T initC);
+    void init_arrays(T initA, T initB, T initC) override;
 };
 

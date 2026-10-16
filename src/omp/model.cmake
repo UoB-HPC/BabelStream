@@ -49,9 +49,13 @@
 set(OMP_FLAGS_OFFLOAD_INTEL
         -qnextgen -fiopenmp -fopenmp-targets=spir64)
 set(OMP_FLAGS_OFFLOAD_GNU_NVIDIA
-        -foffload=nvptx-none)
+        -fopenmp -foffload=nvptx-none -fcf-protection=none -fno-stack-protector)
+set(OMP_FLAGS_OFFLOAD_GNU_NVIDIA_ARCH_FLAG
+        -foffload-options=nvptx-none=-misa=) # prefix only, arch appended by the vendor:arch tuple
 set(OMP_FLAGS_OFFLOAD_GNU_AMD
-        -foffload=amdgcn-amdhsa)
+        -fopenmp -foffload=amdgcn-amdhsa -fcf-protection=none -fno-stack-protector)
+set(OMP_FLAGS_OFFLOAD_GNU_AMD_ARCH_FLAG
+        -foffload-options=amdgcn-amdhsa=-march=)
 set(OMP_FLAGS_OFFLOAD_CLANG_NVIDIA
         -fopenmp=libomp -fopenmp-targets=nvptx64-nvidia-cuda -Xopenmp-target=nvptx64-nvidia-cuda)
 set(OMP_FLAGS_OFFLOAD_CLANG_AMD
@@ -148,12 +152,10 @@ macro(setup)
 
     elseif ("${OFFLOAD}" STREQUAL ON)
         #  offload but with custom flags
-        register_definitions(OMP_TARGET_GPU)
         separate_arguments(OFFLOAD_FLAGS)
         set(OMP_FLAGS ${OFFLOAD_FLAGS})
     elseif ((DEFINED OFFLOAD) AND OFFLOAD_FLAGS)
         # offload but OFFLOAD_FLAGS overrides
-        register_definitions(OMP_TARGET_GPU)
         separate_arguments(OFFLOAD_FLAGS)
         list(APPEND OMP_FLAGS ${OFFLOAD_FLAGS})
     else ()
@@ -175,8 +177,11 @@ macro(setup)
 
             # append OMP_FLAGS_OFFLOAD_<compiler>_<vendor> if exists
             list(APPEND OMP_FLAGS ${OMP_FLAGS_OFFLOAD_${COMPILER}_${OFFLOAD_VENDOR}})
-            # append offload arch if OMP_FLAGS_OFFLOAD_<compiler>_ARCH_FLAG if exists
-            if (DEFINED OMP_FLAGS_OFFLOAD_${COMPILER}_ARCH_FLAG)
+            # append offload arch if OMP_FLAGS_OFFLOAD_<compiler>_<vendor>_ARCH_FLAG or else OMP_FLAGS_OFFLOAD_<compiler>_ARCH_FLAG exists
+            if (DEFINED OMP_FLAGS_OFFLOAD_${COMPILER}_${OFFLOAD_VENDOR}_ARCH_FLAG)
+                list(APPEND OMP_FLAGS
+                        "${OMP_FLAGS_OFFLOAD_${COMPILER}_${OFFLOAD_VENDOR}_ARCH_FLAG}${OFFLOAD_ARCH}")
+            elseif (DEFINED OMP_FLAGS_OFFLOAD_${COMPILER}_ARCH_FLAG)
                 list(APPEND OMP_FLAGS
                         "${OMP_FLAGS_OFFLOAD_${COMPILER}_ARCH_FLAG}${OFFLOAD_ARCH}")
             endif ()
@@ -186,6 +191,9 @@ macro(setup)
 
     endif ()
 
+    if (NOT (("${OFFLOAD}" STREQUAL OFF) OR (NOT DEFINED OFFLOAD)))
+        register_definitions(OMP_TARGET_GPU)
+    endif ()
 
     message(STATUS "OMP CXX  flags : ${OMP_FLAGS}")
     message(STATUS "OMP Link flags : ${OMP_LINK_FLAGS}")

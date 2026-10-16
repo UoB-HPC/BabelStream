@@ -1,20 +1,16 @@
 use num_traits::real::Real;
 use num_traits::{NumAssign, Signed};
-use std::alloc::Allocator;
 use std::fmt::Debug;
 use std::time::{Duration, Instant};
 
-pub trait AllocatorType: Allocator + Copy + Clone + Default + Debug {}
-impl<T: Allocator + Copy + Clone + Default + Debug> AllocatorType for T {}
-
-pub struct StreamData<T, D, A: AllocatorType> {
+pub struct StreamData<T, D> {
   pub device: D,
   pub size: usize,
   pub scalar: T,
   pub init: (T, T, T),
-  pub a: Vec<T, A>,
-  pub b: Vec<T, A>,
-  pub c: Vec<T, A>,
+  pub a: Vec<T>,
+  pub b: Vec<T>,
+  pub c: Vec<T>,
   pub needs_dealloc: bool,
 }
 
@@ -43,24 +39,24 @@ pub struct AllTiming<T> {
 pub trait ArrayType: Real + NumAssign + Signed + Default + Debug {}
 impl<T: Real + NumAssign + Signed + Default + Debug> ArrayType for T {}
 
-impl<T: Default + Clone, D, A: AllocatorType> StreamData<T, D, A> {
-  pub fn new_in(
+impl<T: Default + Clone, D> StreamData<T, D> {
+  pub fn new(
     size: usize,
     scalar: T,
     init: (T, T, T),
     device: D,
-    allocator: A,
     malloc: bool,     //
     initialise: bool, //
-  ) -> StreamData<T, D, A> {
+  ) -> StreamData<T, D> {
     let mk_vec = || {
       if malloc {
         extern crate libc;
         use std::mem;
         unsafe {
-          // we do the typical C malloc with a NULL check here
+          // we do the typical C calloc with a NULL check here
           let bytes = mem::size_of::<T>() * size;
-          let ptr = libc::malloc(bytes as libc::size_t) as *mut T;
+          let ptr =
+            libc::calloc(size as libc::size_t, mem::size_of::<T>() as libc::size_t) as *mut T;
           if ptr.is_null() {
             panic!(
               "Cannot allocate {} bytes in `sizeof(T) * size` (T = {}, size = {})",
@@ -69,7 +65,7 @@ impl<T: Default + Clone, D, A: AllocatorType> StreamData<T, D, A> {
               size
             );
           }
-          let mut xs = Vec::from_raw_parts_in(ptr, size, size, allocator);
+          let mut xs = Vec::from_raw_parts(ptr, size, size);
           if initialise {
             xs.fill(T::default());
           }
@@ -77,16 +73,12 @@ impl<T: Default + Clone, D, A: AllocatorType> StreamData<T, D, A> {
         }
       } else {
         if initialise {
-          let mut xs = Vec::new_in(allocator);
+          let mut xs = Vec::new();
           xs.resize(size, T::default());
           xs
         } else {
-          // try not to touch the vec after allocation
-          let mut xs = Vec::with_capacity_in(size, allocator);
-          unsafe {
-            xs.set_len(size);
-          }
-          xs
+          // zeroed allocation leaves pages untouched, so first touch happens on the worker threads
+          vec![T::default(); size]
         }
       }
     };
@@ -106,12 +98,12 @@ impl<T: Default + Clone, D, A: AllocatorType> StreamData<T, D, A> {
     if self.needs_dealloc {
       unsafe {
         extern crate libc;
-        let free_ts = move |xs: Vec<T, A>| {
+        let free_ts = move |xs: Vec<T>| {
           // make sure we don't call dealloc for vec anymore
-          // XXX it's important we don't free xs.as_mut_ptr() here and use xs.into_raw_parts_with_alloc()
+          // XXX it's important we don't free xs.as_mut_ptr() here and use xs.into_raw_parts()
           // as that function handles drops semantic for us
           // if we free the the raw ptr directly, the compiler will still drop the vec and then segfault
-          let (ptr, _, _, _) = xs.into_raw_parts_with_alloc();
+          let (ptr, _, _) = xs.into_raw_parts();
           libc::free(ptr as *mut libc::c_void);
         };
         free_ts(self.a);

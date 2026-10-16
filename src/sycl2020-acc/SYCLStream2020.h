@@ -14,15 +14,7 @@
 
 #include <sycl/sycl.hpp>
 
-#ifdef SYCL2020ACC
-#define SYCLIMPL "Accessors"
-#elif SYCL2020USM
-#define SYCLIMPL "USM"
-#else
-#error unimplemented
-#endif
-
-#define IMPLEMENTATION_STRING "SYCL2020 " SYCLIMPL
+#define IMPLEMENTATION_STRING "SYCL2020 accessors"
 
 template <class T>
 class SYCLStream : public Stream<T>
@@ -36,14 +28,19 @@ class SYCLStream : public Stream<T>
     std::unique_ptr<sycl::queue> queue;
 
     // Buffers
-    T *a, *b, *c, *sum{};
-    sycl::buffer<T> d_a, d_b, d_c, d_sum;
+    sycl::buffer<T> d_a;
+    sycl::buffer<T> d_b;
+    sycl::buffer<T> d_c;
+    sycl::buffer<T> d_sum;
+
+    // Host copies for verification
+    std::vector<T> h_a, h_b, h_c;
 
   public:
 
     SYCLStream(BenchId bs, const intptr_t array_size, const int device_id,
-	       T initA, T initB, T initC);
-    ~SYCLStream();
+               T initA, T initB, T initC);
+    ~SYCLStream() = default;
 
     void copy() override;
     void add() override;
@@ -52,8 +49,9 @@ class SYCLStream : public Stream<T>
     void nstream() override;
     T    dot() override;
 
-    void get_arrays(T const*& a, T const*& b, T const*& c) override;    
-    void init_arrays(T initA, T initB, T initC);
+    void init_arrays(T initA, T initB, T initC) override;
+    void get_arrays(T const*& a, T const*& b, T const*& c) override;
+
 };
 
 // Populate the devices list

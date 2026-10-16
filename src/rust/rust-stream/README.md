@@ -3,7 +3,7 @@ rust-stream
 
 This is an implementation of BabelStream in Rust.
 
-Currently, we support three CPU threading API as devices:
+Currently, we support five CPU threading APIs as devices:
 
 * Plain - basic single-threaded `for` version, see [plain_stream.rs](src/plain_stream.rs)
 * [Rayon](https://github.com/rayon-rs/rayon) - Parallel with high level API,
@@ -19,60 +19,39 @@ In addition, this implementation also supports the following extra flags:
 ****
 ```
 --init    Initialise each benchmark array at allocation time on the main thread
---malloc  Use libc malloc instead of the Rust's allocator for benchmark array allocation
+--malloc  Use libc calloc instead of the Rust allocator for benchmark array allocation
 --pin     Pin threads to distinct cores, this has NO effect in Rayon devices
 ```
 
 Max thread count is controlled by the environment variable `BABELSTREAM_NUM_THREADS` which is compatible for all devices (avoid setting `RAYON_NUM_THREADS`, the implementation will issue a warning if this happened).   
 
-There is an ongoing investigation on potential performance issues under NUMA situations. As part of
-the experiment, this implementation made use of the
-provisional [Allocator traits](https://github.com/rust-lang/rust/issues/32838) which requires rust
-unstable. We hope a NUMA aware allocator will be available once the allocator API reaches rust
-stable.
-
 ### Build & Run
 
 Prerequisites:
 
-* [Rust toolchain](https://www.rust-lang.org/tools/install)
-
-Once the toolchain is installed, enable the nightly channel:
-
-```shell
-> rustup install nightly
-> rustup default nightly # optional, this sets `+nightly` automatically for cargo calls later
-```
+* [Rust toolchain](https://www.rust-lang.org/tools/install), stable 1.93 or later
 
 With `cargo` on path, compile and run the benchmark with:
 
 ```shell
 > cd rust-stream/
-> cargo +nightly build --release # or simply `cargo build --release` if nightly channel is the default 
+> cargo build --release
 > ./target/release/rust-stream --help
-rust-stream 3.4.0
+Usage: rust-stream [OPTIONS]
 
-USAGE:
-    rust-stream [FLAGS] [OPTIONS]
-
-FLAGS:
-        --csv             Output as csv table
-        --float           Use floats (rather than doubles)
-    -h, --help            Prints help information
-        --init            Initialise each benchmark array at allocation time on the main thread
-        --list            List available devices
-        --malloc          Use libc malloc instead of the Rust's allocator for benchmark array allocation
-        --mibibytes       Use MiB=2^20 for bandwidth calculation (default MB=10^6)
-        --nstream-only    Only run nstream
-        --pin             Pin threads to distinct cores, this has NO effect in Rayon devices
-        --triad-only      Only run triad
-    -V, --version         Prints version information
-
-OPTIONS:
-    -s, --arraysize <arraysize>    Use <arraysize> elements in the array [default: 33554432]
-        --device <device>          Select device at <device> [default: 0]
-    -n, --numtimes <numtimes>      Run the test <numtimes> times (NUM >= 2) [default: 100]
+Options:
+      --list                   List available devices
+      --device <DEVICE>        Select device at <device> [default: 0]
+  -n, --numtimes <NUMTIMES>    Run the test <numtimes> times (NUM >= 2) [default: 100]
+  -s, --arraysize <ARRAYSIZE>  Use <arraysize> elements in the array [default: 33554432]
+      --float                  Use floats (rather than doubles)
+      --triad-only             Only run triad
+      --nstream-only           Only run nstream
+      --csv                    Output as csv table
+      --mibibytes              Use MiB=2^20 for bandwidth calculation (default MB=10^6)
+      --malloc                 Use libc calloc instead of the Rust allocator for benchmark array allocation
+      --init                   Initialise each benchmark array at allocation time on the main thread
+      --pin                    Pin threads to distinct cores, this has NO effect in Rayon devices
+  -h, --help                   Print help
+  -V, --version                Print version
 ```
-
-
- 

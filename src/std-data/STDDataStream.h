@@ -10,21 +10,11 @@
 #include <stdexcept>
 #include "Stream.h"
 
-#ifdef DATA17
-#define STDIMPL "DATA17"
-#elif DATA23
-#define STDIMPL "DATA23"
-#elif INDICES
-#define STDIMPL "INDICES"
-#else
-#error unimplemented
-#endif
-
-#define IMPLEMENTATION_STRING "STD (" STDIMPL ")"
+#define IMPLEMENTATION_STRING "STD (data-oriented)"
 
 
 template <class T>
-class STDStream : public Stream<T>
+class STDDataStream : public Stream<T>
 {
   protected:
     // Size of arrays
@@ -34,9 +24,9 @@ class STDStream : public Stream<T>
     T *a, *b, *c;
 
   public:
-    STDStream(BenchId bs, const intptr_t array_size, const int device_id,
+    STDDataStream(BenchId bs, const intptr_t array_size, const int device_id,
 		  T initA, T initB, T initC) noexcept;
-    ~STDStream();
+    ~STDDataStream();
 
     void copy() override;
     void add() override;
@@ -46,6 +36,5 @@ class STDStream : public Stream<T>
     T dot() override;
 
     void get_arrays(T const*& a, T const*& b, T const*& c) override;
-    void init_arrays(T initA, T initB, T initC);
+    void init_arrays(T initA, T initB, T initC) override;
 };
-

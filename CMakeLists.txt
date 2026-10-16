@@ -16,8 +16,8 @@ include(FetchContent)
 
 FetchContent_Declare(
         opencl_header
-        URL https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v2021.06.30.zip
-        URL_HASH MD5=af7ab7918a6a11c60370c8651a9f0192
+        URL https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v2026.05.29.zip
+        URL_HASH MD5=602be2021f6ce73754bf59a33ddc4664
 )
 
 macro(setup_opencl_header_includes)
@@ -88,7 +88,7 @@ option(USE_TBB "Enable the oneTBB library for *supported* models. Enabling this 
 
 option(FETCH_TBB "Fetch (download) the oneTBB library for *supported* models. This uses CMake's
                   FetchContent feature. Specify version by setting FETCH_TBB_VERSION" OFF)
-set(FETCH_TBB_VERSION "v2021.10.0" CACHE STRING "Specify version of oneTBB to use if FETCH_TBB is ON")
+set(FETCH_TBB_VERSION "v2023.1.0" CACHE STRING "Specify version of oneTBB to use if FETCH_TBB is ON")
 
 option(ENABLE_CALIPER "Enable Caliper/Adiak support" FALSE)
 
@@ -102,6 +102,7 @@ if (FETCH_TBB)
     # Don't fail builds on waring (TBB has -Wall while not being free of warnings from unused symbols...)
     set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
     set(TBB_STRICT OFF)
+    set(TBB_TEST OFF)
     # Not using FetchContent_MakeAvailable (CMake>= 3.14) because we need EXCLUDE_FROM_ALL
     FetchContent_GetProperties(TBB)
     if (NOT TBB_POPULATED)
@@ -116,8 +117,69 @@ option(USE_ONEDPL "Enable the oneDPL library for *supported* models. Enabling th
 
 option(FETCH_ONEDPL "Fetch (download) the oneDPL library for *supported* models. This uses CMake's
                   FetchContent feature. Specify version by setting FETCH_ONEDPL_VERSION" OFF)
-set(FETCH_ONEDPL_VERSION "oneDPL-2022.2.0-rc1" CACHE STRING "Specify version of oneTBB to use if FETCH_ONEDPL is ON")
+set(FETCH_ONEDPL_VERSION "oneDPL-release-2022.14.0" CACHE STRING "Specify version of oneDPL to use if FETCH_ONEDPL is ON")
 
+# include our macros
+include(cmake/register_models.cmake)
+
+# register out models <model_name> <preprocessor_def_name> <source files...>
+register_model(serial SERIAL SerialStream.cpp)
+register_model(omp OMP OMPStream.cpp)
+register_model(ocl OCL OCLStream.cpp)
+register_model(std-data STD_DATA STDDataStream.cpp)
+register_model(std-indices STD_INDICES STDIndicesStream.cpp)
+register_model(std-ranges STD_RANGES STDRangesStream.cpp)
+register_model(hip HIP HIPStream.cpp)
+register_model(cuda CUDA CUDAStream.cu)
+register_model(cuda-tuned CUDA_TUNED CUDAStream.cu)
+register_model(kokkos KOKKOS KokkosStream.cpp)
+register_model(sycl SYCL SYCLStream.cpp)
+register_model(sycl2020-acc SYCL2020 SYCLStream2020.cpp)
+register_model(sycl2020-usm SYCL2020 SYCLStream2020.cpp)
+register_model(acc ACC ACCStream.cpp)
+# defining RAJA collides with the RAJA namespace so USE_RAJA
+register_model(raja USE_RAJA RAJAStream.cpp)
+register_model(tbb TBB TBBStream.cpp)
+register_model(thrust THRUST ThrustStream.cu) # Thrust uses cu, even for rocThrust
+register_model(futhark FUTHARK FutharkStream.cpp)
+
+
+set(USAGE ON CACHE BOOL "Whether to print all custom flags for the selected model")
+
+message(STATUS "Available models:  ${REGISTERED_MODELS}")
+if (NOT DEFINED MODEL)
+    message(FATAL_ERROR "MODEL is unspecified, pick one from the available models")
+else ()
+    message(STATUS "Selected model  :  ${MODEL}")
+endif ()
+
+if (MODEL STREQUAL "sycl2020")
+    message(FATAL_ERROR "
+    Model sycl2020 has been renamed to sycl2020-acc, and a new sycl2020-usm model is now available.
+    Please use sycl2020-acc for SYCL2020 style accessors and sycl2020-usm for USM")
+endif ()
+
+if (MODEL STREQUAL "std")
+    message(FATAL_ERROR "
+    Model std has been replaced by std-data, std-indices, and std-ranges")
+endif ()
+
+# load the $MODEL.cmake file and setup the correct IMPL_* based on $MODEL
+load_model(${MODEL})
+
+if (USAGE)
+    # print the usage of the registered flag options
+    registered_flags_action(print RESULT)
+    message(STATUS "${RESULT}")
+endif ()
+# check required/set default for all registered flag options
+registered_flags_action(check RESULT)
+message(STATUS "${RESULT}")
+
+# run model specific setup, i.e append build flags, etc
+setup()
+
+# oneDPL probes the compiler, so this must come after setup() has chosen the C++ standard
 if (FETCH_ONEDPL)
     FetchContent_Declare(
             oneDPL
@@ -152,59 +214,6 @@ if (FETCH_ONEDPL)
 
     endif ()
 endif ()
-
-
-# include our macros
-include(cmake/register_models.cmake)
-
-# register out models <model_name> <preprocessor_def_name> <source files...>
-register_model(serial SERIAL SerialStream.cpp)
-register_model(omp OMP OMPStream.cpp)
-register_model(ocl OCL OCLStream.cpp)
-register_model(std STD STDStream.cpp)
-register_model(hip HIP HIPStream.cpp)
-register_model(cuda CUDA CUDAStream.cu)
-register_model(cuda-tuned CUDA_TUNED CUDAStream.cu)
-register_model(kokkos KOKKOS KokkosStream.cpp)
-register_model(sycl SYCL SYCLStream.cpp)
-register_model(sycl2020 SYCL2020 SYCLStream2020.cpp)
-register_model(acc ACC ACCStream.cpp)
-# defining RAJA collides with the RAJA namespace so USE_RAJA
-register_model(raja USE_RAJA RAJAStream.cpp)
-register_model(tbb TBB TBBStream.cpp)
-register_model(thrust THRUST ThrustStream.cu) # Thrust uses cu, even for rocThrust
-register_model(futhark FUTHARK FutharkStream.cpp)
-
-
-set(USAGE ON CACHE BOOL "Whether to print all custom flags for the selected model")
-
-message(STATUS "Available models:  ${REGISTERED_MODELS}")
-if (NOT DEFINED MODEL)
-    message(FATAL_ERROR "MODEL is unspecified, pick one from the available models")
-else ()
-    message(STATUS "Selected model  :  ${MODEL}")
-endif ()
-
-if (MODEL STREQUAL "sycl2020")
-    message(FATAL_ERROR "
-    Model sycl2020 has been renamed to sycl2020-acc, and a new sycl2020-usm model is now available.
-    Please use sycl2020-acc for SYCL2020 style accessors and sycl2020-usm for USM")
-endif ()
-
-# load the $MODEL.cmake file and setup the correct IMPL_* based on $MODEL
-load_model(${MODEL})
-
-if (USAGE)
-    # print the usage of the registered flag options
-    registered_flags_action(print RESULT)
-    message(STATUS "${RESULT}")
-endif ()
-# check required/set default for all registered flag options
-registered_flags_action(check RESULT)
-message(STATUS "${RESULT}")
-
-# run model specific setup, i.e append build flags, etc
-setup()
 
 # CMake insists that -O2 (or equivalent) is the universally accepted optimisation level
 # we remove that here and use our own <BUILD_TYPE>_FLAGS

@@ -6,35 +6,15 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  cpp:
     name: ${{ matrix.variant }}
     strategy:
       fail-fast: false
       max-parallel: 32
       matrix:
         # prettier-ignore
-        variant: [
-          gcc-9-serial, gcc-9-omp, gcc-10-serial, gcc-10-omp, gcc-11-serial, gcc-11-omp, gcc-12-serial, gcc-12-omp,
-          gcc-13-serial, gcc-13-omp, gcc-14-serial, gcc-14-omp, gcc-15-serial, gcc-15-omp, gcc-13-omp-target,
-          gcc-13-std, gcc-13-std-indices, gcc-13-std-onedpl, gcc-13-tbb, gcc-13-kokkos, gcc-13-kokkos-5, gcc-13-raja, gcc-13-ocl,
-
-          clang-11-serial, clang-11-omp, clang-12-serial, clang-12-omp, clang-13-serial, clang-13-omp,
-          clang-14-serial, clang-14-omp, clang-15-serial, clang-15-omp, clang-16-serial, clang-16-omp,
-          clang-17-serial, clang-17-omp, clang-18-serial, clang-18-omp, clang-19-serial, clang-19-omp,
-          clang-20-serial, clang-20-omp, clang-21-serial, clang-21-omp,
-
-          oneapi-sycl2020,
-
-          nvhpc-serial, nvhpc-omp, nvhpc-acc,
-
-          adaptivecpp-sycl2020,
-
-          cuda, cuda-tuned, thrust, rocm-hip,
-
-          futhark, futhark-ubuntu,
-        ]
-        # prettier-ignore
         include:
+          ### CPU, built and run ###
           - {variant: "gcc-9-serial", model: "serial", toolchain: &gcc_9 {image: "docker.io/library/ubuntu:22.04", cc: "gcc-9", cxx: "g++-9", packages: "g++-9"}}
           - {variant: "gcc-9-omp", model: "omp", toolchain: *gcc_9}
           - {variant: "gcc-10-serial", model: "serial", toolchain: &gcc_10 {image: "docker.io/library/ubuntu:22.04", cc: "gcc-10", cxx: "g++-10", packages: "g++-10"}}
@@ -73,73 +53,201 @@ jobs:
           - {variant: "clang-21-serial", model: "serial", toolchain: &clang_21 {image: "docker.io/library/ubuntu:26.04", cc: "clang-21", cxx: "clang++-21", packages: "clang-21 libstdc++-16-dev"}}
           - {variant: "clang-21-omp", model: "omp", cmake_args: *clang_omp_flags, model_packages: "libomp-21-dev", toolchain: *clang_21}
           - {variant: "gcc-13-omp-target", model: "omp", cmake_args: "-DOFFLOAD=ON -DOFFLOAD_FLAGS=-fopenmp", toolchain: *gcc_13}
-          # FIXME: default STDIMPL=DATA20 is unimplemented
-          - {variant: "gcc-13-std", model: "std", cmake_args: "-DUSE_TBB=ON", model_packages: "libtbb-dev", toolchain: *gcc_13}
-          - {variant: "gcc-13-std-indices", model: "std", cmake_args: "-DSTDIMPL=INDICES -DUSE_TBB=ON", model_packages: "libtbb-dev", toolchain: *gcc_13}
-          - {variant: "gcc-13-std-onedpl", model: "std", cmake_args: "-DSTDIMPL=DATA17 -DUSE_ONEDPL=OPENMP -DFETCH_ONEDPL=ON", model_packages: "git", toolchain: *gcc_13}
+          - {variant: "gcc-13-std-data", model: "std-data", cmake_args: "-DUSE_TBB=ON", model_packages: "libtbb-dev", toolchain: *gcc_13}
+          - {variant: "gcc-13-std-indices", model: "std-indices", cmake_args: "-DUSE_TBB=ON", model_packages: "libtbb-dev", toolchain: *gcc_13}
+          - {variant: "gcc-13-std-data-onedpl", model: "std-data", cmake_args: "-DUSE_ONEDPL=OPENMP -DFETCH_ONEDPL=ON", model_packages: "git", toolchain: *gcc_13}
+          - {variant: "gcc-13-std-ranges", model: "std-ranges", cmake_args: "-DUSE_TBB=ON", model_packages: "libtbb-dev", toolchain: *gcc_13}
           - {variant: "gcc-13-tbb", model: "tbb", model_packages: "libtbb-dev", toolchain: *gcc_13}
+          - {variant: "gcc-13-tbb-fetch", model: "tbb", cmake_args: "-DFETCH_TBB=ON -DUSE_TBB=ON", model_packages: "git", toolchain: *gcc_13}
           - {variant: "gcc-13-kokkos", model: "kokkos", kokkos_ref: "4.7.04", cmake_args: "-DKOKKOS_IN_TREE=/opt/kokkos -DKokkos_ENABLE_SERIAL=ON", model_packages: "git", toolchain: *gcc_13}
-          # FIXME: model pins C++17, Kokkos 5 needs C++20 (#215)
           - {variant: "gcc-13-kokkos-5", model: "kokkos", kokkos_ref: "5.2.2", cmake_args: "-DKOKKOS_IN_TREE=/opt/kokkos -DKokkos_ENABLE_SERIAL=ON", model_packages: "git", toolchain: *gcc_13}
-          # FIXME: model pins C++14, RAJA >= v2025.09 needs C++17
           - {variant: "gcc-13-raja", model: "raja", raja_ref: "v2026.07.1", cmake_args: "-DRAJA_IN_TREE=/opt/raja -DENABLE_OPENMP=ON", model_packages: "git", toolchain: *gcc_13}
-          # FIXME: empty OpenCL_LIBRARY default defeats find_library
           - {variant: "gcc-13-ocl", model: "ocl", model_packages: "pocl-opencl-icd ocl-icd-opencl-dev", toolchain: *gcc_13}
-          # FIXME: MODEL=sycl2020 is unregistered on main (#228), fixed by PR 226
-          - {variant: "oneapi-sycl2020", model: "sycl2020", cmake_args: "-DSYCL_COMPILER=ONEAPI-ICPX", model_packages: "pocl-opencl-icd", toolchain: &oneapi {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
-              cc: "/opt/intel/oneapi/compiler/2025.3/bin/icx", cxx: "/opt/intel/oneapi/compiler/2025.3/bin/icpx", packages: "intel-oneapi-dpcpp-cpp-2025.3",
+          - {variant: "oneapi-sycl2020-acc", model: "sycl2020-acc", cmake_args: "-DSYCL_COMPILER=ONEAPI-ICPX", model_packages: "pocl-opencl-icd", toolchain: &oneapi {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
+              cc: "/opt/intel/oneapi/compiler/2026.1/bin/icx", cxx: "/opt/intel/oneapi/compiler/2026.1/bin/icpx", packages: "intel-oneapi-dpcpp-cpp-2026.1",
               apt_key: "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB", apt_source: "https://apt.repos.intel.com/oneapi
                 all main", env_script: "/opt/intel/oneapi/setvars.sh"}}
-          - {variant: "nvhpc-serial", model: "serial", toolchain: &nvhpc {image: "nvcr.io/nvidia/nvhpc:26.5-devel-cuda13.2-ubuntu24.04", cc: "nvc", cxx: "nvc++", native_flags: "-tp=native", cleanup_disk: true}}
+          - {variant: "oneapi-sycl2020-usm", model: "sycl2020-usm", cmake_args: "-DSYCL_COMPILER=ONEAPI-ICPX", model_packages: "pocl-opencl-icd", toolchain: *oneapi}
+          - {variant: "oneapi-std-data", model: "std-data", cmake_args: "-DUSE_ONEDPL=DPCPP -DFETCH_ONEDPL=ON", model_packages: "git pocl-opencl-icd", toolchain: *oneapi}
+          - {variant: "oneapi-std-indices", model: "std-indices", cmake_args: "-DUSE_ONEDPL=DPCPP -DFETCH_ONEDPL=ON", model_packages: "git pocl-opencl-icd", toolchain: *oneapi}
+          - {variant: "oneapi-std-ranges", model: "std-ranges", cmake_args: "-DUSE_ONEDPL=DPCPP -DFETCH_ONEDPL=ON", model_packages: "git pocl-opencl-icd", toolchain: *oneapi}
+          - {variant: "nvhpc-serial", model: "serial", toolchain: &nvhpc {image: "nvcr.io/nvidia/nvhpc:26.9-devel-cuda13.3-ubuntu24.04", cc: "nvc", cxx: "nvc++", native_flags: "-tp=native", cleanup_disk: true}}
           - {variant: "nvhpc-omp", model: "omp", toolchain: *nvhpc}
           - {variant: "nvhpc-acc", model: "acc", cmake_args: "-DTARGET_DEVICE=multicore", toolchain: *nvhpc}
-          # FIXME: dot() never zeroes sum without initialize_to_identity
-          - {variant: "adaptivecpp-sycl2020", model: "sycl2020", cmake_args: "-DSYCL_COMPILER=AdaptiveCpp -DSYCL_COMPILER_DIR=/opt/adaptivecpp", toolchain: &adaptivecpp {
+          - {variant: "nvhpc-std-data-multicore", model: "std-data", cmake_args: "-DNVHPC_MULTICORE=ON", toolchain: *nvhpc}
+          - {variant: "adaptivecpp-sycl2020-acc", model: "sycl2020-acc", cmake_args: "-DSYCL_COMPILER=AdaptiveCpp -DSYCL_COMPILER_DIR=/opt/adaptivecpp", toolchain: &adaptivecpp {
               image: "docker.io/library/ubuntu:24.04", cc: "clang-18", cxx: "clang++-18", packages: "clang-18 llvm-18-dev libclang-18-dev libclang-cpp18-dev libomp-18-dev lld-18 python3",
               source_url: "https://github.com/AdaptiveCpp/AdaptiveCpp/archive/refs/tags/v25.10.0.tar.gz", sha256: "334b16ebff373bd2841f83332c2ae9a45ec192f2cf964d5fdfe94e1140776059"}}
-          - {variant: "cuda", model: "cuda", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=sm_80", toolchain: &cuda {image: "docker.io/library/ubuntu:24.04",
-              cc: "gcc", cxx: "g++", packages: "cuda-nvcc-13-2", arm_apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/3bf863cc.pub",
-              arm_apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/ /",
-              apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub", apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/
-                /"}}
-          - {variant: "cuda-tuned", model: "cuda-tuned", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=sm_80", model_packages: "cuda-nvml-dev-13-2", toolchain: *cuda}
-          - {variant: "thrust", model: "thrust", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.2/bin/nvcc -DCUDA_ARCH=80", toolchain: *cuda}
-          - {variant: "rocm-hip", model: "hip", skip_tests: true, cmake_args: "-DCXX_EXTRA_FLAGS=--offload-arch=gfx90a", toolchain: {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04", cc: "gcc", cxx: "/opt/rocm/bin/hipcc",
-              packages: "hip-dev rocm-device-libs", apt_key: "https://repo.radeon.com/rocm/rocm.gpg.key", apt_source: "https://repo.radeon.com/rocm/apt/7.2.4/ noble main"}}
+          - {variant: "adaptivecpp-sycl2020-usm", model: "sycl2020-usm", cmake_args: "-DSYCL_COMPILER=AdaptiveCpp -DSYCL_COMPILER_DIR=/opt/adaptivecpp", toolchain: *adaptivecpp}
+          - {variant: "adaptivecpp-std-data", model: "std-data", cmake_args: "-DCMAKE_CXX_COMPILER=/opt/adaptivecpp/bin/acpp -DACPP_OFFLOAD=ON", toolchain: *adaptivecpp}
+          - {variant: "adaptivecpp-pcuda", model: "cuda", cmake_args: "-DACPP_PCUDA_DRIVER=ON -DCMAKE_CXX_COMPILER=/opt/adaptivecpp/bin/acpp -DCMAKE_CUDA_COMPILER=/opt/adaptivecpp/bin/acpp -DCUDA_ARCH=sm_80 -DCUDA_EXTRA_FLAGS=--acpp-targets=generic", toolchain: *adaptivecpp}
           - {variant: "futhark", model: "futhark", futhark_ref: "v0.28.1", futhark_sha256: "044a8ef2f55e3a8eb18d367dfa85438e958e61dedfd0f6621b507eb9d6fff281",
               cmake_args: "-DFUTHARK_COMPILER=/opt/futhark/bin/futhark -DFUTHARK_BACKEND=multicore", model_packages: "xz-utils", toolchain: {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
               cc: "gcc", cxx: "g++"}}
           - {variant: "futhark-ubuntu", model: "futhark", cmake_args: "-DFUTHARK_COMPILER=/usr/bin/futhark -DFUTHARK_BACKEND=multicore", model_packages: "futhark", toolchain: {image: "docker.io/library/ubuntu:26.04", cc: "gcc", cxx: "g++"}}
-    uses: ./.github/workflows/build.yml
+
+          ### GPU, compile only ###
+          - {variant: "gcc-15-omp-nvptx", model: "omp", skip_tests: true, cmake_args: "-DOFFLOAD=NVIDIA:sm_80", toolchain: &gcc_15_offload {architectures: [x86_64], image: "docker.io/library/ubuntu:26.04", cc: "gcc-15", cxx: "g++-15", packages: "g++-15 gcc-15-offload-nvptx gcc-15-offload-amdgcn"}}
+          - {variant: "gcc-15-omp-amdgcn", model: "omp", skip_tests: true, cmake_args: "-DOFFLOAD=AMD:gfx90a", toolchain: *gcc_15_offload}
+          - {variant: "nvhpc-omp-gpu", model: "omp", skip_tests: true, cmake_args: "-DOFFLOAD=ON -DOFFLOAD_FLAGS=-mp=gpu;-gpu=cc80", toolchain: *nvhpc}
+          - {variant: "nvhpc-acc-gpu", model: "acc", skip_tests: true, cmake_args: "-DTARGET_DEVICE=gpu -DCUDA_ARCH=cc80", toolchain: *nvhpc}
+          - {variant: "nvhpc-std-data-gpu", model: "std-data", skip_tests: true, cmake_args: "-DNVHPC_OFFLOAD=cc80", toolchain: *nvhpc}
+          - {variant: "nvhpc-std-indices-gpu", model: "std-indices", skip_tests: true, cmake_args: "-DNVHPC_OFFLOAD=cc80", toolchain: *nvhpc}
+          - {variant: "nvhpc-std-ranges-gpu", model: "std-ranges", skip_tests: true, cmake_args: "-DNVHPC_OFFLOAD=cc80", toolchain: *nvhpc}
+          - {variant: "cuda", model: "cuda", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.4/bin/nvcc -DCUDA_ARCH=sm_80", toolchain: &cuda {image: "docker.io/library/ubuntu:24.04",
+              cc: "gcc", cxx: "g++", packages: "cuda-nvcc-13-4", arm_apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/3bf863cc.pub",
+              arm_apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/ /",
+              apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub", apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/
+                /", env_script: ".github/ci/cuda-env.sh"}}
+          # FIXME enable aarch64, clang 18's nvptx device pass trips on glibc's SVE types (fixed by clang >= 19, see cuda-clang-21)
+          - {variant: "cuda-clang", model: "cuda", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=clang++-18 -DCUDA_CLANG_DRIVER=ON -DCUDA_ARCH=sm_80", toolchain: {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
+              cc: "clang-18", cxx: "clang++-18", packages: "clang-18 cuda-nvcc-12-6 cuda-cudart-dev-12-6 libcurand-dev-12-6", arm_apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/3bf863cc.pub",
+              arm_apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/ /",
+              apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub", apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/
+                /"}}
+          - {variant: "cuda-clang-21", model: "cuda", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=clang++-21 -DCUDA_CLANG_DRIVER=ON -DCUDA_ARCH=sm_80", toolchain: {image: "docker.io/library/ubuntu:26.04",
+              cc: "clang-21", cxx: "clang++-21", packages: "clang-21 clang-tools-21 libstdc++-16-dev cuda-nvcc-12-6 cuda-cudart-dev-12-6 libcurand-dev-12-6", arm_apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/3bf863cc.pub",
+              arm_apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/ /",
+              apt_key: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub", apt_source: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/
+                /"}}
+          - {variant: "cuda-tuned", model: "cuda-tuned", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.4/bin/nvcc -DCUDA_ARCH=sm_80", model_packages: "cuda-nvml-dev-13-4", toolchain: *cuda}
+          - {variant: "kokkos-cuda", model: "kokkos", skip_tests: true, kokkos_ref: "4.7.04", cmake_args: "-DCMAKE_CXX_COMPILER=/opt/kokkos/bin/nvcc_wrapper -DKOKKOS_IN_TREE=/opt/kokkos -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_AMPERE80=ON -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON", model_packages: "git cuda-cudart-dev-13-4 cuda-driver-dev-13-4", toolchain: *cuda}
+          - {variant: "kokkos-5-cuda", model: "kokkos", skip_tests: true, kokkos_ref: "5.2.2", cmake_args: "-DCMAKE_CXX_COMPILER=/opt/kokkos/bin/nvcc_wrapper -DKOKKOS_IN_TREE=/opt/kokkos -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_AMPERE80=ON -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON", model_packages: "git cuda-cudart-dev-13-4 cuda-driver-dev-13-4", toolchain: *cuda}
+          - {variant: "raja-cuda", model: "raja", skip_tests: true, raja_ref: "v2026.07.1", cmake_args: "-DRAJA_IN_TREE=/opt/raja -DENABLE_CUDA=ON -DTARGET=NVIDIA -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-13.4 -DCUDA_ARCH=sm_80 -DCMAKE_CUDA_ARCHITECTURES=80 -DENABLE_OPENMP=OFF", model_packages: "git cuda-cudart-dev-13-4 cuda-driver-dev-13-4", toolchain: *cuda}
+          - {variant: "thrust", model: "thrust", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.4/bin/nvcc -DCUDA_ARCH=80", toolchain: *cuda}
+          - {variant: "thrust-fetch-cccl", model: "thrust", skip_tests: true, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.4/bin/nvcc -DCUDA_ARCH=80 -DFETCH_CCCL=ON", model_packages: "git", toolchain: *cuda}
+          - {variant: "rocm-hip", model: "hip", skip_tests: true, cmake_args: "-DCXX_EXTRA_FLAGS=--offload-arch=gfx90a", toolchain: &rocm {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04", cc: "gcc", cxx: "/opt/rocm/bin/hipcc",
+              packages: "hip-dev rocm-device-libs", apt_key: "https://repo.radeon.com/rocm/rocm.gpg.key", apt_source: "https://repo.radeon.com/rocm/apt/7.2.4/ noble main"}}
+          - {variant: "rocm-omp", model: "omp", skip_tests: true, cmake_args: "-DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DOFFLOAD=AMD:gfx90a", toolchain: *rocm}
+          - {variant: "rocm-std-data", model: "std-data", skip_tests: true, cmake_args: "-DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DAMDGPU_TARGET_OFFLOAD=gfx90a", model_packages: "rocthrust-dev", toolchain: *rocm}
+          - {variant: "rocm-std-indices", model: "std-indices", skip_tests: true, cmake_args: "-DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DAMDGPU_TARGET_OFFLOAD=gfx90a", model_packages: "rocthrust-dev", toolchain: *rocm}
+          - {variant: "rocm-std-ranges", model: "std-ranges", skip_tests: true, cmake_args: "-DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DAMDGPU_TARGET_OFFLOAD=gfx90a", model_packages: "rocthrust-dev", toolchain: *rocm}
+    uses: ./.github/workflows/cpp.yml
     with:
       configuration: ${{ toJSON(matrix) }}
 
-  # FIXME: nightly renamed into_raw_parts_with_alloc to into_raw_parts_with_allocator
-  test-rust:
-    runs-on: ubuntu-22.04
+  fortran:
+    name: ${{ matrix.variant }}
+    strategy:
+      fail-fast: false
+      max-parallel: 32
+      matrix:
+        # prettier-ignore
+        include:
+          ### CPU, built and run ###
+          - {variant: "gfortran-15-sequential", compiler: "gcc", implementation: "Sequential", toolchain: &gfortran_15 {image: "docker.io/library/ubuntu:26.04", fc: "gfortran-15", packages: "gfortran-15"}}
+          - {variant: "gfortran-15-array", compiler: "gcc", implementation: "Array", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-doconcurrent", compiler: "gcc", implementation: "DoConcurrent", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openmpworkshare", compiler: "gcc", implementation: "OpenMPWorkshare", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openmptaskloop", compiler: "gcc", implementation: "OpenMPTaskloop", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openmptarget", compiler: "gcc", implementation: "OpenMPTarget", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openmptargetloop", compiler: "gcc", implementation: "OpenMPTargetLoop", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openacc", compiler: "gcc", implementation: "OpenACC", toolchain: *gfortran_15}
+          - {variant: "gfortran-15-openaccarray", compiler: "gcc", implementation: "OpenACCArray", toolchain: *gfortran_15}
+          - {variant: "gfortran-14-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_14 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-14", packages: "gfortran-14"}}
+          - {variant: "gfortran-14-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_14}
+          - {variant: "gfortran-13-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_13 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-13", packages: "gfortran-13"}}
+          - {variant: "gfortran-13-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_13}
+          - {variant: "gfortran-12-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_12 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-12", packages: "gfortran-12"}}
+          - {variant: "gfortran-12-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_12}
+          - {variant: "gfortran-11-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_11 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-11", packages: "gfortran-11"}}
+          - {variant: "gfortran-11-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_11}
+          - {variant: "gfortran-10-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_10 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-10", packages: "gfortran-10"}}
+          - {variant: "gfortran-10-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_10}
+          - {variant: "gfortran-9-array", compiler: "gcc", implementation: "Array", toolchain: &gfortran_9 {image: "docker.io/library/ubuntu:24.04", fc: "gfortran-9", packages: "gfortran-9"}}
+          - {variant: "gfortran-9-openmp", compiler: "gcc", implementation: "OpenMP", toolchain: *gfortran_9}
+          - {variant: "flang-22-sequential", compiler: "flang", implementation: "Sequential", toolchain: &flang_22 {image: "docker.io/library/ubuntu:26.04", fc: "flang-22", packages: "flang-22 libomp-22-dev libclang-rt-22-dev"}}
+          - {variant: "flang-22-array", compiler: "flang", implementation: "Array", toolchain: *flang_22}
+          - {variant: "flang-22-doconcurrent", compiler: "flang", implementation: "DoConcurrent", toolchain: *flang_22}
+          - {variant: "flang-22-openmpworkshare", compiler: "flang", implementation: "OpenMPWorkshare", toolchain: *flang_22}
+          - {variant: "flang-22-openmptarget", compiler: "flang", implementation: "OpenMPTarget", toolchain: *flang_22}
+          - {variant: "flang-22-openmptargetloop", compiler: "flang", implementation: "OpenMPTargetLoop", toolchain: *flang_22}
+          - {variant: "flang-21-sequential", compiler: "flang", implementation: "Sequential", toolchain: &flang_21 {image: "docker.io/library/ubuntu:26.04", fc: "flang-21", packages: "flang-21 libomp-21-dev libclang-rt-21-dev"}}
+          - {variant: "flang-21-array", compiler: "flang", implementation: "Array", toolchain: *flang_21}
+          - {variant: "flang-21-doconcurrent", compiler: "flang", implementation: "DoConcurrent", toolchain: *flang_21}
+          - {variant: "flang-21-openmp", compiler: "flang", implementation: "OpenMP", toolchain: *flang_21}
+          - {variant: "flang-21-openmpworkshare", compiler: "flang", implementation: "OpenMPWorkshare", toolchain: *flang_21}
+          - {variant: "flang-21-openmptarget", compiler: "flang", implementation: "OpenMPTarget", toolchain: *flang_21}
+          - {variant: "flang-21-openmptargetloop", compiler: "flang", implementation: "OpenMPTargetLoop", toolchain: *flang_21}
+          - {variant: "nvfortran-sequential", compiler: "nvhpc", implementation: "Sequential", make_args: "TARGET=multicore", toolchain: &nvfortran {image: "nvcr.io/nvidia/nvhpc:26.9-devel-cuda13.3-ubuntu24.04", fc: "nvfortran", cleanup_disk: true}}
+          - {variant: "nvfortran-array", compiler: "nvhpc", implementation: "Array", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-doconcurrent", compiler: "nvhpc", implementation: "DoConcurrent", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openmp", compiler: "nvhpc", implementation: "OpenMP", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openmpworkshare", compiler: "nvhpc", implementation: "OpenMPWorkshare", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openmptarget", compiler: "nvhpc", implementation: "OpenMPTarget", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openmptargetloop", compiler: "nvhpc", implementation: "OpenMPTargetLoop", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openacc", compiler: "nvhpc", implementation: "OpenACC", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "nvfortran-openaccarray", compiler: "nvhpc", implementation: "OpenACCArray", make_args: "TARGET=multicore", toolchain: *nvfortran}
+          - {variant: "ifx-sequential", compiler: "oneapi", implementation: "Sequential", toolchain: &ifx {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04", fc: "ifx", packages: "intel-oneapi-compiler-fortran-2026.1 intel-oneapi-compiler-dpcpp-cpp-runtime-2026.1",
+              apt_key: "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB", apt_source: "https://apt.repos.intel.com/oneapi
+                all main", env_script: "/opt/intel/oneapi/setvars.sh"}}
+          - {variant: "ifx-array", compiler: "oneapi", implementation: "Array", toolchain: *ifx}
+          - {variant: "ifx-doconcurrent", compiler: "oneapi", implementation: "DoConcurrent", toolchain: *ifx}
+          - {variant: "ifx-openmp", compiler: "oneapi", implementation: "OpenMP", toolchain: *ifx}
+          - {variant: "ifx-openmpworkshare", compiler: "oneapi", implementation: "OpenMPWorkshare", toolchain: *ifx}
+          - {variant: "ifx-openmptaskloop", compiler: "oneapi", implementation: "OpenMPTaskloop", toolchain: *ifx}
+          - {variant: "ifx-openmptarget", compiler: "oneapi", implementation: "OpenMPTarget", toolchain: *ifx}
+          - {variant: "ifx-openmptargetloop", compiler: "oneapi", implementation: "OpenMPTargetLoop", toolchain: *ifx}
+
+          ### GPU, compile only ###
+          - {variant: "nvfortran-cuda", compiler: "nvhpc", implementation: "CUDA", make_args: "GPU=cc80", skip_run: true, toolchain: *nvfortran}
+          - {variant: "nvfortran-cudakernel", compiler: "nvhpc", implementation: "CUDAKernel", make_args: "GPU=cc80", skip_run: true, toolchain: *nvfortran}
+          - {variant: "nvfortran-doconcurrent-gpu", compiler: "nvhpc", implementation: "DoConcurrent", make_args: "TARGET=gpu GPU=cc80", skip_run: true, toolchain: *nvfortran}
+          - {variant: "nvfortran-array-gpu", compiler: "nvhpc", implementation: "Array", make_args: "TARGET=gpu GPU=cc80", skip_run: true, toolchain: *nvfortran}
+          - {variant: "nvfortran-openmptarget-gpu", compiler: "nvhpc", implementation: "OpenMPTarget", make_args: "TARGET=gpu GPU=cc80", skip_run: true, toolchain: *nvfortran}
+          - {variant: "nvfortran-openmptargetloop-gpu", compiler: "nvhpc", implementation: "OpenMPTargetLoop", make_args: "TARGET=gpu GPU=cc80", skip_run: true, toolchain: *nvfortran}
+          - {variant: "nvfortran-openacc-gpu", compiler: "nvhpc", implementation: "OpenACC", make_args: "TARGET=gpu GPU=cc80", skip_run: true, toolchain: *nvfortran}
+          - {variant: "nvfortran-openaccarray-gpu", compiler: "nvhpc", implementation: "OpenACCArray", make_args: "TARGET=gpu GPU=cc80", skip_run: true, toolchain: *nvfortran}
+          - {variant: "gfortran-15-openmptarget-nvptx", compiler: "gcc", implementation: "OpenMPTarget", make_args: "OFFLOAD=nvptx-none OFFLOAD_ARCH=sm_80", skip_run: true, toolchain: &gfortran_15_offload {architectures: [x86_64], image: "docker.io/library/ubuntu:26.04", fc: "gfortran-15", packages: "gfortran-15 gcc-15-offload-nvptx gcc-15-offload-amdgcn"}}
+          - {variant: "gfortran-15-openmptargetloop-nvptx", compiler: "gcc", implementation: "OpenMPTargetLoop", make_args: "OFFLOAD=nvptx-none OFFLOAD_ARCH=sm_80", skip_run: true, toolchain: *gfortran_15_offload}
+          - {variant: "gfortran-15-openacc-nvptx", compiler: "gcc", implementation: "OpenACC", make_args: "OFFLOAD=nvptx-none OFFLOAD_ARCH=sm_80", skip_run: true, toolchain: *gfortran_15_offload}
+          - {variant: "gfortran-15-openaccarray-nvptx", compiler: "gcc", implementation: "OpenACCArray", make_args: "OFFLOAD=nvptx-none OFFLOAD_ARCH=sm_80", skip_run: true, toolchain: *gfortran_15_offload}
+          - {variant: "gfortran-15-openmptarget-amdgcn", compiler: "gcc", implementation: "OpenMPTarget", make_args: "OFFLOAD=amdgcn-amdhsa OFFLOAD_ARCH=gfx90a", skip_run: true, toolchain: *gfortran_15_offload}
+          - {variant: "gfortran-15-openmptargetloop-amdgcn", compiler: "gcc", implementation: "OpenMPTargetLoop", make_args: "OFFLOAD=amdgcn-amdhsa OFFLOAD_ARCH=gfx90a", skip_run: true, toolchain: *gfortran_15_offload}
+          - {variant: "gfortran-15-openacc-amdgcn", compiler: "gcc", implementation: "OpenACC", make_args: "OFFLOAD=amdgcn-amdhsa OFFLOAD_ARCH=gfx90a", skip_run: true, toolchain: *gfortran_15_offload}
+          - {variant: "gfortran-15-openaccarray-amdgcn", compiler: "gcc", implementation: "OpenACCArray", make_args: "OFFLOAD=amdgcn-amdhsa OFFLOAD_ARCH=gfx90a", skip_run: true, toolchain: *gfortran_15_offload}
+    uses: ./.github/workflows/fortran.yml
+    with:
+      configuration: ${{ toJSON(matrix) }}
+
+  rust:
+    name: rust / ${{ matrix.architecture }}
+    runs-on: ${{ matrix.architecture == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x86_64, aarch64]
     defaults:
       run:
         working-directory: ./src/rust/rust-stream
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Setup project
-        run: rustup install nightly
+        run: rustup update stable
       - name: Compile project
-        run: cargo +nightly build --release
+        run: cargo +stable build --release
       - name: Test project
-        run: cargo +nightly test --release
+        run: cargo +stable test --release
       - name: Test run project
         run: ./target/release/rust-stream --arraysize 2048
+      - name: Test run project (float)
+        run: ./target/release/rust-stream --arraysize 2048 --float
 
-  test-java:
-    runs-on: ubuntu-22.04
+  java:
+    name: java / ${{ matrix.architecture }}
+    runs-on: ${{ matrix.architecture == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x86_64, aarch64]
     defaults:
       run:
         working-directory: ./src/java/java-stream
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Test build project
@@ -147,16 +255,46 @@ jobs:
       - name: Test run
         run: java -jar target/java-stream.jar --arraysize 2048
 
-  # FIXME: stale Manifest.toml, GPUCompiler fails to precompile on Julia 1.12
-  test-julia:
-    runs-on: ubuntu-22.04
+  scala:
+    name: scala / ${{ matrix.architecture }}
+    runs-on: ${{ matrix.architecture == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x86_64, aarch64]
+    defaults:
+      run:
+        working-directory: ./src/scala/scala-stream
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build project
+        run: ./sbt -batch assembly
+      - name: Test run
+        run: java -jar target/scala-3.3.1/scala-stream.jar --arraysize 2048
+      - name: Test run (float)
+        run: java -jar target/scala-3.3.1/scala-stream.jar --arraysize 2048 --float
+      - name: Test run (nstream)
+        run: java -jar target/scala-3.3.1/scala-stream.jar --arraysize 2048 --nstream_only
+
+  julia:
+    name: julia / ${{ matrix.architecture }}
+    runs-on: ${{ matrix.architecture == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x86_64, aarch64]
     defaults:
       run:
         working-directory: ./src/julia/JuliaStream.jl
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
       - name: Setup project
         run: julia --project -e 'import Pkg; Pkg.instantiate()'
       - name: Test run PlainStream.jl

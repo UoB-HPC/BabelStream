@@ -99,7 +99,7 @@ function check_solutions(
     begin
       gold_sum = gold_a * gold_b * data.size
       error = abs((dot - gold_sum) / gold_sum)
-      failed = error > 1.0e-8
+      failed = error > eps(T) * 1.0e7
       if failed
         println("Validation failed on sum. Error $error \nSum was $dot but should be $gold_sum")
       end
@@ -243,21 +243,23 @@ function main()
     else
       return [
         ("Function", name),
-        ("M$(config.mibibytes ? "i" : "")Bytes/sec", round(mbps; digits = 3)),
-        ("Min (sec)", round(min; digits = 5)),
-        ("Max", round(max; digits = 5)),
-        ("Average", round(avg; digits = 5)),
+        ("M$(config.mibibytes ? "i" : "")Bytes/sec", @sprintf("%.3f", mbps)),
+        ("Min (sec)", @sprintf("%.5f", min)),
+        ("Max", @sprintf("%.5f", max)),
+        ("Average", @sprintf("%.5f", avg)),
       ]
     end
   end
 
-  function tabulate(rows::Vector{Tuple{String,Any}}...)
+  function tabulate(rows::Vector{<:Tuple{String,Any}}...)
     header = Base.first(rows)
     padding = config.csv ? 0 : 12
     sep = config.csv ? "," : ""
-    map(x -> rpad(x[1], padding), header) |> x -> join(x, sep) |> println
+    # always leave a space after a cell, even if it overflows the column
+    cell(x) = config.csv ? string(x) : rpad(x, padding - 1) * " "
+    map(x -> cell(x[1]), header) |> x -> join(x, sep) |> println
     for row in rows
-      map(x -> rpad(x[2], padding), row) |> x -> join(x, sep) |> println
+      map(x -> cell(x[2]), row) |> x -> join(x, sep) |> println
     end
   end
 
@@ -279,7 +281,7 @@ function main()
     else
       for (name, elapsed, total_bytes) in setup
         println(
-          "$name: $(round(elapsed; digits=5)) s (=$(round(( mega_scale * total_bytes) / elapsed; digits = 5)) M$(config.mibibytes ? "i" : "")Bytes/sec)",
+          "$name: $(@sprintf("%.5f", elapsed)) s (=$(@sprintf("%.5f", (mega_scale * total_bytes) / elapsed)) M$(config.mibibytes ? "i" : "")Bytes/sec)",
         )
       end
     end
@@ -316,9 +318,9 @@ function main()
     show_init(tInit, tRead)
     valid = check_solutions(result, config.numtimes, init, benchmark, nothing)
     total_bytes = 3 * array_bytes * config.numtimes
-    bandwidth = mega_scale * (total_bytes / elapsed)
-    println("Runtime (seconds): $(round(elapsed; digits=5))")
-    println("Bandwidth ($giga_suffix/s): $(round(bandwidth; digits=3)) ")
+    bandwidth = giga_scale * (total_bytes / elapsed)
+    println("Runtime (seconds): $(@sprintf("%.5f", elapsed))")
+    println("Bandwidth ($giga_suffix/s): $(@sprintf("%.3f", bandwidth)) ")
   else
     error("Bad benchmark $(benchmark)")
   end

@@ -67,10 +67,14 @@ endif
 #MANAGED = -DUSE_MANAGED -gpu=managed
 #DEVICE  = -DUSE_DEVICE -cuda -gpu=nomanaged
 
-DOCONCURRENT_FLAG   = $(GPUFLAG) -stdpar=$(TARGET) $(DEVICE)
-ARRAY_FLAG          = $(GPUFLAG) -stdpar=$(TARGET) $(MANAGED)
-OPENMP_FLAG         = $(GPUFLAG) -mp=$(TARGET)     $(MANAGED)
-OPENACC_FLAG        = $(GPUFLAG) -acc=$(TARGET)    $(MANAGED)
+ifeq ($(TARGET),gpu)
+    TARGET_GPUFLAG = $(GPUFLAG)
+endif
+
+DOCONCURRENT_FLAG   = $(TARGET_GPUFLAG) -stdpar=$(TARGET) $(DEVICE)
+ARRAY_FLAG          = $(TARGET_GPUFLAG) -stdpar=$(TARGET) $(MANAGED)
+OPENMP_FLAG         = $(TARGET_GPUFLAG) -mp=$(TARGET)     $(MANAGED)
+OPENACC_FLAG        = $(TARGET_GPUFLAG) -acc=$(TARGET)    $(MANAGED)
 CUDA_FLAG           = $(GPUFLAG) -cuda -acc=gpu    $(MANAGED)
 SEQUENTIAL_FLAG     =
 

@@ -36,7 +36,7 @@ register_flag_optional(CUDA_EXTRA_FLAGS
 
 option(FETCH_CCCL "Fetch (download) the CCCL library. This uses CMake's FetchContent feature.
                    Specify version by setting FETCH_CCCL_VERSION" OFF)
-set(FETCH_CCCL_VERSION "v3.1.0" CACHE STRING "Specify version of CCCL to use if FETCH_CCCL is ON")
+set(FETCH_CCCL_VERSION "v3.5.0" CACHE STRING "Specify version of CCCL to use if FETCH_CCCL is ON")
 
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)
