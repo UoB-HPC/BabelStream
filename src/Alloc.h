@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
@@ -21,6 +22,8 @@
 template <class T>
 T *alloc_raw(size_t size)
 {
+  if (size > (SIZE_MAX - (ALIGNMENT - 1)) / sizeof(T)) throw std::runtime_error("Allocation size overflow");
+
   // aligned_alloc requires the size to be a multiple of the alignment, so round
   // it up. glibc lets the unrounded size through, but other libcs return a null
   // pointer, which used to show up as a crash for array sizes that are not a
