@@ -11,6 +11,8 @@
 #define UNROLL_FACTOR 4
 #endif
 
+#include <cub/cub.cuh>
+
 [[noreturn]] inline void cuda_error(char const* file, int line, char const* expr, cudaError_t e) {
   std::fprintf(stderr, "CUDA Error at %s:%d: %s (%d)\n  %s\n", file, line, cudaGetErrorString(e), e, expr);
   exit(e);
@@ -234,76 +236,258 @@ void CUDAStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 #endif
 }
 
+static constexpr int unroll = 4;
+
+template <typename T>
+__global__ void copy_kernel(const T * a, T * c, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+  T a_reg[unroll];
+
+  // First: Load from global memory to registers
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        a_reg[i] = a[idx];
+    }
+
+  // Second: Store
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        c[idx] = a_reg[i];
+    }
+}
+
 template <class T>
 void CUDAStream<T>::copy()
 {
-  for_each(array_size, [a=d_a,c=d_c] __device__ (size_t i) {
-    c[i] = a[i];
-  });
+
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
+  copy_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_c, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
+}
+
+template <typename T>
+__global__ void mul_kernel(T * b, const T * c, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+  T c_reg[unroll];
+
+  // First: Load from global memory to registers
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        c_reg[i] = c[idx];
+    }
+
+  // Second: Multiply and store
+  const T scalar = startScalar;
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        b[idx] = scalar * c_reg[i];
+    }
 }
 
 template <class T>
 void CUDAStream<T>::mul()
 {
-  for_each(array_size, [b=d_b,c=d_c] __device__ (size_t i) {
-    b[i] = startScalar * c[i];
-  });
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
+  mul_kernel<<<blocks, TBSIZE, 0, stream>>>(d_b, d_c, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
+}
+
+template <typename T>
+__global__ void add_kernel(const T * a, const T * b, T * c, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+  T a_reg[unroll];
+  T b_reg[unroll];
+
+  // First: Load from global memory to registers
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        {
+          a_reg[i] = a[idx];
+          b_reg[i] = b[idx];
+        }
+    }
+
+  // Second: Add and store
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        c[idx] = a_reg[i] + b_reg[i];
+    }
 }
 
 template <class T>
 void CUDAStream<T>::add()
 {
-  for_each(array_size, [a=d_a,b=d_b,c=d_c] __device__ (size_t i) {
-    c[i] = a[i] + b[i];
-  });
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
+  add_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
+}
+
+template <typename T>
+__global__ void triad_kernel(T * a, const T * b, const T * c, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+  T b_reg[unroll];
+  T c_reg[unroll];
+
+  // First: Load 2*unroll elements from global memory to registers
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+  {
+    if (offset + i * blockDim.x < array_size)
+      {
+        b_reg[i] = b[offset + i * blockDim.x];
+        c_reg[i] = c[offset + i * blockDim.x];
+      }
+  }
+
+  // Second: Add and store
+  const T scalar = startScalar;
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+  {
+    if (offset + i * blockDim.x < array_size)
+      a[offset + i * blockDim.x] = b_reg[i] + scalar * c_reg[i];
+  }
 }
 
 template <class T>
 void CUDAStream<T>::triad()
 {
-  for_each(array_size, [a=d_a,b=d_b,c=d_c] __device__ (size_t i) {
-    a[i] = b[i] + startScalar * c[i];
-  });
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
+  triad_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
+}
+
+template <typename T>
+__global__ void nstream_kernel(T * a, const T * b, const T * c, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+  T a_reg[unroll];
+  T b_reg[unroll];
+  T c_reg[unroll];
+
+  // First: Load 3*unroll elements from global memory to registers
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        {
+          a_reg[i] = a[idx];
+          b_reg[i] = b[idx];
+          c_reg[i] = c[idx];
+        }
+    }
+
+  // Second: Compute and store
+  const T scalar = startScalar;
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        a[idx] = a_reg[i] + b_reg[i] + scalar * c_reg[i];
+    }
 }
 
 template <class T>
 void CUDAStream<T>::nstream()
 {
-  for_each(array_size, [a=d_a,b=d_b,c=d_c] __device__ (size_t i) {
-    a[i] += b[i] + startScalar * c[i];
-  });
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
+  nstream_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
 }
 
 template <class T>
 __global__ void dot_kernel(const T * a, const T * b, T* sums, size_t array_size)
 {
-  __shared__ T smem[TBSIZE_DOT];
-  T tmp = T(0.);
-  const size_t tidx = threadIdx.x;
-  size_t i = tidx + (size_t)blockDim.x * blockIdx.x;
-  for (; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
-    tmp += a[i] * b[i];
-  }
-  smem[tidx] = tmp;
+  typedef cub::BlockReduce<T, TBSIZE_DOT> BlockReduce;
+  __shared__ typename BlockReduce::TempStorage temp_storage;
 
-  for (int offset = blockDim.x / 2; offset > 0; offset /= 2) {
-    __syncthreads();
-    if (tidx < offset) smem[tidx] += smem[tidx+offset];
-  }
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+
+  T a_reg[unroll];
+  T b_reg[unroll];
+  T partial_sum = {};
+
+  // Process with unrolling
+  for (size_t base = offset; base < array_size; base += tile_size * gridDim.x)
+    {
+      // First: Load from global memory to registers
+#pragma unroll
+      for (int u = 0; u < unroll; u++)
+        {
+          size_t idx = base + u * blockDim.x;
+          if (idx < array_size)
+            {
+              a_reg[u] = a[idx];
+              b_reg[u] = b[idx];
+            }
+          else
+            {
+              a_reg[u] = {};
+              b_reg[u] = {};
+            }
+        }
+
+      // Second: Compute dot products
+#pragma unroll
+      for (int u = 0; u < unroll; u++)
+        {
+          partial_sum += a_reg[u] * b_reg[u];
+        }
+    }
+
+  // CUB block-wide reduction
+  T block_sum = BlockReduce(temp_storage).Sum(partial_sum);
 
   // First thread writes to host memory directly from the device
-  if (tidx == 0) sums[blockIdx.x] = smem[tidx];
+  if (threadIdx.x == 0) sums[blockIdx.x] = block_sum;
 }
+
 
 template <class T>
 T CUDAStream<T>::dot()
 {
-  dot_kernel<<<dot_num_blocks, TBSIZE_DOT, 0, stream>>>(d_a, d_b, sums, array_size);
+
+  dot_kernel<<<dot_num_blocks/unroll, TBSIZE_DOT, 0, stream>>>(d_a, d_b, sums, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaStreamSynchronize(stream));
 
   T sum = 0.0;
-  for (intptr_t i = 0; i < dot_num_blocks; ++i) sum += sums[i];
+  for (intptr_t i = 0; i < dot_num_blocks/unroll; ++i) sum += sums[i];
 
   return sum;
 }

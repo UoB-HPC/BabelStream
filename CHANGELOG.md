@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- New `cuda-tuned` model for CUDA kernels tuned by NVIDIA: generic parallel-for with grid- or block-stride loops (`STRIDE`), configurable unrolling (`UNROLL_FACTOR`), and peak bandwidth reporting via NVML
+- New `cuda-tuned` model for CUDA kernels tuned by NVIDIA: register-tiled loads and stores, a CUB block reduction for `dot`, and peak bandwidth reporting via NVML; requires C++17 (#222)
 - `MEM=PAGEFAULT` for `sycl2020-usm` and `omp`, relying on GPU page faults (#217)
 - `cuda` supports AdaptiveCpp's PCUDA frontend via `ACPP_PCUDA_DRIVER=ON`
 - Fortran with gfortran can offload OpenMP target and OpenACC builds via `OFFLOAD=nvptx-none` or `OFFLOAD=amdgcn-amdhsa`, with an optional `OFFLOAD_ARCH` (e.g. `sm_80`, `gfx90a`)
