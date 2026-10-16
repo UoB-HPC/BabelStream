@@ -23,7 +23,7 @@ for precision in double float; do
   make -C "$build_dir" "COMPILER=$CI_COMPILER" "IMPLEMENTATION=$CI_IMPL" "FC=$FC" \
     "EXTRA_FCFLAGS=$extra_flags" "${make_args[@]}"
   if [[ -n ${CI_SKIP_RUN:-} ]]; then
-    readelf -SW "$build_dir/BabelStream.$CI_COMPILER.$CI_IMPL" | grep -Eq '\.(nv_fatbin|gnu\.offload_funcs)' ||
+    readelf -SW "$build_dir/BabelStream.$CI_COMPILER.$CI_IMPL" | grep -E '\.(nv_fatbin|gnu\.offload_funcs)' > /dev/null ||
       { echo "no device code in the binary"; exit 1; }
   fi
   if [[ -z ${CI_SKIP_RUN:-} ]]; then
