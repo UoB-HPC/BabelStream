@@ -1,7 +1,3 @@
-using Base.Iterators: println
-using Base.Iterators: println
-using Printf: Iterators
-
 include("Stream.jl")
 using oneAPI
 
@@ -9,7 +5,7 @@ const oneData = StreamData{T,oneArray{T}} where {T}
 const DotWGSize = 256::Int
 
 function devices()::Vector{DeviceWithRepr}
-  all = map(oneL0.devices, oneL0.drivers()) |> Iterators.flatten |> Iterators.collect
+  all = map(oneL0.devices, oneL0.drivers()) |> Iterators.flatten |> collect
   map(dev -> (dev, repr("text/plain", dev), "oneAPi.jl"), all)
 end
 
@@ -125,7 +121,7 @@ end
 
 function dot(data::oneData{T}, groupsize::Int) where {T}
   function kernel(a::AbstractArray{T}, b::AbstractArray{T}, size::Int, partial::AbstractArray{T})
-    wg_sum = @LocalMemory(T, (DotWGSize,))
+    wg_sum = oneLocalArray(T, (DotWGSize,))
     li = get_local_id()
     @inbounds wg_sum[li] = 0.0
 
@@ -139,7 +135,7 @@ function dot(data::oneData{T}, groupsize::Int) where {T}
     # then tree reduction
     offset = get_local_size() ÷ 2
     while offset > 0
-      barrier()
+      barrier(oneAPI.LOCAL_MEM_FENCE)
       if li <= offset
         @inbounds wg_sum[li] += wg_sum[li+offset]
       end
@@ -153,7 +149,7 @@ function dot(data::oneData{T}, groupsize::Int) where {T}
     return
   end
   partial_sum = oneArray{T}(undef, groupsize)
-  @oneapi items = groupsize groups = DotWGSize kernel(
+  @oneapi items = DotWGSize groups = groupsize kernel(
     data.a,
     data.b,
     data.size,

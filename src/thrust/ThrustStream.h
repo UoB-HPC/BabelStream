@@ -1,5 +1,5 @@
-// Copyright (c) 2020 Tom Deakin
-// University of Bristol HPC
+// Copyright (c) 2020 Tom Deakin, 2025 Bernhard Manfred Gruber
+// University of Bristol HPC, NVIDIA
 //
 // For full license terms please see the LICENSE file distributed with this
 // source code
@@ -8,11 +8,8 @@
 
 #include <iostream>
 #include <vector>
-#if defined(MANAGED)
-#include <thrust/universal_vector.h>
-#else
-#include <thrust/device_vector.h>
-#endif
+#include <memory>
+#include <cstdint>
 
 #include "Stream.h"
 
@@ -22,20 +19,13 @@ template <class T>
 class ThrustStream : public Stream<T>
 {
   protected:
-    // Size of arrays
+    struct Impl;
+    std::unique_ptr<Impl> impl; // avoid thrust vectors leaking into non-CUDA translation units
     intptr_t array_size;
 
-  #if defined(MANAGED)
-    thrust::universal_vector<T> a, b, c;
-  #else
-    thrust::device_vector<T> a, b, c;
-    std::vector<T> h_a, h_b, h_c;
-  #endif
-
   public:
-    ThrustStream(BenchId bs, const intptr_t array_size, const int device_id,
-		 T initA, T initB, T initC);
-    ~ThrustStream() = default;
+    ThrustStream(BenchId selection, intptr_t array_size, int device, T initA, T initB, T initC);
+    ~ThrustStream();
 
     void copy() override;
     void add() override;
@@ -45,6 +35,6 @@ class ThrustStream : public Stream<T>
     T dot() override;
 
     void get_arrays(T const*& a, T const*& b, T const*& c) override;
-    void init_arrays(T initA, T initB, T initC);
+    void init_arrays(T initA, T initB, T initC) override;
 };
 

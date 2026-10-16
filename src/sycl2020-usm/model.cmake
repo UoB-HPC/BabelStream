@@ -20,21 +20,15 @@ register_flag_optional(SYCL_COMPILER_DIR
         "")
 
 register_flag_optional(MEM "Device memory mode:
-        DEFAULT   - allocate host and device memory pointers.
-        PAGEFAULT - shared memory, only host pointers allocated."
+        DEFAULT   - device USM, copied to the host for verification.
+        MANAGED   - shared USM.
+        PAGEFAULT - system allocations, relies on GPU page faults."
         "DEFAULT")
-
-register_flag_optional(SYCL_ACCESS
-  "Data access method:
-     - ACCESSOR
-     - USM"
-  "ACCESSOR")
 
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)
-    register_definitions(${SYCL_ACCESS})
     if (${SYCL_COMPILER} STREQUAL "AdaptiveCpp")
-        set(adaptivecpp_DIR ${SYCL_COMPILER_DIR}/lib/cmake/adaptivecpp)
+        set(AdaptiveCpp_DIR ${SYCL_COMPILER_DIR}/lib/cmake/AdaptiveCpp)
 
         if (NOT EXISTS "${AdaptiveCpp_DIR}")
             message(WARNING "Falling back to AdaptiveCpp < 0.9.0 CMake structure")

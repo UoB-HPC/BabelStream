@@ -180,7 +180,7 @@ object App:
   implicit class RichDuration(private val d: Duration) extends AnyVal:
     def seconds: Double = d.toUnit(SECONDS)
 
-  def validate[A: Fractional](vec: Data[A], config: Config[A], dotSum: Option[A] = None): Unit =
+  def validate[A: Fractional](vec: Data[A], config: Config[A], dotSum: Option[A] = None): Boolean =
 
     var (goldA, goldB, goldC) = config.init
     for _ <- 0 until config.options.numtimes do
@@ -196,23 +196,25 @@ object App:
           goldA += goldB + config.scalar * goldC
 
     val tolerance = config.ulp * (100.fractional)
-    def validateXs(name: String, xs: Seq[A], from: A): Unit =
-      val error = xs.map(x => (x - from).abs_).fold(0.fractional)(_ + _) / xs.size.fractional
-      if error > tolerance then
-        Console.err.println(s"Validation failed on $name. Average error $error ")
+    def validateXs(name: String, xs: Seq[A], from: A): Boolean =
+      val error  = xs.map(x => (x - from).abs_).fold(0.fractional)(_ + _) / xs.size.fractional
+      val failed = error > tolerance
+      if failed then Console.err.println(s"Validation failed on $name. Average error $error ")
+      !failed
 
-    validateXs("a", vec.a, goldA)
-    validateXs("b", vec.b, goldB)
-    validateXs("c", vec.c, goldC)
-
-    dotSum.foreach { sum =>
+    val sumValid = dotSum.forall { sum =>
       val goldSum = (goldA * goldB) * config.options.arraysize.fractional
       val error   = ((sum - goldSum) / goldSum).abs_
-      if error > 1.fractional / 100000000.fractional then
+      val failed  = error > config.ulp * 10000000.fractional
+      if failed then
         Console.err.println(
           s"Validation failed on sum. Error $error \nSum was $sum but should be $goldSum"
         )
+      !failed
     }
+
+    validateXs("a", vec.a, goldA) & validateXs("b", vec.b, goldB) & validateXs("c", vec.c, goldC) &
+      sumValid
 
   inline def run[A: Fractional: ClassTag](
       name: String,
@@ -322,7 +324,7 @@ object App:
         val (results, sum) = stream.runAll(opt.numtimes)
         val read           = stream.runReadArrays()
         showInit(init, read)
-        validate(stream.data(), config, Some(sum))
+        val valid = validate(stream.data(), config, Some(sum))
         tabulate(
           mkRow(results.copy, "Copy", 2 * arrayBytes),
           mkRow(results.mul, "Mul", 2 * arrayBytes),
@@ -330,18 +332,20 @@ object App:
           mkRow(results.triad, "Triad", 3 * arrayBytes),
           mkRow(results.dot, "Dot", 2 * arrayBytes)
         )
+        if !valid then sys.exit(1)
       case Benchmark.NStream =>
         val result = stream.runNStream(opt.numtimes)
         val read   = stream.runReadArrays()
         showInit(init, read)
-        validate(stream.data(), config)
+        val valid = validate(stream.data(), config)
         tabulate(mkRow(result, "Nstream", 4 * arrayBytes))
+        if !valid then sys.exit(1)
       case Benchmark.Triad =>
         val results = stream.runTriad(opt.numtimes)
         val read    = stream.runReadArrays()
         showInit(init, read)
-        val totalBytes = 3 * arrayBytes * opt.numtimes
-        val bandwidth  = megaScale * (totalBytes / results.seconds)
+        val totalBytes = 3L * arrayBytes * opt.numtimes
+        val bandwidth  = gigaScale * (totalBytes / results.seconds)
         println(f"Runtime (seconds): ${results.seconds}%.5f")
         println(f"Bandwidth ($gigaSuffix/s): $bandwidth%.3f ")
 
@@ -379,7 +383,7 @@ object App:
             options = opt,
             benchmark = benchmark,
             typeSize = 4, // 32bit
-            ulp = math.ulp(Float.MaxValue),
+            ulp = math.ulp(1.0f),
             scalar = 0.4f,
             init = (0.1f, 0.2f, 0.0f)
           )
@@ -391,7 +395,7 @@ object App:
             options = opt,
             benchmark = benchmark,
             typeSize = 8,
-            ulp = math.ulp(Double.MaxValue),
+            ulp = math.ulp(1.0),
             scalar = 0.4, // 64bit
             init = (0.1, 0.2, 0.0)
           )

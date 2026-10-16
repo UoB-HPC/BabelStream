@@ -170,6 +170,7 @@ OCLStream<T>::OCLStream(BenchId bs, const intptr_t array_size, const int device_
   nstream_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "nstream");
   dot_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_long>(program, "stream_dot");
 
+#if !defined(OCL_DISABLE_MEMORY_CHECK)
   // Check buffers fit on the device
   cl_ulong totalmem = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
   cl_ulong maxbuffer = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
@@ -177,6 +178,7 @@ OCLStream<T>::OCLStream(BenchId bs, const intptr_t array_size, const int device_
     throw std::runtime_error("Device cannot allocate a buffer big enough");
   if (totalmem < 3*sizeof(T)*array_size)
     throw std::runtime_error("Device does not have enough memory for all 3 buffers");
+#endif
 
   // Create buffers
   d_a = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * array_size);

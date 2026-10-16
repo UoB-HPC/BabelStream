@@ -2,23 +2,23 @@ use std::iter::Sum;
 use std::sync::{Arc, Mutex};
 
 use self::core_affinity::CoreId;
-use crate::stream::{AllocatorType, ArrayType, RustStream, StreamData};
+use crate::stream::{ArrayType, RustStream, StreamData};
 
-struct ArcHeapData<T: ArrayType, A: AllocatorType> {
-  a_chunks: Vec<Arc<Mutex<Vec<T, A>>>>,
-  b_chunks: Vec<Arc<Mutex<Vec<T, A>>>>,
-  c_chunks: Vec<Arc<Mutex<Vec<T, A>>>>,
+struct ArcHeapData<T: ArrayType> {
+  a_chunks: Vec<Arc<Mutex<Vec<T>>>>,
+  b_chunks: Vec<Arc<Mutex<Vec<T>>>>,
+  c_chunks: Vec<Arc<Mutex<Vec<T>>>>,
 }
 
-pub struct ArcDevice<T: ArrayType, A: AllocatorType> {
+pub struct ArcDevice<T: ArrayType> {
   pub(crate) ncore: usize,
   pub(crate) pin: bool,
   pub(crate) core_ids: Vec<CoreId>,
-  data: ArcHeapData<T, A>,
+  data: ArcHeapData<T>,
 }
 
-impl<T: ArrayType, A: AllocatorType> ArcDevice<T, A> {
-  pub fn new(ncore: usize, pin: bool, alloc: A) -> Self {
+impl<T: ArrayType> ArcDevice<T> {
+  pub fn new(ncore: usize, pin: bool) -> Self {
     let mut core_ids = match core_affinity::get_core_ids() {
       Some(xs) => xs,
       None => {
@@ -28,18 +28,17 @@ impl<T: ArrayType, A: AllocatorType> ArcDevice<T, A> {
     };
     core_ids.resize(ncore, core_ids[0]);
 
-    let lift =
-      || (0..ncore).map(|_| return Arc::new(Mutex::new(Vec::new_in(alloc)))).collect::<Vec<_>>();
+    let lift = || (0..ncore).map(|_| return Arc::new(Mutex::new(Vec::new()))).collect::<Vec<_>>();
     let data = ArcHeapData { a_chunks: lift(), b_chunks: lift(), c_chunks: lift() };
 
     ArcDevice { ncore, pin, core_ids, data }
   }
 
-  pub fn ref_a(&self, t: usize) -> Arc<Mutex<Vec<T, A>>> { self.data.a_chunks[t].clone() }
+  pub fn ref_a(&self, t: usize) -> Arc<Mutex<Vec<T>>> { self.data.a_chunks[t].clone() }
 
-  pub fn ref_b(&self, t: usize) -> Arc<Mutex<Vec<T, A>>> { self.data.b_chunks[t].clone() }
+  pub fn ref_b(&self, t: usize) -> Arc<Mutex<Vec<T>>> { self.data.b_chunks[t].clone() }
 
-  pub fn ref_c(&self, t: usize) -> Arc<Mutex<Vec<T, A>>> { self.data.c_chunks[t].clone() }
+  pub fn ref_c(&self, t: usize) -> Arc<Mutex<Vec<T>>> { self.data.c_chunks[t].clone() }
 
   // divide the length by the number of cores, the last core gets less work if it does not divide
   fn chunk_size(&self, len: usize, t: usize) -> usize {
@@ -56,9 +55,7 @@ impl<T: ArrayType, A: AllocatorType> ArcDevice<T, A> {
 extern crate core_affinity;
 
 // Arc+Mutex threaded version, it should be semantically equal to the single threaded version
-impl<T: 'static + ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send + 'static>
-  RustStream<T> for StreamData<T, ArcDevice<T, A>, A>
-{
+impl<T: 'static + ArrayType + Sync + Send + Sum> RustStream<T> for StreamData<T, ArcDevice<T>> {
   fn init_arrays(&mut self) {
     let init = self.init;
     let pin = self.device.pin;
@@ -84,7 +81,7 @@ impl<T: 'static + ArrayType + Sync + Send + Sum, A: AllocatorType + Sync + Send 
   }
   fn read_arrays(&mut self) {
     let range = self.size;
-    let unlift = |drain: &mut Vec<T, A>, source: &Vec<Arc<Mutex<Vec<T, A>>>>| {
+    let unlift = |drain: &mut Vec<T>, source: &Vec<Arc<Mutex<Vec<T>>>>| {
       let xs =
         source.into_iter().flat_map(|x| x.lock().unwrap().clone().into_iter()).collect::<Vec<_>>();
       for i in 0..range {

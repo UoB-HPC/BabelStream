@@ -390,7 +390,7 @@ module BabelStreamUtil
 
             ! always use double because of accumulation error
             real(kind=REAL64) :: errA, errB, errC, errSum, epsi
-            logical :: cleanA, cleanB, cleanC, cleanSum
+            logical :: cleanA, cleanB, cleanC, cleanSum, failed
 
             goldA = startA
             goldB = startB
@@ -420,6 +420,7 @@ module BabelStreamUtil
             cleanB = ALL(IEEE_Is_Normal(B))
             cleanC = ALL(IEEE_Is_Normal(C))
             cleanSum = IEEE_Is_Normal(summ)
+            failed = .not. (cleanA .and. cleanB .and. cleanC)
 
             if (.not. cleanA) then
                 write(*,'(a51)') "Validation failed on A. Contains NaA/Inf/Subnormal."
@@ -430,8 +431,9 @@ module BabelStreamUtil
             if (.not. cleanC) then
                 write(*,'(a51)') "Validation failed on C. Contains NaA/Inf/Subnormal."
             end if
-            if (.not. cleanSum) then
+            if (selection.eq.1 .and. .not. cleanSum) then
                 write(*,'(a54,e20.12)') "Validation failed on Sum. Contains NaA/Inf/Subnormal: ",summ
+                failed = .true.
             end if
 
             errA = SUM( ABS( A - goldA ) ) / array_size
@@ -441,22 +443,28 @@ module BabelStreamUtil
 
             epsi = epsilon(real(0,kind=StreamRealKind)) * 100.0d0
 
-            if (errA .gt. epsi) then
+            if (errA .gt. epsi * abs(goldA)) then
                 write(*,'(a38,e20.12)') "Validation failed on A. Average error ", errA
+                failed = .true.
             end if
-            if (errB .gt. epsi) then
+            if (errB .gt. epsi * abs(goldB)) then
                 write(*,'(a38,e20.12)') "Validation failed on B. Average error ", errB
+                failed = .true.
             end if
-            if (errC .gt. epsi) then
+            if (errC .gt. epsi * abs(goldC)) then
                 write(*,'(a38,e20.12)') "Validation failed on C. Average error ", errC
+                failed = .true.
             end if
 
             if (selection.eq.1) then
-                if (errSum .gt. 1.0e-8) then
+                if (errSum .gt. epsilon(real(0,kind=StreamRealKind)) * 1.0d7) then
                     write(*,'(a38,e20.12)') "Validation failed on Sum. Error ", errSum
-                    write(*,'(a8,e20.12,a15,e20.12)') "Sum was ",summ, " but should be ", errSum
+                    write(*,'(a8,e20.12,a15,e20.12)') "Sum was ",summ, " but should be ", goldSum
+                    failed = .true.
                 end if
             endif
+
+            if (failed) error stop 1
 
         end subroutine check_solution
 

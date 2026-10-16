@@ -3,7 +3,14 @@ FCFLAGS	:= -O3
 
 DOCONCURRENT_FLAG   =
 ARRAY_FLAG          =
-OPENMP_FLAG         = -fopenmp --offload-arch=${GPUARCH} -DUSE_OMP_GET_WTIME
+OPENMP_FLAG         = -fopenmp -DUSE_OMP_GET_WTIME
+ifdef GPUARCH
+    OPENMP_FLAG += --offload-arch=${GPUARCH}
+endif
 OPENACC_FLAG        =
 CUDA_FLAG           =
 SEQUENTIAL_FLAG     =
+
+ifneq ($(filter OpenACC OpenACCArray OpenMPTaskloop CUDA CUDAKernel,$(IMPLEMENTATION)),)
+    $(error IMPLEMENTATION=$(IMPLEMENTATION) is not supported by this compiler.)
+endif

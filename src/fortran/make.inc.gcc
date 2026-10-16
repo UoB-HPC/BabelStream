@@ -18,10 +18,23 @@ else
      endif
 endif
 
-DOCONCURRENT_FLAG   = -ftree-parallelize-loops=4
+DOCONCURRENT_FLAG   = -ftree-parallelize-loops=4 -std=f2023
 ARRAY_FLAG          =
 OPENMP_FLAG         = -fopenmp
 OPENACC_FLAG        = -fopenacc
+
+ifdef OFFLOAD
+    OFFLOAD_FLAG = -foffload=$(OFFLOAD) -fcf-protection=none
+    ifdef OFFLOAD_ARCH
+        ifeq ($(OFFLOAD),nvptx-none)
+            OFFLOAD_FLAG += -foffload-options=$(OFFLOAD)=-misa=$(OFFLOAD_ARCH)
+        else
+            OFFLOAD_FLAG += -foffload-options=$(OFFLOAD)=-march=$(OFFLOAD_ARCH)
+        endif
+    endif
+    OPENMP_FLAG  += $(OFFLOAD_FLAG)
+    OPENACC_FLAG += $(OFFLOAD_FLAG)
+endif
 CUDA_FLAG           =
 SEQUENTIAL_FLAG     =
 

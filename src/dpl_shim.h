@@ -55,3 +55,20 @@ static constexpr auto exe_policy = std::execution::par_unseq;
 #ifdef USE_STD_PTR_ALLOC_DEALLOC
 #include "Alloc.h"
 #endif
+
+#ifdef USE_ONEDPL
+#include <iostream>
+inline void print_dpl_backend() {
+  std::cout << "Using oneDPL backend: ";
+#if ONEDPL_USE_DPCPP_BACKEND
+  std::cout << "SYCL USM (device=" << exe_policy.queue().get_device().get_info<sycl::info::device::name>() << ")";
+#elif ONEDPL_USE_TBB_BACKEND
+  std::cout << "TBB " TBB_VERSION_STRING;
+#elif ONEDPL_USE_OPENMP_BACKEND
+  std::cout << "OpenMP";
+#else
+  std::cout << "Default";
+#endif
+  std::cout << std::endl;
+}
+#endif

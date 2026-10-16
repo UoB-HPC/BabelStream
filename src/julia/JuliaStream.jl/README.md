@@ -15,7 +15,7 @@ This is an implementation of BabelStream in Julia which contains the following v
 
 Prerequisites
 
- * Julia >= 1.6+
+ * Julia >= 1.12
 
 A set of reduced dependency projects are available for the following backend and implementations:
 

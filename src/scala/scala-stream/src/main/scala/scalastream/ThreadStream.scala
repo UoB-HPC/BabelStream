@@ -55,11 +55,13 @@ class ThreadStream[@specialized(Float, Double) A: Fractional: ClassTag](val conf
     ()
 
   class Box(var value: A)
-  override inline def copy(): Unit = { forEachAll(())((_, i) => c(i) = a(i)); () }
-  override inline def mul(): Unit = { forEachAll(())((_, i) => b(i) = scalar * c(i)); () }
-  override inline def add(): Unit = { forEachAll(())((_, i) => c(i) = a(i) + b(i)); () }
+  override inline def copy(): Unit  = { forEachAll(())((_, i) => c(i) = a(i)); () }
+  override inline def mul(): Unit   = { forEachAll(())((_, i) => b(i) = scalar * c(i)); () }
+  override inline def add(): Unit   = { forEachAll(())((_, i) => c(i) = a(i) + b(i)); () }
   override inline def triad(): Unit = { forEachAll(())((_, i) => a(i) = b(i) + scalar * c(i)); () }
-  override inline def nstream(): Unit = { forEachAll(())((_, i) => a(i) = b(i) * scalar * c(i)); () }
+  override inline def nstream(): Unit = {
+    forEachAll(())((_, i) => a(i) = a(i) + b(i) + scalar * c(i)); ()
+  }
 
   override inline def dot(): A =
     forEachAll(Box(0.fractional))((acc, i) => acc.value = acc.value + (a(i) * b(i)))

@@ -1,4 +1,4 @@
-using ROCKernels, CUDAKernels, KernelAbstractions, CUDA, AMDGPU
+using KernelAbstractions, CUDA, AMDGPU
 include("Stream.jl")
 
 const CuData = StreamData{T,CUDA.CuArray{T}} where {T}
@@ -6,23 +6,17 @@ const ROCData = StreamData{T,AMDGPU.ROCArray{T}} where {T}
 
 const TBSize = 1024::Int
 const DotBlocks = 256::Int
+const DotOffsets = ntuple(k -> TBSize >> k, trailing_zeros(TBSize))
 
 @enum Backend cuda rocm cpu
 
 struct Context
   backend::Backend
-  device::Device
+  device::KernelAbstractions.Backend
 end
 
 function list_rocm_devices()::Vector{DeviceWithRepr}
-  try
-    # AMDGPU.agents()'s internal iteration order isn't stable
-    sorted = sort(AMDGPU.get_agents(:gpu), by = repr)
-    map(x -> (x, repr(x), rocm), sorted)
-  catch
-    # probably unsupported
-    []
-  end
+  return !AMDGPU.functional() ? [] : map(d -> (d, repr(d), rocm), AMDGPU.devices())
 end
 
 function list_cuda_devices()::Vector{DeviceWithRepr}
@@ -61,7 +55,7 @@ function make_stream(
       scalar,
       arraysize,
     )
-    backenddevice = CPU()
+    backend_impl = CPU()
   elseif backend == cuda
     CUDA.device!(selected)
     if CUDA.device() != selected
@@ -81,16 +75,14 @@ function make_stream(
       scalar,
       arraysize,
     )
-    backenddevice = CUDADevice()
+    backend_impl = CUDABackend()
   elseif backend == rocm
-    AMDGPU.DEFAULT_AGENT[] = selected
-    if AMDGPU.get_default_agent() != selected
-      error(
-        "Cannot select HSA device, expecting $selected, but got $(AMDGPU.get_default_agent())",
-      )
+    AMDGPU.device!(selected)
+    if AMDGPU.device() != selected
+      error("Cannot select HIP device, expecting $selected, but got $(AMDGPU.device())")
     end
     if !silent
-      println("Using GPU HSA device: $(AMDGPU.get_name(selected)) ($(repr(selected)))")
+      println("Using HIP device: $(repr(selected))")
     end
     partialsum = ROCArray{T}(undef, DotBlocks)
     data = ROCData{T}(
@@ -100,7 +92,7 @@ function make_stream(
       scalar,
       arraysize,
     )
-    backenddevice = ROCDevice()
+    backend_impl = ROCBackend()
   else
     error("unsupported backend $(backend)")
   end
@@ -108,7 +100,7 @@ function make_stream(
   if !silent
     println("Kernel parameters   : <<<$(data.size),$(TBSize)>>>")
   end
-  return (data, Context(backend, backenddevice))
+  return (data, Context(backend, backend_impl))
 end
 
 function init_arrays!(
@@ -117,19 +109,19 @@ function init_arrays!(
   init::Tuple{T,T,T},
 ) where {T,C}
   if context.backend == cpu
-    Threads.@threads for i = 1:data.size
+    Threads.@threads :static for i = 1:data.size
       @inbounds data.a[i] = init[1]
       @inbounds data.b[i] = init[2]
       @inbounds data.c[i] = init[3]
     end
   elseif context.backend == cuda
-    CUDA.fill!(data.a, init[1])
-    CUDA.fill!(data.b, init[2])
-    CUDA.fill!(data.c, init[3])
+    fill!(data.a, init[1])
+    fill!(data.b, init[2])
+    fill!(data.c, init[3])
   elseif context.backend == rocm
-    AMDGPU.fill!(data.a, init[1])
-    AMDGPU.fill!(data.b, init[2])
-    AMDGPU.fill!(data.c, init[3])
+    fill!(data.a, init[1])
+    fill!(data.b, init[2])
+    fill!(data.c, init[3])
   else
     error("unsupported backend $(backend)")
   end
@@ -140,7 +132,8 @@ function copy!(data::StreamData{T,C}, context::Context) where {T,C}
     i = @index(Global)
     @inbounds c[i] = a[i]
   end
-  wait(kernel(context.device, TBSize)(data.a, data.c, ndrange = data.size))
+  kernel(context.device, TBSize)(data.a, data.c, ndrange = data.size)
+  KernelAbstractions.synchronize(context.device)
 end
 
 function mul!(data::StreamData{T,C}, context::Context) where {T,C}
@@ -148,7 +141,8 @@ function mul!(data::StreamData{T,C}, context::Context) where {T,C}
     i = @index(Global)
     @inbounds b[i] = scalar * c[i]
   end
-  wait(kernel(context.device, TBSize)(data.b, data.c, data.scalar, ndrange = data.size))
+  kernel(context.device, TBSize)(data.b, data.c, data.scalar, ndrange = data.size)
+  KernelAbstractions.synchronize(context.device)
 end
 
 function add!(data::StreamData{T,C}, context::Context) where {T,C}
@@ -156,7 +150,8 @@ function add!(data::StreamData{T,C}, context::Context) where {T,C}
     i = @index(Global)
     @inbounds c[i] = a[i] + b[i]
   end
-  wait(kernel(context.device, TBSize)(data.a, data.b, data.c, ndrange = data.size))
+  kernel(context.device, TBSize)(data.a, data.b, data.c, ndrange = data.size)
+  KernelAbstractions.synchronize(context.device)
 end
 
 function triad!(data::StreamData{T,C}, context::Context) where {T,C}
@@ -164,15 +159,14 @@ function triad!(data::StreamData{T,C}, context::Context) where {T,C}
     i = @index(Global)
     @inbounds a[i] = b[i] + (scalar * c[i])
   end
-  wait(
-    kernel(context.device, TBSize)(
-      data.a,
-      data.b,
-      data.c,
-      data.scalar,
-      ndrange = data.size,
-    ),
+  kernel(context.device, TBSize)(
+    data.a,
+    data.b,
+    data.c,
+    data.scalar,
+    ndrange = data.size,
   )
+  KernelAbstractions.synchronize(context.device)
 end
 
 function nstream!(data::StreamData{T,C}, context::Context) where {T,C}
@@ -180,21 +174,19 @@ function nstream!(data::StreamData{T,C}, context::Context) where {T,C}
     i = @index(Global)
     @inbounds a[i] += b[i] + scalar * c[i]
   end
-  wait(
-    kernel(context.device, TBSize)(
-      data.a,
-      data.b,
-      data.c,
-      data.scalar,
-      ndrange = data.size,
-    ),
+  kernel(context.device, TBSize)(
+    data.a,
+    data.b,
+    data.c,
+    data.scalar,
+    ndrange = data.size,
   )
+  KernelAbstractions.synchronize(context.device)
 end
 
 function dot(data::StreamData{T,C}, context::Context) where {T,C}
   @kernel function kernel(@Const(a::AbstractArray{T}), @Const(b::AbstractArray{T}), size::Int, partial::AbstractArray{T})
     local_i = @index(Local)
-    group_i = @index(Group)
     tb_sum = @localmem T TBSize
     @inbounds tb_sum[local_i] = 0.0
 
@@ -205,23 +197,17 @@ function dot(data::StreamData{T,C}, context::Context) where {T,C}
       i += TBSize * DotBlocks
     end
 
-    # then tree reduction
-    # FIXME this does not compile when targeting CPUs:
-    # see https://github.com/JuliaGPU/KernelAbstractions.jl/issues/262
-    offset = @private Int64 (1,)
-    @inbounds begin
-      offset[1] = @groupsize()[1] ÷ 2
-      while offset[1] > 0
-        @synchronize
-        if (local_i - 1) < offset[1]
-          tb_sum[local_i] += tb_sum[local_i+offset[1]]
-        end
-        offset[1] ÷= 2
+    # then tree reduction, constant offsets keep private state out of @synchronize for the CPU backend
+    @inbounds for offset in DotOffsets
+      @synchronize
+      li = @index(Local)
+      if li <= offset
+        tb_sum[li] += tb_sum[li+offset]
       end
     end
 
-    if (local_i == 1)
-      @inbounds partial[group_i] = tb_sum[local_i]
+    if @index(Local) == 1
+      @inbounds partial[@index(Group)] = tb_sum[1]
     end
   end
 
@@ -235,15 +221,14 @@ function dot(data::StreamData{T,C}, context::Context) where {T,C}
     error("unsupported backend $(backend)")
   end
 
-  wait(
-    kernel(context.device, TBSize)(
-      data.a,
-      data.b,
-      data.size,
-      partial_sum,
-      ndrange = TBSize * DotBlocks,
-    ),
+  kernel(context.device, TBSize)(
+    data.a,
+    data.b,
+    data.size,
+    partial_sum,
+    ndrange = TBSize * DotBlocks,
   )
+  KernelAbstractions.synchronize(context.device)
 
   return sum(partial_sum)
 end
