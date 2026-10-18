@@ -164,7 +164,7 @@ __global__ void for_each_kernel(size_t array_size, size_t start, F f) {
 #if defined(GRID_STRIDE)
   // Grid-stride loop
   size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x;
-  #pragma unroll(unroll_factor)
+  #pragma unroll unroll_factor
   for (; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     f(i);
   }
@@ -172,7 +172,7 @@ __global__ void for_each_kernel(size_t array_size, size_t start, F f) {
   // Block-stride loop
   size_t i = start * blockIdx.x + threadIdx.x;
   const size_t e = min(array_size, start * (blockIdx.x + size_t(1)));
-  #pragma unroll(unroll_factor)
+  #pragma unroll unroll_factor
   for (; i < e; i += blockDim.x) {
     f(i);
   }
