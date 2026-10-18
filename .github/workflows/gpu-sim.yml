@@ -46,5 +46,10 @@ jobs:
       - name: Build
         run: cmake --build build
 
+      # BabelStream's own ctest uses 16M-element arrays and a 60 s limit, which a CPU-emulated
+      # GPU on a 4-core runner does not meet. The executable checks its results itself
+      # (check_solution) and exits non-zero on a mismatch, so run it directly on a small size.
       - name: Run the verification on the simulated GPU
-        run: vgpu run ctest --test-dir build --output-on-failure --no-tests=error
+        run: >
+          timeout 900 vgpu run ./build/${{ matrix.model }}-stream
+          --device 0 --arraysize 1048576 --numtimes 4
