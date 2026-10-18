@@ -12,10 +12,14 @@
 
 #if ONEDPL_USE_DPCPP_BACKEND
 
+#if __has_include(<sycl/sycl.hpp>)
+#include <sycl/sycl.hpp>
+#else
 #include <CL/sycl.hpp>
+#endif
 
 const static auto exe_policy = oneapi::dpl::execution::device_policy<>{
-        oneapi::dpl::execution::make_device_policy(cl::sycl::default_selector{})
+        oneapi::dpl::execution::make_device_policy(sycl::default_selector{})
 };
 
 template<typename T>
