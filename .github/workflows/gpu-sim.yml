@@ -1,0 +1,50 @@
+name: GPU simulator (run tests)
+
+# Runs the CUDA and Thrust variants and their built-in verification (ctest) on a
+# *simulated* NVIDIA GPU, using PantheonSim, because GitHub-hosted runners have no GPU.
+# The simulator is functional, not cycle- or bit-accurate and the bandwidth numbers it
+# prints mean nothing: this checks that the variants build and compute correct results,
+# which the compile-only checks in linux.yml do not.
+# Not part of the required checks: manual and weekly only.
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "23 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  sim:
+    name: ${{ matrix.model }} / ${{ matrix.gpu }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {model: cuda, gpu: nvidia/a100, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.0/bin/nvcc -DCUDA_ARCH=sm_80 -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared"}
+          - {model: thrust, gpu: nvidia/a100, cmake_args: "-DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.0/bin/nvcc -DCUDA_ARCH=80 -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared"}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The shared CUDA runtime is required: a statically linked runtime cannot be
+      # intercepted by the simulator.
+      - uses: pantheongpu/setup-pantheonsim@23932d9b811269d55c8d65687332fefc65daeb2c # v0.1.3
+        with:
+          gpu: ${{ matrix.gpu }}
+          cuda-toolkit: "13.0"
+          library-path: false
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DUSAGE=OFF
+          -DMODEL=${{ matrix.model }} ${{ matrix.cmake_args }}
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run the verification on the simulated GPU
+        run: vgpu run ctest --test-dir build --output-on-failure --no-tests=error
