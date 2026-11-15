@@ -7,6 +7,13 @@ register_flag_optional(OpenCL_LIBRARY
         "Path to OpenCL library, usually called libOpenCL.so"
         "${OpenCL_LIBRARY}")
 
+register_flag_optional(MEM "Device memory mode:
+        DEFAULT    - allocate device buffers.
+        SVM_COARSE - coarse-grained buffer SVM, requires OpenCL 2.0.
+        SVM_FINE   - fine-grained buffer SVM, requires OpenCL 2.0.
+        SVM_SYSTEM - fine-grained system SVM, only host pointers allocated, requires OpenCL 2.0."
+        "DEFAULT")
+
 register_flag_optional(OCL_DISABLE_MEMORY_CHECK
         "Skip the check that the buffers fit in the device's reported memory, for devices that report it incorrectly"
         "OFF")
@@ -20,6 +27,9 @@ macro(setup)
     endif ()
     find_package(OpenCL REQUIRED)
     register_link_library(OpenCL::OpenCL)
+    if (NOT MEM STREQUAL "DEFAULT")
+        register_definitions(${MEM})
+    endif ()
     if (OCL_DISABLE_MEMORY_CHECK)
         register_definitions(OCL_DISABLE_MEMORY_CHECK)
     endif ()

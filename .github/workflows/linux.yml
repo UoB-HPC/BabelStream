@@ -62,6 +62,9 @@ jobs:
           - {variant: "gcc-13-kokkos-5", model: "kokkos", kokkos_ref: "5.2.2", cmake_args: "-DKOKKOS_IN_TREE=/opt/kokkos -DKokkos_ENABLE_SERIAL=ON", model_packages: "git", toolchain: *gcc_13}
           - {variant: "gcc-13-raja", model: "raja", raja_ref: "v2026.07.1", cmake_args: "-DRAJA_IN_TREE=/opt/raja -DENABLE_OPENMP=ON", model_packages: "git", toolchain: *gcc_13}
           - {variant: "gcc-13-ocl", model: "ocl", model_packages: "pocl-opencl-icd ocl-icd-opencl-dev", toolchain: *gcc_13}
+          - {variant: "gcc-13-ocl-svm-coarse", model: "ocl", cmake_args: "-DMEM=SVM_COARSE", model_packages: "pocl-opencl-icd ocl-icd-opencl-dev", toolchain: *gcc_13}
+          - {variant: "gcc-13-ocl-svm-fine", model: "ocl", cmake_args: "-DMEM=SVM_FINE", model_packages: "pocl-opencl-icd ocl-icd-opencl-dev", toolchain: *gcc_13}
+          - {variant: "ocl-svm-system", model: "ocl", cmake_args: "-DMEM=SVM_SYSTEM", model_packages: "pocl-opencl-icd ocl-icd-opencl-dev", toolchain: {image: "docker.io/library/ubuntu:26.04", cc: "gcc", cxx: "g++"}}
           - {variant: "oneapi-sycl2020-acc", model: "sycl2020-acc", cmake_args: "-DSYCL_COMPILER=ONEAPI-ICPX", model_packages: "pocl-opencl-icd", toolchain: &oneapi {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
               cc: "/opt/intel/oneapi/compiler/2026.1/bin/icx", cxx: "/opt/intel/oneapi/compiler/2026.1/bin/icpx", packages: "intel-oneapi-dpcpp-cpp-2026.1",
               apt_key: "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB", apt_source: "https://apt.repos.intel.com/oneapi

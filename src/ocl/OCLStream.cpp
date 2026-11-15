@@ -6,6 +6,22 @@
 // source code
 
 #include "OCLStream.h"
+#include "Alloc.h"
+
+#include <algorithm>
+
+#if defined(SVM_COARSE)
+constexpr cl_device_svm_capabilities svm_capability = CL_DEVICE_SVM_COARSE_GRAIN_BUFFER;
+constexpr cl_svm_mem_flags svm_flags = CL_MEM_READ_WRITE;
+constexpr const char* svm_name = "coarse-grained buffer SVM";
+#elif defined(SVM_FINE)
+constexpr cl_device_svm_capabilities svm_capability = CL_DEVICE_SVM_FINE_GRAIN_BUFFER;
+constexpr cl_svm_mem_flags svm_flags = CL_MEM_READ_WRITE | CL_MEM_SVM_FINE_GRAIN_BUFFER;
+constexpr const char* svm_name = "fine-grained buffer SVM";
+#elif defined(SVM_SYSTEM)
+constexpr cl_device_svm_capabilities svm_capability = CL_DEVICE_SVM_FINE_GRAIN_SYSTEM;
+constexpr const char* svm_name = "fine-grained system SVM";
+#endif
 
 // Cache list of devices
 bool cached = false;
@@ -150,15 +166,15 @@ OCLStream<T>::OCLStream(BenchId bs, const intptr_t array_size, const int device_
   }
 
   // Create kernels
-  init_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, T, T, T>(program, "init");
-  copy_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "copy");
-  mul_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer>(program, "mul");
-  add_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "add");
-  triad_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "triad");
-  nstream_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>(program, "nstream");
-  dot_kernel = new cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_long>(program, "stream_dot");
+  init_kernel = new cl::KernelFunctor<Array, Array, Array, T, T, T>(program, "init");
+  copy_kernel = new cl::KernelFunctor<Array, Array>(program, "copy");
+  mul_kernel = new cl::KernelFunctor<Array, Array>(program, "mul");
+  add_kernel = new cl::KernelFunctor<Array, Array, Array>(program, "add");
+  triad_kernel = new cl::KernelFunctor<Array, Array, Array>(program, "triad");
+  nstream_kernel = new cl::KernelFunctor<Array, Array, Array>(program, "nstream");
+  dot_kernel = new cl::KernelFunctor<Array, Array, cl::Buffer, cl::LocalSpaceArg, cl_long>(program, "stream_dot");
 
-#if !defined(OCL_DISABLE_MEMORY_CHECK)
+#if !defined(OCL_DISABLE_MEMORY_CHECK) && !defined(SVM_SYSTEM)
   // Check buffers fit on the device
   cl_ulong totalmem = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
   cl_ulong maxbuffer = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
@@ -169,9 +185,28 @@ OCLStream<T>::OCLStream(BenchId bs, const intptr_t array_size, const int device_
 #endif
 
   // Create buffers
+#if defined(OCL_SVM)
+  if (!(device.getInfo<CL_DEVICE_SVM_CAPABILITIES>() & svm_capability))
+    throw std::runtime_error(std::string("Device does not support ") + svm_name);
+#endif
+#if defined(SVM_SYSTEM)
+  d_a = alloc_raw<T>(array_size);
+  d_b = alloc_raw<T>(array_size);
+  d_c = alloc_raw<T>(array_size);
+#elif defined(OCL_SVM)
+  auto alloc = [&]() {
+    T* p = static_cast<T*>(clSVMAlloc(context(), svm_flags, sizeof(T) * array_size, 0));
+    if (!p) throw std::runtime_error("Failed to allocate SVM buffer");
+    return p;
+  };
+  d_a = alloc();
+  d_b = alloc();
+  d_c = alloc();
+#else
   d_a = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * array_size);
   d_b = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * array_size);
   d_c = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(T) * array_size);
+#endif
   d_sum = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(T) * dot_num_groups);
 
   sums = std::vector<T>(dot_num_groups);
@@ -189,6 +224,16 @@ OCLStream<T>::~OCLStream()
   delete triad_kernel;
   delete nstream_kernel;
   delete dot_kernel;
+
+#if defined(SVM_SYSTEM)
+  dealloc_raw(d_a);
+  dealloc_raw(d_b);
+  dealloc_raw(d_c);
+#elif defined(OCL_SVM)
+  clSVMFree(context(), d_a);
+  clSVMFree(context(), d_b);
+  clSVMFree(context(), d_c);
+#endif
 
   devices.clear();
 }
@@ -265,15 +310,34 @@ void OCLStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void OCLStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 {
+#if defined(SVM_FINE) || defined(SVM_SYSTEM)
+  queue.finish();
+  a = d_a;
+  b = d_b;
+  c = d_c;
+#else
   h_a.resize(array_size);
   h_b.resize(array_size);
   h_c.resize(array_size);
   a = h_a.data();
   b = h_b.data();
   c = h_c.data();
+#if defined(SVM_COARSE)
+  auto read = [&](T* src, std::vector<T>& dst) {
+    queue.enqueueMapSVM(src, CL_TRUE, CL_MAP_READ, sizeof(T) * array_size);
+    std::copy(src, src + array_size, dst.begin());
+    queue.enqueueUnmapSVM(src);
+  };
+  read(d_a, h_a);
+  read(d_b, h_b);
+  read(d_c, h_c);
+  queue.finish();
+#else
   cl::copy(queue, d_a, h_a.begin(), h_a.end());
   cl::copy(queue, d_b, h_b.begin(), h_b.end());
   cl::copy(queue, d_c, h_c.begin(), h_c.end());
+#endif
+#endif
 }
 
 void getDeviceList(void)

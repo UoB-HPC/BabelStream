@@ -12,8 +12,14 @@
 #include <stdexcept>
 
 #define CL_HPP_ENABLE_EXCEPTIONS
+#if defined(SVM_COARSE) || defined(SVM_FINE) || defined(SVM_SYSTEM)
+#define OCL_SVM
+#define CL_HPP_TARGET_OPENCL_VERSION 200
+#define CL_HPP_MINIMUM_OPENCL_VERSION 200
+#else
 #define CL_HPP_TARGET_OPENCL_VERSION 120
 #define CL_HPP_MINIMUM_OPENCL_VERSION 120
+#endif
 
 #include "CL/cl2.hpp"
 
@@ -25,6 +31,12 @@ template <class T>
 class OCLStream : public Stream<T>
 {
   protected:
+#if defined(OCL_SVM)
+    using Array = T*;
+#else
+    using Array = cl::Buffer;
+#endif
+
     // Size of arrays
     intptr_t array_size;
 
@@ -37,21 +49,21 @@ class OCLStream : public Stream<T>
     cl::CommandQueue queue;
 
     // Device side pointers to arrays
-    cl::Buffer d_a;
-    cl::Buffer d_b;
-    cl::Buffer d_c;
+    Array d_a;
+    Array d_b;
+    Array d_c;
     cl::Buffer d_sum;
 
     // Host-side arrays for verification
     std::vector<T> h_a, h_b, h_c;
 
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, T, T, T>* init_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer>* copy_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer>* mul_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>* add_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>* triad_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>* nstream_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_long>* dot_kernel;
+    cl::KernelFunctor<Array, Array, Array, T, T, T>* init_kernel;
+    cl::KernelFunctor<Array, Array>* copy_kernel;
+    cl::KernelFunctor<Array, Array>* mul_kernel;
+    cl::KernelFunctor<Array, Array, Array>* add_kernel;
+    cl::KernelFunctor<Array, Array, Array>* triad_kernel;
+    cl::KernelFunctor<Array, Array, Array>* nstream_kernel;
+    cl::KernelFunctor<Array, Array, cl::Buffer, cl::LocalSpaceArg, cl_long>* dot_kernel;
 
     // NDRange configuration for the dot kernel
     size_t dot_num_groups;
