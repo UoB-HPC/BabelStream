@@ -1,11 +1,6 @@
 #pragma once
 
-#include <cstdlib>
 #include <cstddef>
-
-#ifndef ALIGNMENT
-#define ALIGNMENT (2*1024*1024) // 2MB
-#endif
 
 #ifdef USE_ONEDPL
 
@@ -17,10 +12,14 @@
 
 #if ONEDPL_USE_DPCPP_BACKEND
 
+#if __has_include(<sycl/sycl.hpp>)
+#include <sycl/sycl.hpp>
+#else
 #include <CL/sycl.hpp>
+#endif
 
 const static auto exe_policy = oneapi::dpl::execution::device_policy<>{
-        oneapi::dpl::execution::make_device_policy(cl::sycl::default_selector{})
+        oneapi::dpl::execution::make_device_policy(sycl::device{sycl::default_selector_v})
 };
 
 template<typename T>
@@ -58,13 +57,7 @@ static constexpr auto exe_policy = std::execution::par_unseq;
 #endif
 
 #ifdef USE_STD_PTR_ALLOC_DEALLOC
-
-template<typename T>
-T *alloc_raw(size_t size) { return (T *) aligned_alloc(ALIGNMENT, sizeof(T) * size); }
-
-template<typename T>
-void dealloc_raw(T *ptr) { free(ptr); }
-
+#include "Alloc.h"
 #endif
 
 #ifdef USE_ONEDPL

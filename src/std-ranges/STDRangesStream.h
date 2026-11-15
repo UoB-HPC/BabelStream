@@ -25,7 +25,7 @@ class STDRangesStream : public Stream<T>
 
   public:
     STDRangesStream(BenchId bs, const intptr_t array_size, const int device_id,
-		  T initA, T initB, T initC) noexcept;
+		  T initA, T initB, T initC);
     ~STDRangesStream();
 
     void copy() override;

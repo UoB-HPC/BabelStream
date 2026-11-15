@@ -40,7 +40,7 @@ auto counting_range(intptr_t b, intptr_t e) { return std::views::iota(b, e); }
 template <class T>
 STDRangesStream<T>::STDRangesStream(BenchId bs, const intptr_t array_size, const int device_id,
 			      T initA, T initB, T initC)
-  noexcept : array_size{array_size},
+  : array_size{array_size},
   a(alloc_raw<T>(array_size)), b(alloc_raw<T>(array_size)), c(alloc_raw<T>(array_size))
 {
     std::cout << "Backing storage typeid: " << typeid(a).name() << std::endl;

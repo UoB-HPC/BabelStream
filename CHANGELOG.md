@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
 - `std-ranges` builds with hipstdpar and the oneDPL SYCL backend, and the default `FETCH_ONEDPL_VERSION` is `oneDPL-release-2022.14.0`
 - Bump the fetched OpenCL-Headers (v2026.05.29), `FETCH_TBB_VERSION` (v2023.1.0), and `FETCH_CCCL_VERSION` (v3.5.0)
 - Fix `omp` `OFFLOAD=<vendor>:<arch>` building host kernels (`OMP_TARGET_GPU` was never defined), and the GCC offload flags and architecture (#181)
+- Host allocations in `omp`, `raja`, `serial`, and `tbb` share one allocator that rounds sizes up to the alignment and throws on failure, fixing an `aligned_alloc` crash on macOS (#225)
+- Fix `tbb` leaking its arrays without `USE_VECTOR`
 - Fix `FETCH_ONEDPL` probing the compiler with C++14, which broke `-fsycl` detection for oneDPL (#210)
 - `sycl2020-usm` defaults to device USM (`MEM=DEFAULT`), matching `cuda` and `hip`; shared USM moves to `MEM=MANAGED` (#226)
 - Fix `sycl2020-acc` and `sycl2020-usm` `dot` with AdaptiveCpp, which accumulated across calls

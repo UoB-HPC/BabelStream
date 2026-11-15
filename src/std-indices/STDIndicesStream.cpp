@@ -14,7 +14,7 @@
 template <class T>
 STDIndicesStream<T>::STDIndicesStream(BenchId bs, const intptr_t array_size, const int device_id,
 			      T initA, T initB, T initC)
-  noexcept : array_size{array_size}, range(0, array_size),
+  : array_size{array_size}, range(0, array_size),
   a(alloc_raw<T>(array_size)), b(alloc_raw<T>(array_size)), c(alloc_raw<T>(array_size))
 {
     std::cout << "Backing storage typeid: " << typeid(a).name() << std::endl;

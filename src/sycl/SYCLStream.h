@@ -10,7 +10,12 @@
 #include <sstream>
 
 #include "Stream.h"
-#include "CL/sycl.hpp"
+#if __has_include(<sycl/sycl.hpp>)
+#include <sycl/sycl.hpp>
+namespace cl { namespace sycl = ::sycl; }
+#else
+#include <CL/sycl.hpp>
+#endif
 
 #define IMPLEMENTATION_STRING "SYCL"
 
