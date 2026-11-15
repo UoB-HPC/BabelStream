@@ -9,10 +9,6 @@ register_flag_optional(MEM "Device memory mode:
         PAGEFAULT - shared memory, only host pointers allocated."
         "DEFAULT")
 
-register_flag_optional(STRIDE "Kernel stride: GRID_STRIDE or BLOCK_STRIDE" "GRID_STRIDE")
-
-register_flag_optional(UNROLL_FACTOR "Kernel unroll factor:" "4")
-
 
 register_flag_required(CMAKE_CUDA_COMPILER
         "Path to the CUDA nvcc compiler")
@@ -41,12 +37,9 @@ macro(setup)
     if (NOT MEM STREQUAL "DEFAULT")
         register_definitions(${MEM})
     endif ()
-    register_definitions(${STRIDE})
 
     # add -forward-unknown-to-host-compiler for compatibility reasons
-    # add --extended-lambda for device-lambdas
-    set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler" "-arch=${CUDA_ARCH}"
-      "--extended-lambda" "-DUNROLL_FACTOR=${UNROLL_FACTOR}" ${CUDA_EXTRA_FLAGS})
+    set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler" "-arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
     string(REPLACE ";" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
     # Link against the NVIDIA Management Library for device information

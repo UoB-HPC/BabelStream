@@ -7,10 +7,6 @@
 #include "CUDAStream.h"
 #include <nvml.h>
 
-#if !defined(UNROLL_FACTOR)
-#define UNROLL_FACTOR 4
-#endif
-
 #include <cub/cub.cuh>
 
 [[noreturn]] inline void cuda_error(char const* file, int line, char const* expr, cudaError_t e) {
@@ -160,56 +156,33 @@ CUDAStream<T>::~CUDAStream()
   free_host(sums);
 }
 
-template <typename F>
-__global__ void for_each_kernel(size_t array_size, size_t start, F f) {
-  constexpr int unroll_factor = UNROLL_FACTOR;
-#if defined(GRID_STRIDE)
-  // Grid-stride loop
-  size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x;
-  #pragma unroll(unroll_factor)
-  for (; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
-    f(i);
-  }
-#elif defined(BLOCK_STRIDE)
-  // Block-stride loop
-  size_t i = start * blockIdx.x + threadIdx.x;
-  const size_t e = min(array_size, start * (blockIdx.x + size_t(1)));
-  #pragma unroll(unroll_factor)
-  for (; i < e; i += blockDim.x) {
-    f(i);
-  }
-#else
-  #error Must pick grid-stride or block-stride loop
-#endif
-}
+static constexpr int unroll = 4;
 
-template <typename F>
-void for_each(size_t array_size, F f) {
-  static int threads_per_block = 0;
-  if (threads_per_block == 0) {
-    // Pick suitable thread block size for F:
-    int min_blocks_per_grid;
-    auto dyn_smem = [] __host__ __device__ (int){ return 0; };
-    CU(cudaOccupancyMaxPotentialBlockSizeVariableSMem
-       (&min_blocks_per_grid, &threads_per_block, for_each_kernel<F>, dyn_smem, 0));
-    // Clamp to TBSIZE
-    threads_per_block = std::min(TBSIZE, threads_per_block);
-  }
-  size_t blocks = ceil_div(array_size / UNROLL_FACTOR, threads_per_block);
-  size_t start = ceil_div(array_size, (size_t)blocks);
-  for_each_kernel<<<blocks, TBSIZE, 0, stream>>>(array_size, start, f);
-  CU(cudaPeekAtLastError());
-  CU(cudaStreamSynchronize(stream));
+template <typename T>
+__global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, size_t array_size)
+{
+  const size_t tile_size = blockDim.x * unroll;
+  const size_t offset = blockIdx.x * tile_size + threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < unroll; i++)
+    {
+      size_t idx = offset + i * blockDim.x;
+      if (idx < array_size)
+        {
+          a[idx] = initA;
+          b[idx] = initB;
+          c[idx] = initC;
+        }
+    }
 }
 
 template <class T>
 void CUDAStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  for_each(array_size, [=,a=d_a,b=d_b,c=d_c] __device__ (size_t i) {
-    a[i] = initA;
-    b[i] = initB;
-    c[i] = initC;
-  });
+  size_t blocks = ceil_div(array_size, TBSIZE * unroll);
+  init_kernel<<<blocks, TBSIZE, 0, stream>>>(d_a, d_b, d_c, initA, initB, initC, array_size);
+  CU(cudaPeekAtLastError());
+  CU(cudaStreamSynchronize(stream));
 }
 
 template <class T>
@@ -235,8 +208,6 @@ void CUDAStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
   CU(cudaMemcpy(h_c.data(), d_c, nbytes, cudaMemcpyDeviceToHost));
 #endif
 }
-
-static constexpr int unroll = 4;
 
 template <typename T>
 __global__ void copy_kernel(const T * a, T * c, size_t array_size)
