@@ -24,13 +24,13 @@ class OMPStream : public Stream<T>
     intptr_t array_size;
 
     // Device side pointers
-    T *a;
-    T *b;
-    T *c;
+    T* a;
+    T* b;
+    T* c;
 
   public:
     OMPStream(BenchId bs, const intptr_t array_size, const int device_id,
-	       T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~OMPStream();
 
     void copy() override;

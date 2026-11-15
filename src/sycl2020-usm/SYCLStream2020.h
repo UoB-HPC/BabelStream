@@ -28,18 +28,17 @@ class SYCLStream : public Stream<T>
     std::unique_ptr<sycl::queue> queue;
 
     // Buffers
-    T *a{};
-    T *b{};
-    T *c{};
-    T *sum{};
+    T* a{};
+    T* b{};
+    T* c{};
+    T* sum{};
 
     // Host copies for verification with device USM
     std::vector<T> hostA, hostB, hostC;
 
   public:
-
     SYCLStream(BenchId bs, const intptr_t array_size, const int device_id,
-               T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~SYCLStream();
 
     void copy() override;
@@ -47,11 +46,10 @@ class SYCLStream : public Stream<T>
     void mul() override;
     void triad() override;
     void nstream() override;
-    T    dot() override;
+    T dot() override;
 
     void init_arrays(T initA, T initB, T initC) override;
     void get_arrays(T const*& a, T const*& b, T const*& c) override;
-
 };
 
 // Populate the devices list

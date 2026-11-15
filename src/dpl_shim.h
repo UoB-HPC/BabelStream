@@ -19,14 +19,13 @@
 #endif
 
 const static auto exe_policy = oneapi::dpl::execution::device_policy<>{
-        oneapi::dpl::execution::make_device_policy(sycl::device{sycl::default_selector_v})
-};
+    oneapi::dpl::execution::make_device_policy(sycl::device{sycl::default_selector_v})};
 
-template<typename T>
-T *alloc_raw(size_t size) { return sycl::malloc_shared<T>(size, exe_policy.queue()); }
+template <typename T>
+T* alloc_raw(size_t size) { return sycl::malloc_shared<T>(size, exe_policy.queue()); }
 
-template<typename T>
-void dealloc_raw(T *ptr) { sycl::free(ptr, exe_policy.queue()); }
+template <typename T>
+void dealloc_raw(T* ptr) { sycl::free(ptr, exe_policy.queue()); }
 
 #define WORKAROUND
 
@@ -53,7 +52,6 @@ static constexpr auto exe_policy = dpl::execution::par_unseq;
 static constexpr auto exe_policy = std::execution::par_unseq;
 #define USE_STD_PTR_ALLOC_DEALLOC
 
-
 #endif
 
 #ifdef USE_STD_PTR_ALLOC_DEALLOC
@@ -62,7 +60,8 @@ static constexpr auto exe_policy = std::execution::par_unseq;
 
 #ifdef USE_ONEDPL
 #include <iostream>
-inline void print_dpl_backend() {
+inline void print_dpl_backend()
+{
   std::cout << "Using oneDPL backend: ";
 #if ONEDPL_USE_DPCPP_BACKEND
   std::cout << "SYCL USM (device=" << exe_policy.queue().get_device().get_info<sycl::info::device::name>() << ")";

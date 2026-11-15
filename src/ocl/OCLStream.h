@@ -45,22 +45,21 @@ class OCLStream : public Stream<T>
     // Host-side arrays for verification
     std::vector<T> h_a, h_b, h_c;
 
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, T, T, T> *init_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer> *copy_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer> * mul_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *add_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *triad_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> *nstream_kernel;
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_long> *dot_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, T, T, T>* init_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer>* copy_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer>* mul_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>* add_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>* triad_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer>* nstream_kernel;
+    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl::LocalSpaceArg, cl_long>* dot_kernel;
 
     // NDRange configuration for the dot kernel
     size_t dot_num_groups;
     size_t dot_wgsize;
 
   public:
-
     OCLStream(BenchId bs, const intptr_t array_size, const int device_id,
-	       T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~OCLStream();
 
     void copy() override;

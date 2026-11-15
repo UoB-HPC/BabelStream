@@ -18,8 +18,7 @@ void getDeviceList(void);
 
 template <class T>
 SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int device_index,
-                          T initA, T initB, T initC)
-: array_size {size_t(array_size)}
+    T initA, T initB, T initC) : array_size{size_t(array_size)}
 {
   if (!cached)
     getDeviceList();
@@ -41,10 +40,8 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
 #endif
 
   // Check device can support FP64 if needed
-  if (sizeof(T) == sizeof(double))
-  {
-    if (!dev.has(sycl::aspect::fp64))
-    {
+  if (sizeof(T) == sizeof(double)) {
+    if (!dev.has(sycl::aspect::fp64)) {
       throw std::runtime_error("Device does not support double precision, please use --float");
     }
   }
@@ -54,26 +51,21 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
     throw std::runtime_error("Device does not support shared USM, please use MEM=DEFAULT");
 #endif
 
-  queue = std::make_unique<sycl::queue>(dev, sycl::async_handler{[&](sycl::exception_list l)
-  {
+  queue = std::make_unique<sycl::queue>(dev, sycl::async_handler{[&](sycl::exception_list l) {
     bool error = false;
-    for(auto e: l)
-    {
-      try
-      {
+    for (auto e : l) {
+      try {
         std::rethrow_exception(e);
-      }
-      catch (sycl::exception e)
-      {
+      } catch (sycl::exception e) {
         std::cout << e.what();
         error = true;
       }
     }
-    if(error)
-    {
+    if (error) {
       throw std::runtime_error("SYCL errors detected");
     }
-  }}, sycl::property::queue::in_order());
+  }},
+      sycl::property::queue::in_order());
 
 #if defined(PAGEFAULT)
   a = (T*)aligned_alloc(ALIGNMENT, array_size * sizeof(T));
@@ -99,28 +91,27 @@ SYCLStream<T>::SYCLStream(BenchId bs, const intptr_t array_size, const int devic
   init_arrays(initA, initB, initC);
 }
 
-template<class T>
-SYCLStream<T>::~SYCLStream() {
+template <class T>
+SYCLStream<T>::~SYCLStream()
+{
 #if defined(PAGEFAULT)
- free(a);
- free(b);
- free(c);
- free(sum);
+  free(a);
+  free(b);
+  free(c);
+  free(sum);
 #else
- sycl::free(a, *queue);
- sycl::free(b, *queue);
- sycl::free(c, *queue);
- sycl::free(sum, *queue);
+  sycl::free(a, *queue);
+  sycl::free(b, *queue);
+  sycl::free(c, *queue);
+  sycl::free(sum, *queue);
 #endif
 }
 
 template <class T>
 void SYCLStream<T>::copy()
 {
-  queue->submit([&](sycl::handler &cgh)
-  {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, c = this->c, a = this->a](sycl::id<1> idx)
-    {
+  queue->submit([&](sycl::handler& cgh) {
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, c = this->c, a = this->a](sycl::id<1> idx) {
       c[idx] = a[idx];
     });
   });
@@ -131,10 +122,8 @@ template <class T>
 void SYCLStream<T>::mul()
 {
   const T scalar = startScalar;
-  queue->submit([&](sycl::handler &cgh)
-  {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, b = this->b, c = this->c](sycl::id<1> idx)
-    {
+  queue->submit([&](sycl::handler& cgh) {
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, b = this->b, c = this->c](sycl::id<1> idx) {
       b[idx] = scalar * c[idx];
     });
   });
@@ -144,10 +133,8 @@ void SYCLStream<T>::mul()
 template <class T>
 void SYCLStream<T>::add()
 {
-  queue->submit([&](sycl::handler &cgh)
-  {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, c = this->c, a = this->a, b = this->b](sycl::id<1> idx)
-    {
+  queue->submit([&](sycl::handler& cgh) {
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, c = this->c, a = this->a, b = this->b](sycl::id<1> idx) {
       c[idx] = a[idx] + b[idx];
     });
   });
@@ -158,10 +145,8 @@ template <class T>
 void SYCLStream<T>::triad()
 {
   const T scalar = startScalar;
-  queue->submit([&](sycl::handler &cgh)
-  {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
-    {
+  queue->submit([&](sycl::handler& cgh) {
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx) {
       a[idx] = b[idx] + scalar * c[idx];
     });
   });
@@ -173,10 +158,8 @@ void SYCLStream<T>::nstream()
 {
   const T scalar = startScalar;
 
-  queue->submit([&](sycl::handler &cgh)
-  {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
-    {
+  queue->submit([&](sycl::handler& cgh) {
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx) {
       a[idx] += b[idx] + scalar * c[idx];
     });
   });
@@ -188,15 +171,12 @@ T SYCLStream<T>::dot()
 {
   // Zero the result explicitly as initialize_to_identity is not supported everywhere
   queue->fill(sum, T{}, 1).wait();
-  queue->submit([&](sycl::handler &cgh)
-  {
+  queue->submit([&](sycl::handler& cgh) {
     cgh.parallel_for(sycl::range<1>{array_size},
-      sycl::reduction(sum, sycl::plus<T>()),
-      [a = this->a, b = this->b](sycl::id<1> idx, auto& sum)
-      {
-        sum += a[idx] * b[idx];
-      });
-
+        sycl::reduction(sum, sycl::plus<T>()),
+        [a = this->a, b = this->b](sycl::id<1> idx, auto& sum) {
+          sum += a[idx] * b[idx];
+        });
   });
 #if defined(PAGEFAULT) || defined(MANAGED)
   queue->wait();
@@ -213,17 +193,14 @@ template <class T>
 void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 {
 #if defined(PAGEFAULT)
-  for (size_t i = 0; i < array_size; i++)
-  {
+  for (size_t i = 0; i < array_size; i++) {
     a[i] = initA;
     b[i] = initB;
     c[i] = initC;
   }
 #else
-  queue->submit([&](sycl::handler &cgh)
-  {
-    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx)
-    {
+  queue->submit([&](sycl::handler& cgh) {
+    cgh.parallel_for(sycl::range<1>{array_size}, [=, a = this->a, b = this->b, c = this->c](sycl::id<1> idx) {
       a[idx] = initA;
       b[idx] = initB;
       c[idx] = initC;
@@ -271,16 +248,12 @@ void listDevices(void)
   getDeviceList();
 
   // Print device names
-  if (devices.size() == 0)
-  {
+  if (devices.size() == 0) {
     std::cerr << "No devices found." << std::endl;
-  }
-  else
-  {
+  } else {
     std::cout << std::endl;
     std::cout << "Devices:" << std::endl;
-    for (int i = 0; i < devices.size(); i++)
-    {
+    for (int i = 0; i < devices.size(); i++) {
       std::cout << i << ": " << getDeviceName(i) << std::endl;
     }
     std::cout << std::endl;
@@ -294,12 +267,9 @@ std::string getDeviceName(const int device)
 
   std::string name;
 
-  if (device < devices.size())
-  {
+  if (device < devices.size()) {
     name = devices[device].get_info<sycl::info::device::name>();
-  }
-  else
-  {
+  } else {
     throw std::runtime_error("Error asking for name for non-existant device");
   }
 
@@ -313,12 +283,9 @@ std::string getDeviceDriver(const int device)
 
   std::string driver;
 
-  if (device < devices.size())
-  {
+  if (device < devices.size()) {
     driver = devices[device].get_info<sycl::info::device::driver_version>();
-  }
-  else
-  {
+  } else {
     throw std::runtime_error("Error asking for driver for non-existant device");
   }
 

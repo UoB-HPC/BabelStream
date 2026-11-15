@@ -36,7 +36,7 @@ size_t num_times = 100;
 size_t deviceIndex = 0;
 bool use_float = false;
 bool output_as_csv = false;
-// Default unit of memory is MegaBytes (as per STREAM) 
+// Default unit of memory is MegaBytes (as per STREAM)
 Unit unit{Unit::Kind::MegaByte};
 bool silence_errors = false;
 std::string csv_separator = ",";
@@ -50,47 +50,47 @@ bool run_benchmark(Benchmark const& b) { return run_benchmark(selection, b); }
 // Benchmark run order
 // - Classic: runs each bench once in the order above, and repeats n times.
 // - Isolated: runs each bench n times in isolation
-enum class BenchOrder : int {Classic, Isolated};
+enum class BenchOrder : int { Classic,
+  Isolated };
 BenchOrder order = BenchOrder::Classic;
 
 template <typename T>
 void run();
 
-void parseArguments(int argc, char *argv[]);
+void parseArguments(int argc, char* argv[]);
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 #ifdef ENABLE_CALIPER
-  	cali::ConfigManager calimgr;
+  cali::ConfigManager calimgr;
 
-     if (calimgr.error()){
-      std::cerr << "caliper config error: " << calimgr.error_msg() << std::endl;
-    }
-    calimgr.start();
+  if (calimgr.error()) {
+    std::cerr << "caliper config error: " << calimgr.error_msg() << std::endl;
+  }
+  calimgr.start();
 
-    cali_config_preset("CALI_LOG_VERBOSITY", "2");
-    cali_config_preset("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", "process");
+  cali_config_preset("CALI_LOG_VERBOSITY", "2");
+  cali_config_preset("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", "process");
 
-    adiak::init(nullptr);
-    adiak::collect_all();
+  adiak::init(nullptr);
+  adiak::collect_all();
 
-    cali_config_set("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", "process");
+  cali_config_set("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", "process");
 
-	adiak::value("BABELSTREAM version", "4.0");
-	adiak::value("num_times", num_times);
-	adiak::value("elements", array_size);
+  adiak::value("BABELSTREAM version", "4.0");
+  adiak::value("num_times", num_times);
+  adiak::value("elements", array_size);
 
-	CALI_MARK_FUNCTION_BEGIN;
-#endif  
+  CALI_MARK_FUNCTION_BEGIN;
+#endif
 
   parseArguments(argc, argv);
 
-  if (!output_as_csv)
-  {
+  if (!output_as_csv) {
     std::cout
-      << "BabelStream" << std::endl
-      << "Version: " << VERSION_STRING << std::endl
-      << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
+        << "BabelStream" << std::endl
+        << "Version: " << VERSION_STRING << std::endl
+        << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
   }
 
   if (use_float)
@@ -99,15 +99,16 @@ int main(int argc, char *argv[])
     run<double>();
 
 #ifdef ENABLE_CALIPER
-    adiak::fini();
-    calimgr.flush();
+  adiak::fini();
+  calimgr.flush();
 #endif
   return EXIT_SUCCESS;
 }
 
 // Returns duration of executing function f:
 template <typename F>
-double time(F&& f) {
+double time(F&& f)
+{
   using clk_t = std::chrono::high_resolution_clock;
   using dur_t = std::chrono::duration<double>;
   auto start = clk_t::now();
@@ -123,15 +124,21 @@ std::vector<std::vector<double>> run_all(std::unique_ptr<Stream<T>>& stream, T& 
   std::vector<std::vector<double>> timings(num_benchmarks);
 
   // Run a particular benchmark
-  auto run = [&](Benchmark const& b)
-  {
-    switch(b.id) {
-    case BenchId::Copy:    return stream->copy();
-    case BenchId::Mul:     return stream->mul();
-    case BenchId::Add:     return stream->add();
-    case BenchId::Triad:   return stream->triad();
-    case BenchId::Dot:     sum = stream->dot(); return;
-    case BenchId::Nstream: return stream->nstream();
+  auto run = [&](Benchmark const& b) {
+    switch (b.id) {
+    case BenchId::Copy:
+      return stream->copy();
+    case BenchId::Mul:
+      return stream->mul();
+    case BenchId::Add:
+      return stream->add();
+    case BenchId::Triad:
+      return stream->triad();
+    case BenchId::Dot:
+      sum = stream->dot();
+      return;
+    case BenchId::Nstream:
+      return stream->nstream();
     default:
       std::cerr << "Unimplemented benchmark: " << b.label << std::endl;
       abort();
@@ -147,20 +154,20 @@ std::vector<std::vector<double>> run_all(std::unique_ptr<Stream<T>>& stream, T& 
     timings[i].reserve(num_times);
   }
 
-  switch(order) {
+  switch (order) {
   // Classic runs each benchmark once in the order specifies in the "bench" array above,
   // and then repeats num_times:
   case BenchOrder::Classic: {
     for (size_t k = 0; k < num_times; k++) {
       for (size_t i = 0; i < num_benchmarks; ++i) {
-	if (!run_benchmark(bench[i])) continue;
+        if (!run_benchmark(bench[i])) continue;
 #ifdef ENABLE_CALIPER
-    CALI_MARK_BEGIN(bench[i].label);
-#endif 
-	timings[i].push_back(dt(bench[i]));
+        CALI_MARK_BEGIN(bench[i].label);
+#endif
+        timings[i].push_back(dt(bench[i]));
 #ifdef ENABLE_CALIPER
-    CALI_MARK_END(bench[i].label);
-#endif 
+        CALI_MARK_END(bench[i].label);
+#endif
       }
     }
     break;
@@ -195,92 +202,100 @@ void run()
 
   // Formatting utilities:
   auto fmt_bw = [&](size_t weight, double dt) {
-    return unit.fmt((weight * sizeof(T) * array_size)/dt);
+    return unit.fmt((weight * sizeof(T) * array_size) / dt);
   };
   auto fmt_csv_header = [] {
     std::cout
-      << "function" << csv_separator
-      << "num_times" << csv_separator
-      << "n_elements" << csv_separator
-      << "sizeof" << csv_separator
-      << "max_" << unit.str() << "_per_sec" << csv_separator
-      << "min_runtime" << csv_separator
-      << "max_runtime" << csv_separator
-      << "avg_runtime" << std::endl;
+        << "function" << csv_separator
+        << "num_times" << csv_separator
+        << "n_elements" << csv_separator
+        << "sizeof" << csv_separator
+        << "max_" << unit.str() << "_per_sec" << csv_separator
+        << "min_runtime" << csv_separator
+        << "max_runtime" << csv_separator
+        << "avg_runtime" << std::endl;
   };
   auto fmt_csv = [](char const* function, size_t num_times, size_t num_elements,
-                    size_t type_size, double bandwidth,
-		    double dt_min, double dt_max, double dt_avg) {
+                     size_t type_size, double bandwidth,
+                     double dt_min, double dt_max, double dt_avg) {
     std::cout << function << csv_separator
-         << num_times << csv_separator
-         << num_elements << csv_separator
-         << type_size << csv_separator
-         << bandwidth << csv_separator
-         << dt_min << csv_separator
-         << dt_max << csv_separator
-         << dt_avg << std::endl;
+              << num_times << csv_separator
+              << num_elements << csv_separator
+              << type_size << csv_separator
+              << bandwidth << csv_separator
+              << dt_min << csv_separator
+              << dt_max << csv_separator
+              << dt_avg << std::endl;
   };
   auto fmt_cli = [](char const* function, double bandwidth,
-		    double dt_min, double dt_max, double dt_avg) {
+                     double dt_min, double dt_max, double dt_avg) {
     std::cout
-      << std::left << std::setw(12) << function
-      << std::left << std::setw(12) << std::setprecision(3) << bandwidth
-      << std::left << std::setw(12) << std::setprecision(5) << dt_min
-      << std::left << std::setw(12) << std::setprecision(5) << dt_max
-      << std::left << std::setw(12) << std::setprecision(5) << dt_avg
-      << std::endl;
+        << std::left << std::setw(12) << function
+        << std::left << std::setw(12) << std::setprecision(3) << bandwidth
+        << std::left << std::setw(12) << std::setprecision(5) << dt_min
+        << std::left << std::setw(12) << std::setprecision(5) << dt_max
+        << std::left << std::setw(12) << std::setprecision(5) << dt_avg
+        << std::endl;
   };
   auto fmt_result = [&](char const* function, size_t num_times, size_t num_elements,
                         size_t type_size, double bandwidth,
-			double dt_min, double dt_max, double dt_avg) {
+                        double dt_min, double dt_max, double dt_avg) {
     if (!output_as_csv) return fmt_cli(function, bandwidth, dt_min, dt_max, dt_avg);
     fmt_csv(function, num_times, num_elements, type_size, bandwidth, dt_min, dt_max, dt_avg);
   };
 
-  if (!output_as_csv)
-  {
+  if (!output_as_csv) {
     std::cout << "Running ";
-    switch(selection) {
-    case BenchId::All: std::cout << " All kernels "; break;
-    case BenchId::Classic: std::cout << " Classic kernels "; break;
+    switch (selection) {
+    case BenchId::All:
+      std::cout << " All kernels ";
+      break;
+    case BenchId::Classic:
+      std::cout << " Classic kernels ";
+      break;
     default:
       std::cout << "Running ";
       for (size_t i = 0; i < num_benchmarks; ++i) {
-	if (selection == bench[i].id) {
-	  std::cout << bench[i].label;
-	  break;
-	}
+        if (selection == bench[i].id) {
+          std::cout << bench[i].label;
+          break;
+        }
       }
       std::cout << " ";
     }
     std::cout << num_times << " times in ";
     switch (order) {
-    case BenchOrder::Classic: std::cout << " Classic"; break;
-    case BenchOrder::Isolated: std::cout << " Isolated"; break;
-    default: std::cerr << "Error: Unknown order" << std::endl; abort();
+    case BenchOrder::Classic:
+      std::cout << " Classic";
+      break;
+    case BenchOrder::Isolated:
+      std::cout << " Isolated";
+      break;
+    default:
+      std::cerr << "Error: Unknown order" << std::endl;
+      abort();
     };
     std::cout << " order " << std::endl;
     std::cout << "Number of elements: " << array_size << std::endl;
-    std::cout << "Precision: " << (sizeof(T) == sizeof(float)? "float" : "double") << std::endl;
+    std::cout << "Precision: " << (sizeof(T) == sizeof(float) ? "float" : "double") << std::endl;
 
     size_t nbytes = array_size * sizeof(T);
     std::cout << std::setprecision(1) << std::fixed
-	      << "Array size: " << unit.fmt(nbytes) << " " << unit.str() << std::endl;
-    std::cout << "Total size: " << unit.fmt(3.0*nbytes) << " " << unit.str() << std::endl;
+              << "Array size: " << unit.fmt(nbytes) << " " << unit.str() << std::endl;
+    std::cout << "Total size: " << unit.fmt(3.0 * nbytes) << " " << unit.str() << std::endl;
     std::cout.precision(ss);
   }
 
-  std::unique_ptr<Stream<T>> stream
-    = make_stream<T>(selection, array_size, deviceIndex, startA, startB, startC);
-  
+  std::unique_ptr<Stream<T>> stream = make_stream<T>(selection, array_size, deviceIndex, startA, startB, startC);
+
 #ifdef ENABLE_CALIPER
-    CALI_MARK_BEGIN("init_arrays");
+  CALI_MARK_BEGIN("init_arrays");
 #endif
 
   auto initElapsedS = time([&] { stream->init_arrays(startA, startB, startC); });
 
 #ifdef ENABLE_CALIPER
-    CALI_MARK_END("init_arrays");
+  CALI_MARK_END("init_arrays");
 #endif
 
   // Result of the Dot kernel, if used.
@@ -295,41 +310,37 @@ void run()
 
   check_solution<T>(num_times, a, b, c, sum);
 
-  if (output_as_csv)
-  {
+  if (output_as_csv) {
     fmt_csv_header();
-  }
-  else
-  {
+  } else {
     std::cout
-      << std::left << std::setw(12) << "Function"
-      << std::left << std::setw(12) << (std::string(unit.str()) + "/s")
-      << std::left << std::setw(12) << "Min (sec)"
-      << std::left << std::setw(12) << "Max"
-      << std::left << std::setw(12) << "Average"
-      << std::endl
-      << std::fixed;
+        << std::left << std::setw(12) << "Function"
+        << std::left << std::setw(12) << (std::string(unit.str()) + "/s")
+        << std::left << std::setw(12) << "Min (sec)"
+        << std::left << std::setw(12) << "Max"
+        << std::left << std::setw(12) << "Average"
+        << std::endl
+        << std::fixed;
   }
 
-  for (size_t i = 0; i < num_benchmarks; ++i)
-  {
+  for (size_t i = 0; i < num_benchmarks; ++i) {
     if (!run_benchmark(bench[i])) continue;
 
     // Get min/max; ignore the first result
-    auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
+    auto minmax = std::minmax_element(timings[i].begin() + 1, timings[i].end());
 
     // Calculate average; ignore the first result
-    double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0)
-      / (double)(num_times - 1);
+    double average = std::accumulate(timings[i].begin() + 1, timings[i].end(), 0.0) / (double)(num_times - 1);
 
     // Display results
     fmt_result(bench[i].label, num_times, array_size, sizeof(T),
-	       fmt_bw(bench[i].weight, *minmax.first), *minmax.first, *minmax.second, average);
+        fmt_bw(bench[i].weight, *minmax.first), *minmax.first, *minmax.second, average);
   }
 }
 
 template <typename T>
-void check_solution(const size_t num_times, T const* a, T const* b, T const* c, T sum) {
+void check_solution(const size_t num_times, T const* a, T const* b, T const* c, T sum)
+{
   // Generate correct solution
   T goldA = startA;
   T goldB = startB;
@@ -340,27 +351,39 @@ void check_solution(const size_t num_times, T const* a, T const* b, T const* c, 
 
   // Updates output due to running each benchmark:
   auto run = [&](int b) {
-    switch(bench[b].id) {
-    case BenchId::Copy:    goldC = goldA; break;
-    case BenchId::Mul:     goldB = scalar * goldC; break;
-    case BenchId::Add:     goldC = goldA + goldB; break;
-    case BenchId::Triad:   goldA = goldB + scalar * goldC; break;
-    case BenchId::Nstream: goldA += goldB + scalar * goldC; break;
-    case BenchId::Dot:     goldS = goldA * goldB * T(array_size); break; // This calculates the answer exactly
+    switch (bench[b].id) {
+    case BenchId::Copy:
+      goldC = goldA;
+      break;
+    case BenchId::Mul:
+      goldB = scalar * goldC;
+      break;
+    case BenchId::Add:
+      goldC = goldA + goldB;
+      break;
+    case BenchId::Triad:
+      goldA = goldB + scalar * goldC;
+      break;
+    case BenchId::Nstream:
+      goldA += goldB + scalar * goldC;
+      break;
+    case BenchId::Dot:
+      goldS = goldA * goldB * T(array_size);
+      break; // This calculates the answer exactly
     default:
-    std::cerr << "Unimplemented Check: " << bench[b].label << std::endl;
-    abort();
+      std::cerr << "Unimplemented Check: " << bench[b].label << std::endl;
+      abort();
     }
   };
 
-  switch(order) {
+  switch (order) {
   // Classic runs each benchmark once in the order specifies in the "bench" array above,
   // and then repeats num_times:
   case BenchOrder::Classic: {
     for (size_t k = 0; k < num_times; k++) {
       for (size_t i = 0; i < num_benchmarks; ++i) {
-	      if (!run_benchmark(bench[i])) continue;
-	      run(i);
+        if (!run_benchmark(bench[i])) continue;
+        run(i);
       }
     }
     break;
@@ -369,7 +392,8 @@ void check_solution(const size_t num_times, T const* a, T const* b, T const* c, 
   case BenchOrder::Isolated: {
     for (size_t i = 0; i < num_benchmarks; ++i) {
       if (!run_benchmark(bench[i])) continue;
-      for (size_t k = 0; k < num_times; k++) run(i);
+      for (size_t k = 0; k < num_times; k++)
+        run(i);
     }
     break;
   }
@@ -395,9 +419,9 @@ void check_solution(const size_t num_times, T const* a, T const* b, T const* c, 
       std::cerr << "FAILED validation of " << name;
       if (i != size_t(-1)) std::cerr << "[" << i << "]";
       std::cerr << ": " << is << " (is) != " << should
-		<< " (should)" << ", diff=" << diff << " > "
-		<< largest * mrel << " (largest=" << largest
-		<< ", max_rel=" << mrel << ")" << std::endl;
+                << " (should)" << ", diff=" << diff << " > "
+                << largest * mrel << " (largest=" << largest
+                << ", max_rel=" << mrel << ")" << std::endl;
     }
   };
 
@@ -420,15 +444,15 @@ void check_solution(const size_t num_times, T const* a, T const* b, T const* c, 
     std::exit(EXIT_FAILURE);
 }
 
-void parseArguments(int argc, char *argv[])
+void parseArguments(int argc, char* argv[])
 {
-  auto parseUInt =[](const char *str, size_t *output) {
-    char *next;
+  auto parseUInt = [](const char* str, size_t* output) {
+    char* next;
     *output = strtoull(str, &next, 10);
     return !strlen(next);
   };
-  auto parseInt = [](const char *str, intptr_t *output) {
-    char *next;
+  auto parseInt = [](const char* str, intptr_t* output) {
+    char* next;
     *output = strtoll(str, &next, 10);
     return !strlen(next);
   };
@@ -441,73 +465,49 @@ void parseArguments(int argc, char *argv[])
     }
   };
 
-  for (int i = 1; i < argc; i++)
-  {
-    if (!std::string("--list").compare(argv[i]))
-    {
+  for (int i = 1; i < argc; i++) {
+    if (!std::string("--list").compare(argv[i])) {
       listDevices();
       exit(EXIT_SUCCESS);
-    }
-    else if (!std::string("--device").compare(argv[i]))
-    {
-      if (++i >= argc || !parseUInt(argv[i], &deviceIndex))
-      {
+    } else if (!std::string("--device").compare(argv[i])) {
+      if (++i >= argc || !parseUInt(argv[i], &deviceIndex)) {
         std::cerr << "Invalid device index." << std::endl;
         exit(EXIT_FAILURE);
       }
-    }
-    else if (!std::string("--arraysize").compare(argv[i]) ||
-             !std::string("-s").compare(argv[i]))
-    {
-      if (++i >= argc || !parseInt(argv[i], &array_size) || array_size <= 0)
-      {
+    } else if (!std::string("--arraysize").compare(argv[i]) ||
+               !std::string("-s").compare(argv[i])) {
+      if (++i >= argc || !parseInt(argv[i], &array_size) || array_size <= 0) {
         std::cerr << "Invalid array size." << std::endl;
         std::exit(EXIT_FAILURE);
       }
-    }
-    else if (!std::string("--numtimes").compare(argv[i]) ||
-             !std::string("-n").compare(argv[i]))
-    {
-      if (++i >= argc || !parseUInt(argv[i], &num_times))
-      {
+    } else if (!std::string("--numtimes").compare(argv[i]) ||
+               !std::string("-n").compare(argv[i])) {
+      if (++i >= argc || !parseUInt(argv[i], &num_times)) {
         std::cerr << "Invalid number of times." << std::endl;
         exit(EXIT_FAILURE);
       }
-      if (num_times < 2)
-      {
+      if (num_times < 2) {
         std::cerr << "Number of times must be 2 or more" << std::endl;
         exit(EXIT_FAILURE);
       }
-    }
-    else if (!std::string("--float").compare(argv[i]))
-    {
+    } else if (!std::string("--float").compare(argv[i])) {
       use_float = true;
-    }
-    else if (!std::string("--print-names").compare(argv[i]))
-    {
+    } else if (!std::string("--print-names").compare(argv[i])) {
       std::cout << "Available benchmarks: ";
       print_labels(std::cout);
       std::cout << std::endl;
       std::exit(EXIT_SUCCESS);
-    }
-    else if (!std::string("--only").compare(argv[i]) || !std::string("-o").compare(argv[i]))
-    {
-      if (++i >= argc)
-      {
+    } else if (!std::string("--only").compare(argv[i]) || !std::string("-o").compare(argv[i])) {
+      if (++i >= argc) {
         std::cerr << "Expected benchmark name after --only" << std::endl;
         std::exit(EXIT_FAILURE);
       }
       auto key = std::string(argv[i]);
-      if (key == "Classic")
-      {
+      if (key == "Classic") {
         selection = BenchId::Classic;
-      }
-      else if (key == "All")
-      {
+      } else if (key == "All") {
         selection = BenchId::All;
-      }
-      else
-      {
+      } else {
         auto p = std::find_if(bench.begin(), bench.end(), [&](Benchmark const& b) {
           return std::string(b.label) == key;
         });
@@ -520,58 +520,37 @@ void parseArguments(int argc, char *argv[])
         }
         selection = p->id;
       }
-    }
-    else if (!std::string("--order").compare(argv[i]))
-    {
-      if (++i >= argc)
-      {
-       std::cerr << "Expected benchmark order after --order. Options: \"Classic\" (default), \"Isolated\"."
-		  << std::endl;
+    } else if (!std::string("--order").compare(argv[i])) {
+      if (++i >= argc) {
+        std::cerr << "Expected benchmark order after --order. Options: \"Classic\" (default), \"Isolated\"."
+                  << std::endl;
         exit(EXIT_FAILURE);
       }
       auto key = std::string(argv[i]);
-      if (key == "Isolated")
-      {
+      if (key == "Isolated") {
         order = BenchOrder::Isolated;
       }
-    }
-    else if (!std::string("--csv").compare(argv[i]))
-    {
+    } else if (!std::string("--csv").compare(argv[i])) {
       output_as_csv = true;
-    }
-    else if (!std::string("--mibibytes").compare(argv[i]))
-    {
+    } else if (!std::string("--mibibytes").compare(argv[i])) {
       unit = Unit(Unit::Kind::MibiByte);
-    }
-    else if (!std::string("--megabytes").compare(argv[i]))
-    {
+    } else if (!std::string("--megabytes").compare(argv[i])) {
       unit = Unit(Unit::Kind::MegaByte);
-    }
-    else if (!std::string("--gibibytes").compare(argv[i]))
-    {
+    } else if (!std::string("--gibibytes").compare(argv[i])) {
       unit = Unit(Unit::Kind::GibiByte);
-    }
-    else if (!std::string("--gigabytes").compare(argv[i]))
-    {
+    } else if (!std::string("--gigabytes").compare(argv[i])) {
       unit = Unit(Unit::Kind::GigaByte);
-    }
-    else if (!std::string("--tebibytes").compare(argv[i]))
-    {
+    } else if (!std::string("--tebibytes").compare(argv[i])) {
       unit = Unit(Unit::Kind::TebiByte);
-    }
-    else if (!std::string("--terabytes").compare(argv[i]))
-    {
+    } else if (!std::string("--terabytes").compare(argv[i])) {
       unit = Unit(Unit::Kind::TeraByte);
-    }
-    else if (!std::string("--silence-errors").compare(argv[i]))
-    {
+    } else if (!std::string("--silence-errors").compare(argv[i])) {
       silence_errors = true;
-    }
-    else if (!std::string("--help").compare(argv[i]) ||
-             !std::string("-h").compare(argv[i]))
-    {
+    } else if (!std::string("--help").compare(argv[i]) ||
+               !std::string("-h").compare(argv[i])) {
       std::cout << std::endl;
-      std::cout << "Usage: " << argv[0] << " [OPTIONS]" << std::endl << std::endl;
+      std::cout << "Usage: " << argv[0] << " [OPTIONS]" << std::endl
+                << std::endl;
       std::cout << "Options:" << std::endl;
       std::cout << "  -h  --help               Print the message" << std::endl;
       std::cout << "      --list               List available devices" << std::endl;
@@ -592,9 +571,7 @@ void parseArguments(int argc, char *argv[])
       std::cout << "      --silence-errors     Ignores validation errors." << std::endl;
       std::cout << std::endl;
       std::exit(EXIT_SUCCESS);
-    }
-    else
-    {
+    } else {
       std::cerr << "Unrecognized argument '" << argv[i] << "' (try '--help')"
                 << std::endl;
       std::exit(EXIT_FAILURE);

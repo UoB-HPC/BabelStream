@@ -23,17 +23,17 @@
 template <class T>
 using vector =
 #if defined(MANAGED)
-  thrust::universal_vector<T>;
+    thrust::universal_vector<T>;
 #else
-  thrust::device_vector<T>;
+    thrust::device_vector<T>;
 #endif
 
 template <class T>
-struct ThrustStream<T>::Impl{
-  vector<T> a, b, c;
+struct ThrustStream<T>::Impl {
+    vector<T> a, b, c;
 #if !(defined(PAGEFAULT) || defined(MANAGED))
-  // we need separate host allocations to hold the data for get_arrays()
-  thrust::host_vector<T> h_a, h_b, h_c;
+    // we need separate host allocations to hold the data for get_arrays()
+    thrust::host_vector<T> h_a, h_b, h_c;
 #endif
 };
 
@@ -46,8 +46,8 @@ static inline void synchronise()
 }
 
 template <class T>
-ThrustStream<T>::ThrustStream(BenchId selection, const intptr_t array_size, int device, T initA, T initB, T initC)
-    : array_size{array_size}, impl(new Impl{vector<T>(array_size), vector<T>(array_size), vector<T>(array_size)}) {
+ThrustStream<T>::ThrustStream(BenchId selection, const intptr_t array_size, int device, T initA, T initB, T initC) : array_size{array_size}, impl(new Impl{vector<T>(array_size), vector<T>(array_size), vector<T>(array_size)})
+{
   std::cout << "Using CUDA device: " << getDeviceName(device) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device) << std::endl;
   std::cout << "Thrust version: " << THRUST_VERSION << std::endl;
@@ -114,7 +114,7 @@ void ThrustStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 template <class T>
 void ThrustStream<T>::copy()
 {
-  thrust::copy(impl->a.begin(), impl->a.end(),impl->c.begin());
+  thrust::copy(impl->a.begin(), impl->a.end(), impl->c.begin());
   synchronise();
 }
 
@@ -126,10 +126,9 @@ void ThrustStream<T>::mul()
       impl->c.begin(),
       impl->c.end(),
       impl->b.begin(),
-      [=] __device__ __host__ (const T &ci){
+      [=] __device__ __host__(const T& ci) {
         return ci * scalar;
-      }
-  );
+      });
   synchronise();
 }
 
@@ -141,10 +140,9 @@ void ThrustStream<T>::add()
       impl->a.end(),
       impl->b.begin(),
       impl->c.begin(),
-      [] __device__ __host__ (const T& ai, const T& bi){
+      [] __device__ __host__(const T& ai, const T& bi) {
         return ai + bi;
-      }
-  );
+      });
   synchronise();
 }
 
@@ -157,10 +155,9 @@ void ThrustStream<T>::triad()
       impl->b.end(),
       impl->c.begin(),
       impl->a.begin(),
-      [=] __device__ __host__ (const T& bi, const T& ci){
+      [=] __device__ __host__(const T& bi, const T& ci) {
         return bi + scalar * ci;
-      }
-  );
+      });
   synchronise();
 }
 
@@ -173,10 +170,9 @@ void ThrustStream<T>::nstream()
       thrust::make_zip_iterator(impl->a.end(), impl->b.end(), impl->c.end()),
       impl->a.begin(),
       thrust::make_zip_function(
-          [=] __device__ __host__ (const T& ai, const T& bi, const T& ci){
+          [=] __device__ __host__(const T& ai, const T& bi, const T& ci) {
             return ai + bi + scalar * ci;
-          })
-  );
+          }));
   synchronise();
 }
 
@@ -190,21 +186,21 @@ T ThrustStream<T>::dot()
     (defined(THRUST_DEVICE_SYSTEM_HIP) && THRUST_DEVICE_SYSTEM_HIP == THRUST_DEVICE_SYSTEM)
 
 #if defined(__NVCC__) || defined(__NVCOMPILER_CUDA__)
-#define IMPL_FN__(fn) cuda ## fn
-#define IMPL_TYPE__(tpe) cuda ## tpe
+#define IMPL_FN__(fn) cuda##fn
+#define IMPL_TYPE__(tpe) cuda##tpe
 #elif defined(__HIP_PLATFORM_HCC__)
-#define IMPL_FN__(fn) hip ## fn
-#define IMPL_TYPE__(tpe) hip ## tpe ## _t
+#define IMPL_FN__(fn) hip##fn
+#define IMPL_TYPE__(tpe) hip##tpe##_t
 #else
-# error Unsupported compiler for Thrust
+#error Unsupported compiler for Thrust
 #endif
 
 void check_error()
 {
-  IMPL_FN__(Error_t) err =  IMPL_FN__(GetLastError());
-  if (err !=  IMPL_FN__(Success))
-  {
-    std::cerr << "Error: " <<  IMPL_FN__(GetErrorString(err)) << std::endl;
+  IMPL_FN__(Error_t)
+  err = IMPL_FN__(GetLastError());
+  if (err != IMPL_FN__(Success)) {
+    std::cerr << "Error: " << IMPL_FN__(GetErrorString(err)) << std::endl;
     exit(err);
   }
 }
@@ -217,16 +213,12 @@ void listDevices()
   check_error();
 
   // Print device names
-  if (count == 0)
-  {
+  if (count == 0) {
     std::cerr << "No devices found." << std::endl;
-  }
-  else
-  {
+  } else {
     std::cout << std::endl;
     std::cout << "Devices:" << std::endl;
-    for (int i = 0; i < count; i++)
-    {
+    for (int i = 0; i < count; i++) {
       std::cout << i << ": " << getDeviceName(i) << std::endl;
     }
     std::cout << std::endl;
@@ -235,12 +227,12 @@ void listDevices()
 
 std::string getDeviceName(const int device)
 {
-  IMPL_TYPE__(DeviceProp) props = {};
+  IMPL_TYPE__(DeviceProp)
+  props = {};
   IMPL_FN__(GetDeviceProperties(&props, device));
   check_error();
   return std::string(props.name);
 }
-
 
 std::string getDeviceDriver(const int device)
 {
@@ -276,4 +268,3 @@ std::string getDeviceDriver(const int)
 
 template class ThrustStream<float>;
 template class ThrustStream<double>;
-

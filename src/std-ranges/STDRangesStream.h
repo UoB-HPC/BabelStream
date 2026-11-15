@@ -12,7 +12,6 @@
 
 #define IMPLEMENTATION_STRING "STD C++ ranges"
 
-
 template <class T>
 class STDRangesStream : public Stream<T>
 {
@@ -25,7 +24,7 @@ class STDRangesStream : public Stream<T>
 
   public:
     STDRangesStream(BenchId bs, const intptr_t array_size, const int device_id,
-		  T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~STDRangesStream();
 
     void copy() override;

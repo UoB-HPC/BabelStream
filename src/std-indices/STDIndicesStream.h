@@ -14,58 +14,83 @@
 
 #define IMPLEMENTATION_STRING "STD (index-oriented)"
 
-
 // A lightweight counting iterator which will be used by the STL algorithms
 // NB: C++ <= 17 doesn't have this built-in, and it's only added later in ranges-v3 (C++2a) which this
 // implementation doesn't target
 template <typename N>
-class ranged {
-public:
-  class iterator {
-    friend class ranged;
-    public:
-    using difference_type = N;
-    using value_type = N;
-    using pointer = const N*;
-    using reference = N;
-    using iterator_category = std::random_access_iterator_tag;
+class ranged
+{
+  public:
+    class iterator
+    {
+        friend class ranged;
 
-    // XXX This is not part of the iterator spec, it gets picked up by oneDPL if enabled.
-    // Without this, the DPL SYCL backend collects the iterator data on the host and copies to the device.
-    // This type is unused for any nother STL impl.
-    using is_passed_directly = std::true_type;
+      public:
+        using difference_type = N;
+        using value_type = N;
+        using pointer = const N*;
+        using reference = N;
+        using iterator_category = std::random_access_iterator_tag;
 
-    reference operator *() const { return i_; }
-    iterator &operator ++() { ++i_; return *this; }
-    iterator operator ++(int) { iterator copy(*this); ++i_; return copy; }
+        // XXX This is not part of the iterator spec, it gets picked up by oneDPL if enabled.
+        // Without this, the DPL SYCL backend collects the iterator data on the host and copies to the device.
+        // This type is unused for any nother STL impl.
+        using is_passed_directly = std::true_type;
 
-    iterator &operator --() { --i_; return *this; }
-    iterator operator --(int) { iterator copy(*this); --i_; return copy; }
+        reference operator*() const { return i_; }
+        iterator& operator++()
+        {
+          ++i_;
+          return *this;
+        }
+        iterator operator++(int)
+        {
+          iterator copy(*this);
+          ++i_;
+          return copy;
+        }
 
-    iterator &operator +=(N by) { i_+=by; return *this; }
+        iterator& operator--()
+        {
+          --i_;
+          return *this;
+        }
+        iterator operator--(int)
+        {
+          iterator copy(*this);
+          --i_;
+          return copy;
+        }
 
-    value_type operator[](const difference_type &i) const { return i_ + i; }
+        iterator& operator+=(N by)
+        {
+          i_ += by;
+          return *this;
+        }
 
-    difference_type operator-(const iterator &it) const { return i_ - it.i_; }
-    iterator operator+(const value_type v) const { return iterator(i_ + v); }
+        value_type operator[](const difference_type& i) const { return i_ + i; }
 
-    bool operator ==(const iterator &other) const { return i_ == other.i_; }
-    bool operator !=(const iterator &other) const { return i_ != other.i_; }
-    bool operator < (const iterator &other) const { return i_ < other.i_; }
+        difference_type operator-(const iterator& it) const { return i_ - it.i_; }
+        iterator operator+(const value_type v) const { return iterator(i_ + v); }
 
-    protected:
-      explicit iterator(N start) : i_ (start) {}
+        bool operator==(const iterator& other) const { return i_ == other.i_; }
+        bool operator!=(const iterator& other) const { return i_ != other.i_; }
+        bool operator<(const iterator& other) const { return i_ < other.i_; }
 
-    private:
+      protected:
+        explicit iterator(N start) : i_(start) {}
+
+      private:
         N i_;
-  };
+    };
 
-  [[nodiscard]] iterator begin() const { return begin_; }
-  [[nodiscard]] iterator end() const { return end_; }
-  ranged(N begin, N end) : begin_(begin), end_(end) {}
-private:
-  iterator begin_;
-  iterator end_;
+    [[nodiscard]] iterator begin() const { return begin_; }
+    [[nodiscard]] iterator end() const { return end_; }
+    ranged(N begin, N end) : begin_(begin), end_(end) {}
+
+  private:
+    iterator begin_;
+    iterator end_;
 };
 
 template <class T>
@@ -83,7 +108,7 @@ class STDIndicesStream : public Stream<T>
 
   public:
     STDIndicesStream(BenchId bs, const intptr_t array_size, const int device_id,
-		  T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~STDIndicesStream();
 
     void copy() override;

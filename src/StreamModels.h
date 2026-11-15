@@ -39,8 +39,9 @@
 #include "VulkanStream.h"
 #endif
 
-template <typename T, typename...Args>
-std::unique_ptr<Stream<T>> make_stream(Args... args) {
+template <typename T, typename... Args>
+std::unique_ptr<Stream<T>> make_stream(Args... args)
+{
 #if defined(CUDA) || defined(CUDA_TUNED)
   // Use the CUDA implementation
   return std::make_unique<CUDAStream<T>>(args...);
@@ -111,7 +112,7 @@ std::unique_ptr<Stream<T>> make_stream(Args... args) {
 
 #else
 
-  #error unknown benchmark
+#error unknown benchmark
 
 #endif
 }

@@ -15,27 +15,26 @@
 
 #if defined(PARTITIONER_AUTO)
 using tbb_partitioner = tbb::auto_partitioner;
-#define PARTITIONER_NAME  "auto_partitioner"
+#define PARTITIONER_NAME "auto_partitioner"
 #elif defined(PARTITIONER_AFFINITY)
 using tbb_partitioner = tbb::affinity_partitioner;
-#define PARTITIONER_NAME  "affinity_partitioner"
+#define PARTITIONER_NAME "affinity_partitioner"
 #elif defined(PARTITIONER_STATIC)
 using tbb_partitioner = tbb::static_partitioner;
-#define PARTITIONER_NAME  "static_partitioner"
+#define PARTITIONER_NAME "static_partitioner"
 #elif defined(PARTITIONER_SIMPLE)
 using tbb_partitioner = tbb::simple_partitioner;
-#define PARTITIONER_NAME  "simple_partitioner"
+#define PARTITIONER_NAME "simple_partitioner"
 #else
 // default to auto
 using tbb_partitioner = tbb::auto_partitioner;
-#define PARTITIONER_NAME  "auto_partitioner"
+#define PARTITIONER_NAME "auto_partitioner"
 #endif
 
 template <class T>
 class TBBStream : public Stream<T>
 {
   protected:
-  
     tbb_partitioner partitioner;
     tbb::blocked_range<size_t> range;
     // Device side pointers
@@ -48,7 +47,7 @@ class TBBStream : public Stream<T>
 
   public:
     TBBStream(BenchId bs, const intptr_t array_size, const int device_id,
-	      T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~TBBStream();
 
     void copy() override;
@@ -58,6 +57,6 @@ class TBBStream : public Stream<T>
     void nstream() override;
     T dot() override;
 
-    void get_arrays(T const*& a, T const*& b, T const*& c) override;  
+    void get_arrays(T const*& a, T const*& b, T const*& c) override;
     void init_arrays(T initA, T initB, T initC) override;
 };

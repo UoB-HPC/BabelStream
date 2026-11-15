@@ -29,36 +29,36 @@
 template <class T>
 class FutharkStream : public Stream<T>
 {
-protected:
-  // Size of arrays
-  int array_size;
-  // For device selection.
-  std::string device;
+  protected:
+    // Size of arrays
+    int array_size;
+    // For device selection.
+    std::string device;
 
-  // Futhark stuff
-  struct futhark_context_config *cfg;
-  struct futhark_context *ctx;
+    // Futhark stuff
+    struct futhark_context_config* cfg;
+    struct futhark_context* ctx;
 
-  // Device side arrays
-  void* a;
-  void* b;
-  void* c;
+    // Device side arrays
+    void* a;
+    void* b;
+    void* c;
 
-  // Host side arrays for verification
-  std::vector<T> h_a, h_b, h_c;
+    // Host side arrays for verification
+    std::vector<T> h_a, h_b, h_c;
 
-public:
-  FutharkStream(BenchId bs, const intptr_t array_size, const int device_id,
-		T initA, T initB, T initC);
-  ~FutharkStream();
+  public:
+    FutharkStream(BenchId bs, const intptr_t array_size, const int device_id,
+        T initA, T initB, T initC);
+    ~FutharkStream();
 
-  void copy() override;
-  void add() override;
-  void mul() override;
-  void triad() override;
-  void nstream() override;
-  T dot() override;
+    void copy() override;
+    void add() override;
+    void mul() override;
+    void triad() override;
+    void nstream() override;
+    T dot() override;
 
-  void get_arrays(T const*& a, T const*& b, T const*& c) override;  
-  void init_arrays(T initA, T initB, T initC) override;
+    void get_arrays(T const*& a, T const*& b, T const*& c) override;
+    void init_arrays(T initA, T initB, T initC) override;
 };

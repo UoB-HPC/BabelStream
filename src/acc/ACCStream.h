@@ -28,7 +28,7 @@ class ACCStream : public Stream<T>
 
   public:
     ACCStream(BenchId bs, const intptr_t array_size, const int device_id,
-	      T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~ACCStream();
 
     void copy() override;

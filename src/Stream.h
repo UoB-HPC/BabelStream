@@ -30,7 +30,7 @@ template <class T>
 class Stream
 {
   public:
-    virtual ~Stream(){}
+    virtual ~Stream() {}
 
     // Kernels
     // These must be blocking calls
@@ -52,4 +52,3 @@ class Stream
 void listDevices(void);
 std::string getDeviceName(const int);
 std::string getDeviceDriver(const int);
-

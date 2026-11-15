@@ -12,7 +12,6 @@
 
 #define IMPLEMENTATION_STRING "STD (data-oriented)"
 
-
 template <class T>
 class STDDataStream : public Stream<T>
 {
@@ -25,7 +24,7 @@ class STDDataStream : public Stream<T>
 
   public:
     STDDataStream(BenchId bs, const intptr_t array_size, const int device_id,
-		  T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~STDDataStream();
 
     void copy() override;

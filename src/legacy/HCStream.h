@@ -19,28 +19,25 @@
 template <class T>
 class HCStream : public Stream<T>
 {
-protected:
-  // Size of arrays
-  intptr_t array_size;
-  // Device side pointers to arrays
-  hc::array<T,1> d_a;
-  hc::array<T,1> d_b;
-  hc::array<T,1> d_c;
+  protected:
+    // Size of arrays
+    intptr_t array_size;
+    // Device side pointers to arrays
+    hc::array<T, 1> d_a;
+    hc::array<T, 1> d_b;
+    hc::array<T, 1> d_c;
 
+  public:
+    HCStream(const intptr_t, const int);
+    ~HCStream();
 
-public:
+    virtual void copy() override;
+    virtual void add() override;
+    virtual void mul() override;
+    virtual void triad() override;
+    virtual T dot() override;
+    T dot_impl();
 
-  HCStream(const intptr_t, const int);
-  ~HCStream();
-
-  virtual void copy() override;
-  virtual void add() override;
-  virtual void mul() override;
-  virtual void triad() override;
-  virtual T dot() override;
-  T dot_impl();
-
-  virtual void init_arrays(T initA, T initB, T initC) override;
-  virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
-
+    virtual void init_arrays(T initA, T initB, T initC) override;
+    virtual void read_arrays(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
 };

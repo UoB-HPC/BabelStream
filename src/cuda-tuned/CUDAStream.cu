@@ -9,19 +9,29 @@
 
 #include <cub/cub.cuh>
 
-[[noreturn]] inline void cuda_error(char const* file, int line, char const* expr, cudaError_t e) {
+[[noreturn]] inline void cuda_error(char const* file, int line, char const* expr, cudaError_t e)
+{
   std::fprintf(stderr, "CUDA Error at %s:%d: %s (%d)\n  %s\n", file, line, cudaGetErrorString(e), e, expr);
   exit(e);
 }
 
-[[noreturn]] inline void nvml_error(char const* file, int line, char const* expr, nvmlReturn_t e) {
+[[noreturn]] inline void nvml_error(char const* file, int line, char const* expr, nvmlReturn_t e)
+{
   std::fprintf(stderr, "NVML Error at %s:%d: %s (%d)\n  %s\n", file, line, nvmlErrorString(e), e, expr);
   exit(e);
 }
 
 // The do while is there to make sure you remember to put a semi-colon after calling CU
-#define CU(EXPR) do { auto __e = (EXPR); if (__e != cudaSuccess) cuda_error(__FILE__, __LINE__, #EXPR, __e); } while(false)
-#define NVML(EXPR) do { auto __e = (EXPR); if (__e != NVML_SUCCESS) nvml_error(__FILE__, __LINE__, #EXPR, __e); } while(false)
+#define CU(EXPR)                                                        \
+  do {                                                                  \
+    auto __e = (EXPR);                                                  \
+    if (__e != cudaSuccess) cuda_error(__FILE__, __LINE__, #EXPR, __e); \
+  } while (false)
+#define NVML(EXPR)                                                       \
+  do {                                                                   \
+    auto __e = (EXPR);                                                   \
+    if (__e != NVML_SUCCESS) nvml_error(__FILE__, __LINE__, #EXPR, __e); \
+  } while (false)
 
 // It is best practice to include __device__ and constexpr even though in BabelStream it only needs to be __host__ const
 __host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1) / b; }
@@ -29,7 +39,8 @@ __host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + 
 cudaStream_t stream;
 
 template <typename T>
-T* alloc_device(const intptr_t array_size) {
+T* alloc_device(const intptr_t array_size)
+{
   size_t array_bytes = sizeof(T) * array_size;
   T* p = nullptr;
 #if defined(MANAGED)
@@ -44,7 +55,8 @@ T* alloc_device(const intptr_t array_size) {
 }
 
 template <typename T>
-T* alloc_host(const intptr_t array_size) {
+T* alloc_host(const intptr_t array_size)
+{
   size_t array_bytes = sizeof(T) * array_size;
   T* p = nullptr;
 #if defined(PAGEFAULT)
@@ -57,7 +69,8 @@ T* alloc_host(const intptr_t array_size) {
 }
 
 template <typename T>
-void free_device(T* p) {
+void free_device(T* p)
+{
 #if defined(PAGEFAULT)
   free(p);
 #else
@@ -66,7 +79,8 @@ void free_device(T* p) {
 }
 
 template <typename T>
-void free_host(T* p) {
+void free_host(T* p)
+{
 #if defined(PAGEFAULT)
   free(p);
 #else
@@ -76,8 +90,7 @@ void free_host(T* p) {
 
 template <class T>
 CUDAStream<T>::CUDAStream(BenchId bs, const intptr_t array_size, const int device_index,
-			  T initA, T initB, T initC)
-  : array_size(array_size)
+    T initA, T initB, T initC) : array_size(array_size)
 {
   // Set device
   int count;
@@ -100,22 +113,22 @@ CUDAStream<T>::CUDAStream(BenchId bs, const intptr_t array_size, const int devic
   NVML(nvmlDeviceGetHandleByPciBusId(mybus, &nvmldev));
   NVML(nvmlDeviceGetClockInfo(nvmldev, NVML_CLOCK_MEM, &memclock));
   std::cout << "CUDA Device " << device_index << ": \""
-	    << getDeviceName(device_index)
-	    << "\" " << dprop.multiProcessorCount << " SMs(" << dprop.major << "," << dprop.minor << ") "
-	    << "Memory: " << memclock << " MHz x " << dprop.memoryBusWidth << "-bit = "
-	    << 2.0*memclock*(dprop.memoryBusWidth/8)/1000.0 << " GB/s PEAK, ECC is "
-	    << (dprop.ECCEnabled ? "ON" : "OFF")
-	    << std::endl;
+            << getDeviceName(device_index)
+            << "\" " << dprop.multiProcessorCount << " SMs(" << dprop.major << "," << dprop.minor << ") "
+            << "Memory: " << memclock << " MHz x " << dprop.memoryBusWidth << "-bit = "
+            << 2.0 * memclock * (dprop.memoryBusWidth / 8) / 1000.0 << " GB/s PEAK, ECC is "
+            << (dprop.ECCEnabled ? "ON" : "OFF")
+            << std::endl;
 
   // Print Memory allocation API used for buffers
   std::cout << "Memory Allocation: ";
-  #if defined(MANAGED)
-      std::cout << "MANAGED";
-  #elif defined(PAGEFAULT)
-      std::cout << "PAGEFAULT";
-  #else
-      std::cout << "DEFAULT";
-  #endif
+#if defined(MANAGED)
+  std::cout << "MANAGED";
+#elif defined(PAGEFAULT)
+  std::cout << "PAGEFAULT";
+#else
+  std::cout << "DEFAULT";
+#endif
   std::cout << std::endl;
 
   std::cout << "Parallel for kernel config: thread blocks of size " << TBSIZE << std::endl;
@@ -132,7 +145,7 @@ CUDAStream<T>::CUDAStream(BenchId bs, const intptr_t array_size, const int devic
   // Check buffers fit on the device
   if (dprop.totalGlobalMem < total_bytes) {
     std::cerr << "Requested array size of " << total_bytes * 1e-9
-	      << " GB exceeds memory capacity of " << dprop.totalGlobalMem * 1e-9 << " GB !" << std::endl;
+              << " GB exceeds memory capacity of " << dprop.totalGlobalMem * 1e-9 << " GB !" << std::endl;
     throw std::runtime_error("Device does not have enough memory for all buffers");
   }
 
@@ -159,21 +172,19 @@ CUDAStream<T>::~CUDAStream()
 static constexpr int unroll = 4;
 
 template <typename T>
-__global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, size_t array_size)
+__global__ void init_kernel(T* a, T* b, T* c, T initA, T initB, T initC, size_t array_size)
 {
   const size_t tile_size = blockDim.x * unroll;
   const size_t offset = blockIdx.x * tile_size + threadIdx.x;
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-    {
-      size_t idx = offset + i * blockDim.x;
-      if (idx < array_size)
-        {
-          a[idx] = initA;
-          b[idx] = initB;
-          c[idx] = initC;
-        }
+  for (int i = 0; i < unroll; i++) {
+    size_t idx = offset + i * blockDim.x;
+    if (idx < array_size) {
+      a[idx] = initA;
+      b[idx] = initB;
+      c[idx] = initC;
     }
+  }
 }
 
 template <class T>
@@ -210,7 +221,7 @@ void CUDAStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 }
 
 template <typename T>
-__global__ void copy_kernel(const T * a, T * c, size_t array_size)
+__global__ void copy_kernel(const T* a, T* c, size_t array_size)
 {
   const size_t tile_size = blockDim.x * unroll;
   const size_t offset = blockIdx.x * tile_size + threadIdx.x;
@@ -218,21 +229,19 @@ __global__ void copy_kernel(const T * a, T * c, size_t array_size)
 
   // First: Load from global memory to registers
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-    {
-      size_t idx = offset + i * blockDim.x;
-      if (idx < array_size)
-        a_reg[i] = a[idx];
-    }
+  for (int i = 0; i < unroll; i++) {
+    size_t idx = offset + i * blockDim.x;
+    if (idx < array_size)
+      a_reg[i] = a[idx];
+  }
 
   // Second: Store
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-    {
-      size_t idx = offset + i * blockDim.x;
-      if (idx < array_size)
-        c[idx] = a_reg[i];
-    }
+  for (int i = 0; i < unroll; i++) {
+    size_t idx = offset + i * blockDim.x;
+    if (idx < array_size)
+      c[idx] = a_reg[i];
+  }
 }
 
 template <class T>
@@ -246,7 +255,7 @@ void CUDAStream<T>::copy()
 }
 
 template <typename T>
-__global__ void mul_kernel(T * b, const T * c, size_t array_size)
+__global__ void mul_kernel(T* b, const T* c, size_t array_size)
 {
   const size_t tile_size = blockDim.x * unroll;
   const size_t offset = blockIdx.x * tile_size + threadIdx.x;
@@ -254,22 +263,20 @@ __global__ void mul_kernel(T * b, const T * c, size_t array_size)
 
   // First: Load from global memory to registers
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-    {
-      size_t idx = offset + i * blockDim.x;
-      if (idx < array_size)
-        c_reg[i] = c[idx];
-    }
+  for (int i = 0; i < unroll; i++) {
+    size_t idx = offset + i * blockDim.x;
+    if (idx < array_size)
+      c_reg[i] = c[idx];
+  }
 
   // Second: Multiply and store
   const T scalar = startScalar;
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-    {
-      size_t idx = offset + i * blockDim.x;
-      if (idx < array_size)
-        b[idx] = scalar * c_reg[i];
-    }
+  for (int i = 0; i < unroll; i++) {
+    size_t idx = offset + i * blockDim.x;
+    if (idx < array_size)
+      b[idx] = scalar * c_reg[i];
+  }
 }
 
 template <class T>
@@ -282,7 +289,7 @@ void CUDAStream<T>::mul()
 }
 
 template <typename T>
-__global__ void add_kernel(const T * a, const T * b, T * c, size_t array_size)
+__global__ void add_kernel(const T* a, const T* b, T* c, size_t array_size)
 {
   const size_t tile_size = blockDim.x * unroll;
   const size_t offset = blockIdx.x * tile_size + threadIdx.x;
@@ -291,24 +298,21 @@ __global__ void add_kernel(const T * a, const T * b, T * c, size_t array_size)
 
   // First: Load from global memory to registers
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-    {
-      size_t idx = offset + i * blockDim.x;
-      if (idx < array_size)
-        {
-          a_reg[i] = a[idx];
-          b_reg[i] = b[idx];
-        }
+  for (int i = 0; i < unroll; i++) {
+    size_t idx = offset + i * blockDim.x;
+    if (idx < array_size) {
+      a_reg[i] = a[idx];
+      b_reg[i] = b[idx];
     }
+  }
 
   // Second: Add and store
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-    {
-      size_t idx = offset + i * blockDim.x;
-      if (idx < array_size)
-        c[idx] = a_reg[i] + b_reg[i];
-    }
+  for (int i = 0; i < unroll; i++) {
+    size_t idx = offset + i * blockDim.x;
+    if (idx < array_size)
+      c[idx] = a_reg[i] + b_reg[i];
+  }
 }
 
 template <class T>
@@ -321,7 +325,7 @@ void CUDAStream<T>::add()
 }
 
 template <typename T>
-__global__ void triad_kernel(T * a, const T * b, const T * c, size_t array_size)
+__global__ void triad_kernel(T* a, const T* b, const T* c, size_t array_size)
 {
   const size_t tile_size = blockDim.x * unroll;
   const size_t offset = blockIdx.x * tile_size + threadIdx.x;
@@ -330,20 +334,17 @@ __global__ void triad_kernel(T * a, const T * b, const T * c, size_t array_size)
 
   // First: Load 2*unroll elements from global memory to registers
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-  {
-    if (offset + i * blockDim.x < array_size)
-      {
-        b_reg[i] = b[offset + i * blockDim.x];
-        c_reg[i] = c[offset + i * blockDim.x];
-      }
+  for (int i = 0; i < unroll; i++) {
+    if (offset + i * blockDim.x < array_size) {
+      b_reg[i] = b[offset + i * blockDim.x];
+      c_reg[i] = c[offset + i * blockDim.x];
+    }
   }
 
   // Second: Add and store
   const T scalar = startScalar;
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-  {
+  for (int i = 0; i < unroll; i++) {
     if (offset + i * blockDim.x < array_size)
       a[offset + i * blockDim.x] = b_reg[i] + scalar * c_reg[i];
   }
@@ -359,7 +360,7 @@ void CUDAStream<T>::triad()
 }
 
 template <typename T>
-__global__ void nstream_kernel(T * a, const T * b, const T * c, size_t array_size)
+__global__ void nstream_kernel(T* a, const T* b, const T* c, size_t array_size)
 {
   const size_t tile_size = blockDim.x * unroll;
   const size_t offset = blockIdx.x * tile_size + threadIdx.x;
@@ -369,26 +370,23 @@ __global__ void nstream_kernel(T * a, const T * b, const T * c, size_t array_siz
 
   // First: Load 3*unroll elements from global memory to registers
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-    {
-      size_t idx = offset + i * blockDim.x;
-      if (idx < array_size)
-        {
-          a_reg[i] = a[idx];
-          b_reg[i] = b[idx];
-          c_reg[i] = c[idx];
-        }
+  for (int i = 0; i < unroll; i++) {
+    size_t idx = offset + i * blockDim.x;
+    if (idx < array_size) {
+      a_reg[i] = a[idx];
+      b_reg[i] = b[idx];
+      c_reg[i] = c[idx];
     }
+  }
 
   // Second: Compute and store
   const T scalar = startScalar;
 #pragma unroll
-  for (int i = 0; i < unroll; i++)
-    {
-      size_t idx = offset + i * blockDim.x;
-      if (idx < array_size)
-        a[idx] = a_reg[i] + b_reg[i] + scalar * c_reg[i];
-    }
+  for (int i = 0; i < unroll; i++) {
+    size_t idx = offset + i * blockDim.x;
+    if (idx < array_size)
+      a[idx] = a_reg[i] + b_reg[i] + scalar * c_reg[i];
+  }
 }
 
 template <class T>
@@ -401,7 +399,7 @@ void CUDAStream<T>::nstream()
 }
 
 template <class T>
-__global__ void dot_kernel(const T * a, const T * b, T* sums, size_t array_size)
+__global__ void dot_kernel(const T* a, const T* b, T* sums, size_t array_size)
 {
   typedef cub::BlockReduce<T, TBSIZE_DOT> BlockReduce;
   __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -414,32 +412,26 @@ __global__ void dot_kernel(const T * a, const T * b, T* sums, size_t array_size)
   T partial_sum = {};
 
   // Process with unrolling
-  for (size_t base = offset; base < array_size; base += tile_size * gridDim.x)
-    {
-      // First: Load from global memory to registers
+  for (size_t base = offset; base < array_size; base += tile_size * gridDim.x) {
+    // First: Load from global memory to registers
 #pragma unroll
-      for (int u = 0; u < unroll; u++)
-        {
-          size_t idx = base + u * blockDim.x;
-          if (idx < array_size)
-            {
-              a_reg[u] = a[idx];
-              b_reg[u] = b[idx];
-            }
-          else
-            {
-              a_reg[u] = {};
-              b_reg[u] = {};
-            }
-        }
-
-      // Second: Compute dot products
-#pragma unroll
-      for (int u = 0; u < unroll; u++)
-        {
-          partial_sum += a_reg[u] * b_reg[u];
-        }
+    for (int u = 0; u < unroll; u++) {
+      size_t idx = base + u * blockDim.x;
+      if (idx < array_size) {
+        a_reg[u] = a[idx];
+        b_reg[u] = b[idx];
+      } else {
+        a_reg[u] = {};
+        b_reg[u] = {};
+      }
     }
+
+    // Second: Compute dot products
+#pragma unroll
+    for (int u = 0; u < unroll; u++) {
+      partial_sum += a_reg[u] * b_reg[u];
+    }
+  }
 
   // CUB block-wide reduction
   T block_sum = BlockReduce(temp_storage).Sum(partial_sum);
@@ -448,17 +440,17 @@ __global__ void dot_kernel(const T * a, const T * b, T* sums, size_t array_size)
   if (threadIdx.x == 0) sums[blockIdx.x] = block_sum;
 }
 
-
 template <class T>
 T CUDAStream<T>::dot()
 {
 
-  dot_kernel<<<dot_num_blocks/unroll, TBSIZE_DOT, 0, stream>>>(d_a, d_b, sums, array_size);
+  dot_kernel<<<dot_num_blocks / unroll, TBSIZE_DOT, 0, stream>>>(d_a, d_b, sums, array_size);
   CU(cudaPeekAtLastError());
   CU(cudaStreamSynchronize(stream));
 
   T sum = 0.0;
-  for (intptr_t i = 0; i < dot_num_blocks/unroll; ++i) sum += sums[i];
+  for (intptr_t i = 0; i < dot_num_blocks / unroll; ++i)
+    sum += sums[i];
 
   return sum;
 }
@@ -470,16 +462,12 @@ void listDevices(void)
   CU(cudaGetDeviceCount(&count));
 
   // Print device names
-  if (count == 0)
-  {
+  if (count == 0) {
     std::cerr << "No devices found." << std::endl;
-  }
-  else
-  {
+  } else {
     std::cout << std::endl;
     std::cout << "Devices:" << std::endl;
-    for (int i = 0; i < count; i++)
-    {
+    for (int i = 0; i < count; i++) {
       std::cout << i << ": " << getDeviceName(i) << std::endl;
     }
     std::cout << std::endl;

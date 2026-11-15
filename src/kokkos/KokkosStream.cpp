@@ -4,13 +4,11 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
-
 #include "KokkosStream.hpp"
 
 template <class T>
 KokkosStream<T>::KokkosStream(BenchId bs, const intptr_t array_size, const int device_index,
-			      T initA, T initB, T initC)
-    : array_size(array_size)
+    T initA, T initB, T initC) : array_size(array_size)
 {
   Kokkos::initialize(Kokkos::InitializationSettings().set_device_id(device_index));
 
@@ -39,12 +37,10 @@ void KokkosStream<T>::init_arrays(T initA, T initB, T initC)
   Kokkos::View<T*> a(*d_a);
   Kokkos::View<T*> b(*d_b);
   Kokkos::View<T*> c(*d_c);
-  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
-  {
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA(const long index) {
     a[index] = initA;
     b[index] = initB;
-    c[index] = initC;
-  });
+    c[index] = initC; });
   Kokkos::fence();
 }
 
@@ -66,10 +62,7 @@ void KokkosStream<T>::copy()
   Kokkos::View<T*> b(*d_b);
   Kokkos::View<T*> c(*d_c);
 
-  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
-  {
-    c[index] = a[index];
-  });
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA(const long index) { c[index] = a[index]; });
   Kokkos::fence();
 }
 
@@ -81,10 +74,7 @@ void KokkosStream<T>::mul()
   Kokkos::View<T*> c(*d_c);
 
   const T scalar = startScalar;
-  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
-  {
-    b[index] = scalar*c[index];
-  });
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA(const long index) { b[index] = scalar * c[index]; });
   Kokkos::fence();
 }
 
@@ -95,10 +85,7 @@ void KokkosStream<T>::add()
   Kokkos::View<T*> b(*d_b);
   Kokkos::View<T*> c(*d_c);
 
-  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
-  {
-    c[index] = a[index] + b[index];
-  });
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA(const long index) { c[index] = a[index] + b[index]; });
   Kokkos::fence();
 }
 
@@ -110,10 +97,7 @@ void KokkosStream<T>::triad()
   Kokkos::View<T*> c(*d_c);
 
   const T scalar = startScalar;
-  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
-  {
-    a[index] = b[index] + scalar*c[index];
-  });
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA(const long index) { a[index] = b[index] + scalar * c[index]; });
   Kokkos::fence();
 }
 
@@ -125,10 +109,7 @@ void KokkosStream<T>::nstream()
   Kokkos::View<T*> c(*d_c);
 
   const T scalar = startScalar;
-  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA (const long index)
-  {
-    a[index] += b[index] + scalar*c[index];
-  });
+  Kokkos::parallel_for(array_size, KOKKOS_LAMBDA(const long index) { a[index] += b[index] + scalar * c[index]; });
   Kokkos::fence();
 }
 
@@ -140,13 +121,9 @@ T KokkosStream<T>::dot()
 
   T sum{};
 
-  Kokkos::parallel_reduce(array_size, KOKKOS_LAMBDA (const long index, T &tmp)
-  {
-    tmp += a[index] * b[index];
-  }, sum);
+  Kokkos::parallel_reduce(array_size, KOKKOS_LAMBDA(const long index, T& tmp) { tmp += a[index] * b[index]; }, sum);
 
   return sum;
-
 }
 
 void listDevices(void)
@@ -154,12 +131,10 @@ void listDevices(void)
   std::cout << "Kokkos library for " << getDeviceName(0) << std::endl;
 }
 
-
 std::string getDeviceName(const int device)
 {
-  return typeid (Kokkos::DefaultExecutionSpace).name();
+  return typeid(Kokkos::DefaultExecutionSpace).name();
 }
-
 
 std::string getDeviceDriver(const int device)
 {

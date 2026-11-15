@@ -16,11 +16,11 @@
 // the host, so they all use the same alignment.
 
 #ifndef ALIGNMENT
-#define ALIGNMENT (2*1024*1024) // 2MB
+#define ALIGNMENT (2 * 1024 * 1024) // 2MB
 #endif
 
 template <class T>
-T *alloc_raw(size_t size)
+T* alloc_raw(size_t size)
 {
   if (size > (SIZE_MAX - (ALIGNMENT - 1)) / sizeof(T)) throw std::runtime_error("Allocation size overflow");
 
@@ -31,7 +31,7 @@ T *alloc_raw(size_t size)
   size_t bytes = sizeof(T) * size;
   size_t rounded = ((bytes + ALIGNMENT - 1) / ALIGNMENT) * ALIGNMENT;
 
-  T *ptr = (T *)aligned_alloc(ALIGNMENT, rounded);
+  T* ptr = (T*)aligned_alloc(ALIGNMENT, rounded);
   if (!ptr)
     throw std::runtime_error("Failed to allocate " + std::to_string(rounded) + " bytes");
 
@@ -39,4 +39,4 @@ T *alloc_raw(size_t size)
 }
 
 template <class T>
-void dealloc_raw(T *ptr) { free(ptr); }
+void dealloc_raw(T* ptr) { free(ptr); }

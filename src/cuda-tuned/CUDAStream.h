@@ -42,7 +42,7 @@ class CUDAStream : public Stream<T>
 
   public:
     CUDAStream(BenchId bs, const intptr_t array_size, const int device_id,
-	       T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~CUDAStream();
 
     void copy() override;

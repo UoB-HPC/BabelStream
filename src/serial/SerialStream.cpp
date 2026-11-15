@@ -10,8 +10,7 @@
 
 template <class T>
 SerialStream<T>::SerialStream(BenchId bs, const intptr_t array_size, const int device_id,
-			      T initA, T initB, T initC)
-  : array_size{array_size}
+    T initA, T initB, T initC) : array_size{array_size}
 {
   // Allocate on the host
   this->a = alloc_raw<T>(array_size);
@@ -33,8 +32,7 @@ template <class T>
 void SerialStream<T>::init_arrays(T initA, T initB, T initC)
 {
   intptr_t array_size = this->array_size;
-  for (intptr_t i = 0; i < array_size; i++)
-  {
+  for (intptr_t i = 0; i < array_size; i++) {
     a[i] = initA;
     b[i] = initB;
     c[i] = initC;
@@ -52,8 +50,7 @@ void SerialStream<T>::get_arrays(T const*& h_a, T const*& h_b, T const*& h_c)
 template <class T>
 void SerialStream<T>::copy()
 {
-  for (intptr_t i = 0; i < array_size; i++)
-  {
+  for (intptr_t i = 0; i < array_size; i++) {
     c[i] = a[i];
   }
 }
@@ -62,8 +59,7 @@ template <class T>
 void SerialStream<T>::mul()
 {
   const T scalar = startScalar;
-  for (intptr_t i = 0; i < array_size; i++)
-  {
+  for (intptr_t i = 0; i < array_size; i++) {
     b[i] = scalar * c[i];
   }
 }
@@ -71,8 +67,7 @@ void SerialStream<T>::mul()
 template <class T>
 void SerialStream<T>::add()
 {
-  for (intptr_t i = 0; i < array_size; i++)
-  {
+  for (intptr_t i = 0; i < array_size; i++) {
     c[i] = a[i] + b[i];
   }
 }
@@ -81,8 +76,7 @@ template <class T>
 void SerialStream<T>::triad()
 {
   const T scalar = startScalar;
-  for (intptr_t i = 0; i < array_size; i++)
-  {
+  for (intptr_t i = 0; i < array_size; i++) {
     a[i] = b[i] + scalar * c[i];
   }
 }
@@ -91,8 +85,7 @@ template <class T>
 void SerialStream<T>::nstream()
 {
   const T scalar = startScalar;
-  for (intptr_t i = 0; i < array_size; i++)
-  {
+  for (intptr_t i = 0; i < array_size; i++) {
     a[i] += b[i] + scalar * c[i];
   }
 }
@@ -101,14 +94,11 @@ template <class T>
 T SerialStream<T>::dot()
 {
   T sum{};
-  for (intptr_t i = 0; i < array_size; i++)
-  {
+  for (intptr_t i = 0; i < array_size; i++) {
     sum += a[i] * b[i];
   }
   return sum;
 }
-
-
 
 void listDevices(void)
 {

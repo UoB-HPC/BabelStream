@@ -8,28 +8,28 @@
 #include <algorithm>
 #include <execution>
 
- // OneDPL workaround; TODO: remove this eventually
+// OneDPL workaround; TODO: remove this eventually
 #include "dpl_shim.h"
 
 template <class T>
 STDDataStream<T>::STDDataStream(BenchId bs, const intptr_t array_size, const int device_id,
-			      T initA, T initB, T initC)
-  : array_size{array_size},
-  a(alloc_raw<T>(array_size)), b(alloc_raw<T>(array_size)), c(alloc_raw<T>(array_size))
+    T initA, T initB, T initC) : array_size{array_size},
+                                 a(alloc_raw<T>(array_size)), b(alloc_raw<T>(array_size)), c(alloc_raw<T>(array_size))
 {
-    std::cout << "Backing storage typeid: " << typeid(a).name() << std::endl;
+  std::cout << "Backing storage typeid: " << typeid(a).name() << std::endl;
 #ifdef USE_ONEDPL
-    print_dpl_backend();
+  print_dpl_backend();
 #endif
 
 #ifdef WORKAROUND
-    std::cout << "Non-conforming implementation: requires non-portable workarounds to run STREAM" << std::endl;
-#endif      
-    init_arrays(initA, initB, initC);
+  std::cout << "Non-conforming implementation: requires non-portable workarounds to run STREAM" << std::endl;
+#endif
+  init_arrays(initA, initB, initC);
 }
 
-template<class T>
-STDDataStream<T>::~STDDataStream() {
+template <class T>
+STDDataStream<T>::~STDDataStream()
+{
   dealloc_raw(a);
   dealloc_raw(b);
   dealloc_raw(c);
@@ -62,7 +62,7 @@ template <class T>
 void STDDataStream<T>::mul()
 {
   //  b[i] = scalar * c[i];
-  std::transform(exe_policy, c, c + array_size, b, [](T ci){ return startScalar*ci; });
+  std::transform(exe_policy, c, c + array_size, b, [](T ci) { return startScalar * ci; });
 }
 
 template <class T>
@@ -76,7 +76,7 @@ template <class T>
 void STDDataStream<T>::triad()
 {
   //  a[i] = b[i] + scalar * c[i];
-  std::transform(exe_policy, b, b + array_size, c, a, [scalar = startScalar](T bi, T ci){ return bi+scalar*ci; });
+  std::transform(exe_policy, b, b + array_size, c, a, [scalar = startScalar](T bi, T ci) { return bi + scalar * ci; });
 }
 
 template <class T>
@@ -86,8 +86,8 @@ void STDDataStream<T>::nstream()
   //  Need to do in two round-trips with C++17 STL.
   //  1: a[i] += b[i]
   //  2: a[i] += scalar * c[i];
-  std::transform(exe_policy, a, a + array_size, b, a, [](T ai, T bi){ return ai + bi; });
-  std::transform(exe_policy, a, a + array_size, c, a, [](T ai, T ci){ return ai + startScalar*ci; });
+  std::transform(exe_policy, a, a + array_size, b, a, [](T ai, T bi) { return ai + bi; });
+  std::transform(exe_policy, a, a + array_size, c, a, [](T ai, T ci) { return ai + startScalar * ci; });
 }
 
 template <class T>

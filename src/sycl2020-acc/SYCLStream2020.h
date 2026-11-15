@@ -37,9 +37,8 @@ class SYCLStream : public Stream<T>
     std::vector<T> h_a, h_b, h_c;
 
   public:
-
     SYCLStream(BenchId bs, const intptr_t array_size, const int device_id,
-               T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~SYCLStream() = default;
 
     void copy() override;
@@ -47,11 +46,10 @@ class SYCLStream : public Stream<T>
     void mul() override;
     void triad() override;
     void nstream() override;
-    T    dot() override;
+    T dot() override;
 
     void init_arrays(T initA, T initB, T initC) override;
     void get_arrays(T const*& a, T const*& b, T const*& c) override;
-
 };
 
 // Populate the devices list

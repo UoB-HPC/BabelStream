@@ -24,19 +24,19 @@ class HIPStream : public Stream<T>
     intptr_t dot_num_blocks;
 
     // Host array for partial sums for dot kernel
-    T *sums;
+    T* sums;
 
     // Device side pointers to arrays
-    T *d_a;
-    T *d_b;
-    T *d_c;
+    T* d_a;
+    T* d_b;
+    T* d_c;
 
     // If UVM is disabled, host arrays for verification purposes
     std::vector<T> h_a, h_b, h_c;
 
   public:
     HIPStream(BenchId bs, const intptr_t array_size, const int device_id,
-	      T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~HIPStream();
 
     void copy() override;
@@ -46,6 +46,6 @@ class HIPStream : public Stream<T>
     void nstream() override;
     T dot() override;
 
-    void get_arrays(T const*& a, T const*& b, T const*& c) override;    
+    void get_arrays(T const*& a, T const*& b, T const*& c) override;
     void init_arrays(T initA, T initB, T initC) override;
 };

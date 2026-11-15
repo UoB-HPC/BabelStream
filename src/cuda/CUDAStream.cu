@@ -4,29 +4,25 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
-
 #include "CUDAStream.h"
 
 #define TBSIZE 1024
 
-
 void check_error(void)
 {
   cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess)
-  {
+  if (err != cudaSuccess) {
     std::cerr << "Error: " << cudaGetErrorString(err) << std::endl;
     exit(err);
   }
 }
 
 // It is best practice to include __device__ and constexpr even though in BabelStream it only needs to be __host__ const
-__host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1)/b; }
+__host__ __device__ constexpr size_t ceil_div(size_t a, size_t b) { return (a + b - 1) / b; }
 
 template <class T>
 CUDAStream<T>::CUDAStream(BenchId bs, const intptr_t array_size, const int device_index,
-	      T initA, T initB, T initC)
-  : array_size(array_size)
+    T initA, T initB, T initC) : array_size(array_size)
 {
   // Set device
   int count;
@@ -41,11 +37,11 @@ CUDAStream<T>::CUDAStream(BenchId bs, const intptr_t array_size, const int devic
   std::cout << "Using CUDA device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
 #if defined(MANAGED)
-    std::cout << "Memory: MANAGED" << std::endl;
+  std::cout << "Memory: MANAGED" << std::endl;
 #elif defined(PAGEFAULT)
-    std::cout << "Memory: PAGEFAULT" << std::endl;
+  std::cout << "Memory: PAGEFAULT" << std::endl;
 #else
-    std::cout << "Memory: DEFAULT" << std::endl;
+  std::cout << "Memory: DEFAULT" << std::endl;
 #endif
 
   cudaDeviceProp props;
@@ -65,7 +61,7 @@ CUDAStream<T>::CUDAStream(BenchId bs, const intptr_t array_size, const int devic
   check_error();
 
   // Check buffers fit on the device
-  if (props.totalGlobalMem < std::size_t{3}*array_bytes)
+  if (props.totalGlobalMem < std::size_t{3} * array_bytes)
     throw std::runtime_error("Device does not have enough memory for all 3 buffers");
 
   // Create device buffers
@@ -92,7 +88,6 @@ CUDAStream<T>::CUDAStream(BenchId bs, const intptr_t array_size, const int devic
   init_arrays(initA, initB, initC);
 }
 
-
 template <class T>
 CUDAStream<T>::~CUDAStream()
 {
@@ -113,9 +108,8 @@ CUDAStream<T>::~CUDAStream()
 #endif
 }
 
-
 template <typename T>
-__global__ void init_kernel(T * a, T * b, T * c, T initA, T initB, T initC, size_t array_size)
+__global__ void init_kernel(T* a, T* b, T* c, T initA, T initB, T initC, size_t array_size)
 {
   for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     a[i] = initA;
@@ -162,7 +156,7 @@ void CUDAStream<T>::get_arrays(T const*& a, T const*& b, T const*& c)
 }
 
 template <typename T>
-__global__ void copy_kernel(const T * a, T * c, size_t array_size)
+__global__ void copy_kernel(const T* a, T* c, size_t array_size)
 {
   for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     c[i] = a[i];
@@ -180,7 +174,7 @@ void CUDAStream<T>::copy()
 }
 
 template <typename T>
-__global__ void mul_kernel(T * b, const T * c, size_t array_size)
+__global__ void mul_kernel(T* b, const T* c, size_t array_size)
 {
   const T scalar = startScalar;
   for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
@@ -199,7 +193,7 @@ void CUDAStream<T>::mul()
 }
 
 template <typename T>
-__global__ void add_kernel(const T * a, const T * b, T * c, size_t array_size)
+__global__ void add_kernel(const T* a, const T* b, T* c, size_t array_size)
 {
   for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
     c[i] = a[i] + b[i];
@@ -217,7 +211,7 @@ void CUDAStream<T>::add()
 }
 
 template <typename T>
-__global__ void triad_kernel(T * a, const T * b, const T * c, size_t array_size)
+__global__ void triad_kernel(T* a, const T* b, const T* c, size_t array_size)
 {
   const T scalar = startScalar;
   for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
@@ -236,7 +230,7 @@ void CUDAStream<T>::triad()
 }
 
 template <typename T>
-__global__ void nstream_kernel(T * a, const T * b, const T * c, size_t array_size)
+__global__ void nstream_kernel(T* a, const T* b, const T* c, size_t array_size)
 {
   const T scalar = startScalar;
   for (size_t i = (size_t)threadIdx.x + (size_t)blockDim.x * blockIdx.x; i < array_size; i += (size_t)gridDim.x * blockDim.x) {
@@ -255,7 +249,7 @@ void CUDAStream<T>::nstream()
 }
 
 template <typename T>
-__global__ void dot_kernel(const T * a, const T * b, T * sum, size_t array_size)
+__global__ void dot_kernel(const T* a, const T* b, T* sum, size_t array_size)
 {
   __shared__ T tb_sum[TBSIZE];
 
@@ -263,15 +257,13 @@ __global__ void dot_kernel(const T * a, const T * b, T * sum, size_t array_size)
   size_t i = blockDim.x * blockIdx.x + local_i;
 
   tb_sum[local_i] = {};
-  for (; i < array_size; i += blockDim.x*gridDim.x)
+  for (; i < array_size; i += blockDim.x * gridDim.x)
     tb_sum[local_i] += a[i] * b[i];
 
-  for (size_t offset = blockDim.x / 2; offset > 0; offset /= 2)
-  {
+  for (size_t offset = blockDim.x / 2; offset > 0; offset /= 2) {
     __syncthreads();
-    if (local_i < offset)
-    {
-      tb_sum[local_i] += tb_sum[local_i+offset];
+    if (local_i < offset) {
+      tb_sum[local_i] += tb_sum[local_i + offset];
     }
   }
 
@@ -302,22 +294,17 @@ void listDevices(void)
   check_error();
 
   // Print device names
-  if (count == 0)
-  {
+  if (count == 0) {
     std::cerr << "No devices found." << std::endl;
-  }
-  else
-  {
+  } else {
     std::cout << std::endl;
     std::cout << "Devices:" << std::endl;
-    for (int i = 0; i < count; i++)
-    {
+    for (int i = 0; i < count; i++) {
       std::cout << i << ": " << getDeviceName(i) << std::endl;
     }
     std::cout << std::endl;
   }
 }
-
 
 std::string getDeviceName(const int device)
 {
@@ -326,7 +313,6 @@ std::string getDeviceName(const int device)
   check_error();
   return std::string(props.name);
 }
-
 
 std::string getDeviceDriver(const int device)
 {

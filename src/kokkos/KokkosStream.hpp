@@ -30,9 +30,8 @@ class KokkosStream : public Stream<T>
     typename Kokkos::View<T*>::host_mirror_type* hm_c;
 
   public:
-
     KokkosStream(BenchId bs, const intptr_t array_size, const int device_id,
-		 T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~KokkosStream();
 
     void copy() override;
@@ -45,4 +44,3 @@ class KokkosStream : public Stream<T>
     void get_arrays(T const*& a, T const*& b, T const*& c) override;
     void init_arrays(T initA, T initB, T initC) override;
 };
-

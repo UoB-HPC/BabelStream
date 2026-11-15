@@ -13,8 +13,7 @@ using RAJA::forall;
 
 template <class T>
 RAJAStream<T>::RAJAStream(BenchId bs, const intptr_t array_size, const int device_index,
-			  T initA, T initB, T initC)
-  : array_size(array_size), range(0, array_size)
+    T initA, T initB, T initC) : array_size(array_size), range(0, array_size)
 {
 
 #ifdef RAJA_TARGET_CPU
@@ -22,9 +21,9 @@ RAJAStream<T>::RAJAStream(BenchId bs, const intptr_t array_size, const int devic
   d_b = alloc_raw<T>(array_size);
   d_c = alloc_raw<T>(array_size);
 #else
-  cudaMallocManaged((void**)&d_a, sizeof(T)*array_size, cudaMemAttachGlobal);
-  cudaMallocManaged((void**)&d_b, sizeof(T)*array_size, cudaMemAttachGlobal);
-  cudaMallocManaged((void**)&d_c, sizeof(T)*array_size, cudaMemAttachGlobal);
+  cudaMallocManaged((void**)&d_a, sizeof(T) * array_size, cudaMemAttachGlobal);
+  cudaMallocManaged((void**)&d_b, sizeof(T) * array_size, cudaMemAttachGlobal);
+  cudaMallocManaged((void**)&d_c, sizeof(T) * array_size, cudaMemAttachGlobal);
   cudaDeviceSynchronize();
 #endif
 
@@ -51,8 +50,7 @@ void RAJAStream<T>::init_arrays(T initA, T initB, T initC)
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
-  {
+  forall<policy>(range, [=] RAJA_DEVICE(RAJA::Index_type index) {
     a[index] = initA;
     b[index] = initB;
     c[index] = initC;
@@ -72,8 +70,7 @@ void RAJAStream<T>::copy()
 {
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
-  {
+  forall<policy>(range, [=] RAJA_DEVICE(RAJA::Index_type index) {
     c[index] = a[index];
   });
 }
@@ -84,9 +81,8 @@ void RAJAStream<T>::mul()
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
   const T scalar = startScalar;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
-  {
-    b[index] = scalar*c[index];
+  forall<policy>(range, [=] RAJA_DEVICE(RAJA::Index_type index) {
+    b[index] = scalar * c[index];
   });
 }
 
@@ -96,8 +92,7 @@ void RAJAStream<T>::add()
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
-  {
+  forall<policy>(range, [=] RAJA_DEVICE(RAJA::Index_type index) {
     c[index] = a[index] + b[index];
   });
 }
@@ -109,9 +104,8 @@ void RAJAStream<T>::triad()
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
   const T scalar = startScalar;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
-  {
-    a[index] = b[index] + scalar*c[index];
+  forall<policy>(range, [=] RAJA_DEVICE(RAJA::Index_type index) {
+    a[index] = b[index] + scalar * c[index];
   });
 }
 
@@ -122,9 +116,9 @@ void RAJAStream<T>::nstream()
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
   const T scalar = startScalar;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
-  {
-    a[index] += b[index] + scalar * c[index];;
+  forall<policy>(range, [=] RAJA_DEVICE(RAJA::Index_type index) {
+    a[index] += b[index] + scalar * c[index];
+    ;
   });
 }
 
@@ -136,26 +130,22 @@ T RAJAStream<T>::dot()
 
   RAJA::ReduceSum<reduce_policy, T> sum(T{});
 
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
-  {
+  forall<policy>(range, [=] RAJA_DEVICE(RAJA::Index_type index) {
     sum += a[index] * b[index];
   });
 
   return T(sum);
 }
 
-
 void listDevices(void)
 {
   std::cout << "This is not the device you are looking for.";
 }
 
-
 std::string getDeviceName(const int device)
 {
   return "RAJA";
 }
-
 
 std::string getDeviceDriver(const int device)
 {

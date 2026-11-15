@@ -12,7 +12,10 @@
 #include "Stream.h"
 #if __has_include(<sycl/sycl.hpp>)
 #include <sycl/sycl.hpp>
-namespace cl { namespace sycl = ::sycl; }
+namespace cl
+{
+namespace sycl = ::sycl;
+}
 #else
 #include <CL/sycl.hpp>
 #endif
@@ -21,14 +24,21 @@ namespace cl { namespace sycl = ::sycl; }
 
 namespace sycl_kernels
 {
-  template <class T> class init;
-  template <class T> class copy;
-  template <class T> class mul;
-  template <class T> class add;
-  template <class T> class triad;
-  template <class T> class nstream;
-  template <class T> class dot;
-}
+template <class T>
+class init;
+template <class T>
+class copy;
+template <class T>
+class mul;
+template <class T>
+class add;
+template <class T>
+class triad;
+template <class T>
+class nstream;
+template <class T>
+class dot;
+} // namespace sycl_kernels
 
 template <class T>
 class SYCLStream : public Stream<T>
@@ -38,11 +48,11 @@ class SYCLStream : public Stream<T>
     size_t array_size;
 
     // SYCL objects
-    cl::sycl::queue *queue;
-    cl::sycl::buffer<T> *d_a;
-    cl::sycl::buffer<T> *d_b;
-    cl::sycl::buffer<T> *d_c;
-    cl::sycl::buffer<T> *d_sum;
+    cl::sycl::queue* queue;
+    cl::sycl::buffer<T>* d_a;
+    cl::sycl::buffer<T>* d_b;
+    cl::sycl::buffer<T>* d_c;
+    cl::sycl::buffer<T>* d_sum;
 
     // SYCL kernel names
     typedef sycl_kernels::init<T> init_kernel;
@@ -58,9 +68,8 @@ class SYCLStream : public Stream<T>
     size_t dot_wgsize;
 
   public:
-
     SYCLStream(BenchId bs, const intptr_t array_size, const int device_id,
-	       T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~SYCLStream();
 
     void copy() override;
@@ -68,7 +77,7 @@ class SYCLStream : public Stream<T>
     void mul() override;
     void triad() override;
     void nstream() override;
-    T    dot() override;
+    T dot() override;
 
     void get_arrays(T const*& a, T const*& b, T const*& c) override;
     void init_arrays(T initA, T initB, T initC) override;

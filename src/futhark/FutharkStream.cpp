@@ -6,14 +6,13 @@
 // For full license terms please see the LICENSE file distributed with this
 // source code
 
-#include <cstdlib>  // For aligned_alloc
+#include <cstdlib> // For aligned_alloc
 #include <string>
 #include "FutharkStream.h"
 
 template <class T>
 FutharkStream<T>::FutharkStream(BenchId bs, const intptr_t array_size, const int device,
-				T initA, T initB, T initC)
-  : array_size(array_size)
+    T initA, T initB, T initC) : array_size(array_size)
 {
   this->cfg = futhark_context_config_new();
   this->device = "#" + std::to_string(device);
@@ -60,11 +59,12 @@ FutharkStream<double>::~FutharkStream()
 }
 
 template <>
-void FutharkStream<float>::init_arrays(float initA, float initB, float initC) {
+void FutharkStream<float>::init_arrays(float initA, float initB, float initC)
+{
   int array_size = this->array_size;
-  float *a = new float[array_size];
-  float *b = new float[array_size];
-  float *c = new float[array_size];
+  float* a = new float[array_size];
+  float* b = new float[array_size];
+  float* c = new float[array_size];
   for (int i = 0; i < array_size; i++) {
     a[i] = initA;
     b[i] = initB;
@@ -80,11 +80,12 @@ void FutharkStream<float>::init_arrays(float initA, float initB, float initC) {
 }
 
 template <>
-void FutharkStream<double>::init_arrays(double initA, double initB, double initC) {
+void FutharkStream<double>::init_arrays(double initA, double initB, double initC)
+{
   int array_size = this->array_size;
-  double *a = new double[array_size];
-  double *b = new double[array_size];
-  double *c = new double[array_size];
+  double* a = new double[array_size];
+  double* b = new double[array_size];
+  double* c = new double[array_size];
   for (int i = 0; i < array_size; i++) {
     a[i] = initA;
     b[i] = initB;
@@ -100,7 +101,8 @@ void FutharkStream<double>::init_arrays(double initA, double initB, double initC
 }
 
 template <>
-void FutharkStream<float>::get_arrays(float const*& a_, float const*& b_, float const*& c_) {
+void FutharkStream<float>::get_arrays(float const*& a_, float const*& b_, float const*& c_)
+{
   h_a.resize(array_size);
   h_b.resize(array_size);
   h_c.resize(array_size);
@@ -114,7 +116,8 @@ void FutharkStream<float>::get_arrays(float const*& a_, float const*& b_, float 
 }
 
 template <>
-void FutharkStream<double>::get_arrays(double const*& a_, double const*& b_, double const*& c_) {
+void FutharkStream<double>::get_arrays(double const*& a_, double const*& b_, double const*& c_)
+{
   h_a.resize(array_size);
   h_b.resize(array_size);
   h_c.resize(array_size);
@@ -128,63 +131,72 @@ void FutharkStream<double>::get_arrays(double const*& a_, double const*& b_, dou
 }
 
 template <>
-void FutharkStream<float>::copy() {
+void FutharkStream<float>::copy()
+{
   futhark_free_f32_1d(this->ctx, (futhark_f32_1d*)this->c);
   futhark_entry_f32_copy(this->ctx, (futhark_f32_1d**)&this->c, (futhark_f32_1d*)this->a);
   futhark_context_sync(this->ctx);
 }
 
 template <>
-void FutharkStream<double>::copy() {
+void FutharkStream<double>::copy()
+{
   futhark_free_f64_1d(this->ctx, (futhark_f64_1d*)this->c);
   futhark_entry_f64_copy(this->ctx, (futhark_f64_1d**)&this->c, (futhark_f64_1d*)this->a);
   futhark_context_sync(this->ctx);
 }
 
 template <>
-void FutharkStream<float>::mul() {
+void FutharkStream<float>::mul()
+{
   futhark_free_f32_1d(this->ctx, (futhark_f32_1d*)this->b);
   futhark_entry_f32_mul(this->ctx, (futhark_f32_1d**)&this->b, (futhark_f32_1d*)this->c);
   futhark_context_sync(this->ctx);
 }
 
 template <>
-void FutharkStream<double>::mul() {
+void FutharkStream<double>::mul()
+{
   futhark_free_f64_1d(this->ctx, (futhark_f64_1d*)this->b);
   futhark_entry_f64_mul(this->ctx, (futhark_f64_1d**)&this->b, (futhark_f64_1d*)this->c);
   futhark_context_sync(this->ctx);
 }
 
 template <>
-void FutharkStream<float>::add() {
+void FutharkStream<float>::add()
+{
   futhark_free_f32_1d(this->ctx, (futhark_f32_1d*)this->c);
   futhark_entry_f32_add(this->ctx, (futhark_f32_1d**)&this->c, (futhark_f32_1d*)this->a, (futhark_f32_1d*)this->b);
   futhark_context_sync(this->ctx);
 }
 
 template <>
-void FutharkStream<double>::add() {
+void FutharkStream<double>::add()
+{
   futhark_free_f64_1d(this->ctx, (futhark_f64_1d*)this->c);
   futhark_entry_f64_add(this->ctx, (futhark_f64_1d**)&this->c, (futhark_f64_1d*)this->a, (futhark_f64_1d*)this->b);
   futhark_context_sync(this->ctx);
 }
 
 template <>
-void FutharkStream<float>::triad() {
+void FutharkStream<float>::triad()
+{
   futhark_free_f32_1d(this->ctx, (futhark_f32_1d*)this->c);
   futhark_entry_f32_triad(this->ctx, (futhark_f32_1d**)&this->c, (futhark_f32_1d*)this->a, (futhark_f32_1d*)this->b);
   futhark_context_sync(this->ctx);
 }
 
 template <>
-void FutharkStream<double>::triad() {
+void FutharkStream<double>::triad()
+{
   futhark_free_f64_1d(this->ctx, (futhark_f64_1d*)this->a);
   futhark_entry_f64_triad(this->ctx, (futhark_f64_1d**)&this->a, (futhark_f64_1d*)this->b, (futhark_f64_1d*)this->c);
   futhark_context_sync(this->ctx);
 }
 
 template <>
-void FutharkStream<float>::nstream() {
+void FutharkStream<float>::nstream()
+{
   futhark_f32_1d* d;
   futhark_entry_f32_triad(this->ctx, &d, (futhark_f32_1d*)this->a, (futhark_f32_1d*)this->b);
   futhark_free_f32_1d(this->ctx, (futhark_f32_1d*)this->c);
@@ -193,7 +205,8 @@ void FutharkStream<float>::nstream() {
 }
 
 template <>
-void FutharkStream<double>::nstream() {
+void FutharkStream<double>::nstream()
+{
   futhark_f64_1d* d;
   futhark_entry_f64_triad(this->ctx, &d, (futhark_f64_1d*)this->a, (futhark_f64_1d*)this->b);
   futhark_free_f64_1d(this->ctx, (futhark_f64_1d*)this->c);
@@ -202,7 +215,8 @@ void FutharkStream<double>::nstream() {
 }
 
 template <>
-float FutharkStream<float>::dot() {
+float FutharkStream<float>::dot()
+{
   float res;
   futhark_entry_f32_dot(this->ctx, &res, (futhark_f32_1d*)this->a, (futhark_f32_1d*)this->b);
   futhark_context_sync(this->ctx);
@@ -210,7 +224,8 @@ float FutharkStream<float>::dot() {
 }
 
 template <>
-double FutharkStream<double>::dot() {
+double FutharkStream<double>::dot()
+{
   double res;
   futhark_entry_f64_dot(this->ctx, &res, (futhark_f64_1d*)this->a, (futhark_f64_1d*)this->b);
   futhark_context_sync(this->ctx);

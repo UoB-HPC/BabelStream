@@ -29,19 +29,19 @@ class CUDAStream : public Stream<T>
     intptr_t dot_num_blocks;
 
     // Host array for partial sums for dot kernel
-    T *sums;
+    T* sums;
 
     // Device side pointers to arrays
-    T *d_a;
-    T *d_b;
-    T *d_c;
+    T* d_a;
+    T* d_b;
+    T* d_c;
 
     // If UVM is disabled, host arrays for verification purposes
     std::vector<T> h_a, h_b, h_c;
 
   public:
     CUDAStream(BenchId bs, const intptr_t array_size, const int device_id,
-	       T initA, T initB, T initC);
+        T initA, T initB, T initC);
     ~CUDAStream();
 
     void copy() override;
