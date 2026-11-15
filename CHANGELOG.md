@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - `sycl2020-usm` defaults to device USM (`MEM=DEFAULT`), matching `cuda` and `hip`; shared USM moves to `MEM=MANAGED` (#226)
 - Fix `sycl2020-acc` and `sycl2020-usm` `dot` with AdaptiveCpp, which accumulated across calls
 - Fix `ocl` not finding the OpenCL library unless `OpenCL_LIBRARY` was set
+- Fix `ocl` `dot` failing on CPU devices without FP64 and on devices whose kernel work-group limit is below the device limit, such as rusticl's llvmpipe and radeonsi
 - Upgrade to Kokkos 5 (#215)
 - Bump all Rust dependencies and migrate to stable Rust
 - Fix Rust `dot` validation in single precision, which always failed (#20)

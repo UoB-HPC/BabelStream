@@ -129,7 +129,9 @@ OCLStream<T>::OCLStream(BenchId bs, const intptr_t array_size, const int device_
   // Determine sensible dot kernel NDRange configuration
   if (device.getInfo<CL_DEVICE_TYPE>() & CL_DEVICE_TYPE_CPU) {
     dot_num_groups = device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
-    dot_wgsize = device.getInfo<CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE>() * 2;
+    cl_uint width = sizeof(T) == sizeof(double) ? device.getInfo<CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE>()
+                                                : device.getInfo<CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT>();
+    dot_wgsize = width * 2;
   } else {
     dot_num_groups = device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() * 4;
     dot_wgsize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
@@ -138,7 +140,6 @@ OCLStream<T>::OCLStream(BenchId bs, const intptr_t array_size, const int device_
   // Print out device information
   std::cout << "Using OpenCL device " << getDeviceName(device_index) << std::endl;
   std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
-  std::cout << "Reduction kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
 
   context = cl::Context(device);
   queue = cl::CommandQueue(context);
@@ -173,6 +174,9 @@ OCLStream<T>::OCLStream(BenchId bs, const intptr_t array_size, const int device_
   triad_kernel = new cl::KernelFunctor<Array, Array, Array>(program, "triad");
   nstream_kernel = new cl::KernelFunctor<Array, Array, Array>(program, "nstream");
   dot_kernel = new cl::KernelFunctor<Array, Array, cl::Buffer, cl::LocalSpaceArg, cl_long>(program, "stream_dot");
+
+  dot_wgsize = std::min(dot_wgsize, dot_kernel->getKernel().template getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(device));
+  std::cout << "Reduction kernel config: " << dot_num_groups << " groups of size " << dot_wgsize << std::endl;
 
 #if !defined(OCL_DISABLE_MEMORY_CHECK) && !defined(SVM_SYSTEM)
   // Check buffers fit on the device
