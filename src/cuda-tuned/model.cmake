@@ -9,10 +9,6 @@ register_flag_optional(MEM "Device memory mode:
         PAGEFAULT - shared memory, only host pointers allocated."
         "DEFAULT")
 
-register_flag_optional(STRIDE "Kernel stride: GRID_STRIDE or BLOCK_STRIDE" "GRID_STRIDE")
-
-register_flag_optional(UNROLL_FACTOR "Kernel unroll factor:" "4")
-
 
 register_flag_required(CMAKE_CUDA_COMPILER
         "Path to the CUDA nvcc compiler")
@@ -27,6 +23,7 @@ register_flag_optional(CUDA_EXTRA_FLAGS
 
 
 macro(setup)
+    set(CMAKE_CXX_STANDARD 17)
 
     # XXX CMake 3.18 supports CMAKE_CUDA_ARCHITECTURES/CUDA_ARCHITECTURES but we support older CMakes
     # CUDA_ARCH is passed to nvcc directly, so turn CMake's architecture flags off
@@ -36,13 +33,13 @@ macro(setup)
     endif()
 
     enable_language(CUDA)
-    register_definitions(${MEM})
-    register_definitions(${STRIDE})
+    # DEFAULT is the fallback in the source, and a DEFAULT macro clashes with CCCL headers
+    if (NOT MEM STREQUAL "DEFAULT")
+        register_definitions(${MEM})
+    endif ()
 
     # add -forward-unknown-to-host-compiler for compatibility reasons
-    # add --extended-lambda for device-lambdas
-    set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler" "-arch=${CUDA_ARCH}"
-      "--extended-lambda" "-DUNROLL_FACTOR=${UNROLL_FACTOR}" ${CUDA_EXTRA_FLAGS})
+    set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler" "-arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
     string(REPLACE ";" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
     # Link against the NVIDIA Management Library for device information
