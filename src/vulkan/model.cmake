@@ -36,7 +36,6 @@ macro(setup_target NAME)
     file(MAKE_DIRECTORY "${_shader_dir}/float")
     file(MAKE_DIRECTORY "${_shader_dir}/double")
 
-    set(_entries initShader copyShader mulShader addShader triadShader nstreamShader dotShader)
     set(_outputs)
 
     foreach (_precision IN ITEMS float double)
@@ -48,25 +47,30 @@ macro(setup_target NAME)
 
         # Embed SPIR-V shader into a C file compiled into the test binary, this is
         # less fragile for the user than reading from disk at runtime.
-        foreach (_entry IN LISTS _entries)
-            set(_out "${_shader_dir}/${_precision}/${_entry}.spv.h")
-            add_custom_command(
-                OUTPUT "${_out}"
-                COMMAND "${_slangc}"
-                        "${_shader_src}"
-                        -target spirv
-                        -profile spirv_1_5
-                        -stage compute
-                        -entry "${_entry}"
-                        -DUSE_DOUBLE=${_use_double}
-                        -source-embed-style u32
-                        -source-embed-name "${_entry}_${_precision}"
-                        -o "${_out}"
-                DEPENDS "${_shader_src}"
-                VERBATIM
-            )
-            list(APPEND _outputs "${_out}")
-        endforeach ()
+        set(_out "${_shader_dir}/${_precision}_shader.spv.h")
+        add_custom_command(
+            OUTPUT "${_out}"
+            COMMAND "${_slangc}"
+                    "${_shader_src}"
+                    -target spirv
+                    -profile spirv_1_5
+                    -fvk-use-entrypoint-name
+                    -entry "initShader"
+                    -entry "copyShader"
+                    -entry "mulShader"
+                    -entry "addShader"
+                    -entry "triadShader"
+                    -entry "nstreamShader"
+                    -entry "dotShader"
+                    -DUSE_DOUBLE=${_use_double}
+                    -source-embed-style u32
+                    -source-embed-name "shader_${_precision}"
+                    -o "${_out}"
+            DEPENDS "${_shader_src}"
+            VERBATIM
+        )
+        list(APPEND _outputs "${_out}")
+
     endforeach ()
 
     add_custom_target(${NAME}_slang_shaders DEPENDS ${_outputs})

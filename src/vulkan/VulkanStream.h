@@ -45,16 +45,6 @@ struct Pipelines {
   vk::raii::Pipeline dot{nullptr};
 };
 
-enum class ShaderKernel {
-  INIT = 0,
-  COPY = 1,
-  MUL = 2,
-  ADD = 3,
-  TRIAD = 4,
-  NSTREAM = 5,
-  DOT = 6
-};
-
 template <class T> class VulkanStream : public Stream<T> {
 public:
   // Interface constructor and destructor
@@ -126,8 +116,7 @@ private:
   // Helper function for creating vulkan compute pipelines for each device
   // operation using the appropriate SPIR-V shader
   void createPipelines();
-  std::pair<size_t, const uint32_t *> readShader(const ShaderKernel) const;
-  vk::raii::Pipeline createPipeline(const ShaderKernel);
+  vk::raii::Pipeline createPipeline(const char *entry);
 
   // Helper functions for create Vulkan buffers backend by memory
   void createBuffers();

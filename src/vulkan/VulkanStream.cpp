@@ -5,20 +5,8 @@
 
 #include "VulkanStream.h"
 
-#include "double/addShader.spv.h"
-#include "double/copyShader.spv.h"
-#include "double/dotShader.spv.h"
-#include "double/initShader.spv.h"
-#include "double/mulShader.spv.h"
-#include "double/nstreamShader.spv.h"
-#include "double/triadShader.spv.h"
-#include "float/addShader.spv.h"
-#include "float/copyShader.spv.h"
-#include "float/dotShader.spv.h"
-#include "float/initShader.spv.h"
-#include "float/mulShader.spv.h"
-#include "float/nstreamShader.spv.h"
-#include "float/triadShader.spv.h"
+#include "double_shader.spv.h"
+#include "float_shader.spv.h"
 
 #include <algorithm>
 #include <array>
@@ -415,54 +403,13 @@ Buffer VulkanStream<T>::createBuffer(vk::DeviceSize size,
 }
 
 template <class T>
-std::pair<size_t, const uint32_t *>
-VulkanStream<T>::readShader(const ShaderKernel entry) const {
+vk::raii::Pipeline VulkanStream<T>::createPipeline(const char *entry) {
   constexpr bool useDouble = sizeof(T) == sizeof(double);
-  switch (entry) {
-  case ShaderKernel::INIT:
-    return useDouble
-               ? std::make_pair(initShader_double_sizeInBytes,
-                                initShader_double)
-               : std::make_pair(initShader_float_sizeInBytes, initShader_float);
-  case ShaderKernel::COPY:
-    return useDouble
-               ? std::make_pair(copyShader_double_sizeInBytes,
-                                copyShader_double)
-               : std::make_pair(copyShader_float_sizeInBytes, copyShader_float);
-  case ShaderKernel::MUL:
-    return useDouble
-               ? std::make_pair(mulShader_double_sizeInBytes, mulShader_double)
-               : std::make_pair(mulShader_float_sizeInBytes, mulShader_float);
-  case ShaderKernel::ADD:
-    return useDouble
-               ? std::make_pair(addShader_double_sizeInBytes, addShader_double)
-               : std::make_pair(addShader_float_sizeInBytes, addShader_float);
-  case ShaderKernel::TRIAD:
-    return useDouble ? std::make_pair(triadShader_double_sizeInBytes,
-                                      triadShader_double)
-                     : std::make_pair(triadShader_float_sizeInBytes,
-                                      triadShader_float);
-  case ShaderKernel::NSTREAM:
-    return useDouble ? std::make_pair(nstreamShader_double_sizeInBytes,
-                                      nstreamShader_double)
-                     : std::make_pair(nstreamShader_float_sizeInBytes,
-                                      nstreamShader_float);
-  case ShaderKernel::DOT:
-    return useDouble
-               ? std::make_pair(dotShader_double_sizeInBytes, dotShader_double)
-               : std::make_pair(dotShader_float_sizeInBytes, dotShader_float);
-  default:
-    throw std::runtime_error("Unexpected shader requested to create pipeline");
-  }
-}
-
-template <class T>
-vk::raii::Pipeline VulkanStream<T>::createPipeline(const ShaderKernel entry) {
-  auto [spirvSize, spirvBinary] = readShader(entry);
 
   vk::ShaderModuleCreateInfo moduleInfo;
-  moduleInfo.codeSize = spirvSize;
-  moduleInfo.pCode = spirvBinary;
+  moduleInfo.codeSize =
+      useDouble ? shader_double_sizeInBytes : shader_float_sizeInBytes;
+  moduleInfo.pCode = useDouble ? shader_double : shader_float;
   vk::raii::ShaderModule shaderModule = _device.createShaderModule(moduleInfo);
 
   // Specialization constants that must match ids in shader module
@@ -498,7 +445,7 @@ vk::raii::Pipeline VulkanStream<T>::createPipeline(const ShaderKernel entry) {
       sizeof(SpecializationBuffer), &specializationData);
 
   vk::PipelineShaderStageCreateInfo stageInfo(
-      {}, vk::ShaderStageFlagBits::eCompute, shaderModule, "main");
+      {}, vk::ShaderStageFlagBits::eCompute, shaderModule, entry);
   stageInfo.pSpecializationInfo = &specializationInfo;
 
   vk::ComputePipelineCreateInfo pipelineInfo({}, stageInfo, _pipelineLayout);
@@ -507,13 +454,13 @@ vk::raii::Pipeline VulkanStream<T>::createPipeline(const ShaderKernel entry) {
 }
 
 template <class T> void VulkanStream<T>::createPipelines() {
-  _pipelines.init = createPipeline(ShaderKernel::INIT);
-  _pipelines.copy = createPipeline(ShaderKernel::COPY);
-  _pipelines.mul = createPipeline(ShaderKernel::MUL);
-  _pipelines.add = createPipeline(ShaderKernel::ADD);
-  _pipelines.triad = createPipeline(ShaderKernel::TRIAD);
-  _pipelines.nstream = createPipeline(ShaderKernel::NSTREAM);
-  _pipelines.dot = createPipeline(ShaderKernel::DOT);
+  _pipelines.init = createPipeline("initShader");
+  _pipelines.copy = createPipeline("copyShader");
+  _pipelines.mul = createPipeline("mulShader");
+  _pipelines.add = createPipeline("addShader");
+  _pipelines.triad = createPipeline("triadShader");
+  _pipelines.nstream = createPipeline("nstreamShader");
+  _pipelines.dot = createPipeline("dotShader");
 }
 
 template <class T> void VulkanStream<T>::writeDescriptorSets() {
