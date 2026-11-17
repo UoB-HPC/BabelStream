@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -68,9 +69,6 @@ private:
   // Members initialized from constructor
   int _deviceIndex;
   intptr_t _arraySize;
-  T _initA;
-  T _initB;
-  T _initC;
 
   // Members tracking the execution grid to use for compute kernel dispatch
   uint32_t _workgroupSize{128};
@@ -137,7 +135,8 @@ private:
   // Helper function for launching a compute pipeline and waiting for it to
   // complete
   void dispatch(const vk::Pipeline &pipeline,
-                const std::vector<vk::BufferMemoryBarrier> &barriers);
+                const std::vector<vk::BufferMemoryBarrier> &barriers,
+                const std::array<T, 3> *pushConstants = nullptr);
 
   // Helper function for copying device memory back to host
   void copyDeviceToHost(const Buffer &src, std::vector<T> &dst);

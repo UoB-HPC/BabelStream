@@ -12,10 +12,16 @@ typedef float StreamType;
 [vk::constant_id(0)] const uint WORKGROUP_SIZE = 128;
 [vk::constant_id(1)] const uint ELEMENT_COUNT = 0;
 [vk::constant_id(2)] const uint DOT_GRID_SIZE = 0;
-[vk::constant_id(3)] const StreamType INIT_A = 0;
-[vk::constant_id(4)] const StreamType INIT_B = 0;
-[vk::constant_id(5)] const StreamType INIT_C = 0;
-[vk::constant_id(6)] const StreamType SCALAR = 0;
+[vk::constant_id(3)] const StreamType SCALAR = 0;
+
+struct InitValues
+{
+    StreamType a;
+    StreamType b;
+    StreamType c;
+};
+
+[[vk::push_constant]] ConstantBuffer<InitValues> gInit;
 
 [[vk::binding(0, 0)]] RWStructuredBuffer<StreamType> gA;
 [[vk::binding(1, 0)]] RWStructuredBuffer<StreamType> gB;
@@ -29,9 +35,9 @@ groupshared StreamType scratch[WORKGROUP_SIZE];
 void initShader(uint3 tid : SV_DispatchThreadID)
 {
     if (tid.x >= ELEMENT_COUNT) return;
-    gA[tid.x] = INIT_A;
-    gB[tid.x] = INIT_B;
-    gC[tid.x] = INIT_C;
+    gA[tid.x] = gInit.a;
+    gB[tid.x] = gInit.b;
+    gC[tid.x] = gInit.c;
 }
 
 [shader("compute")]

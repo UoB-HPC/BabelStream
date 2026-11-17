@@ -169,9 +169,8 @@ VulkanDevices::VulkanDevices() {
 
 template <class T>
 VulkanStream<T>::VulkanStream(BenchId, const intptr_t array_size,
-                              const int device_index, T initA, T initB, T initC)
-    : _deviceIndex(device_index), _arraySize(array_size), _initA(initA),
-      _initB(initB), _initC(initC) {
+                              const int device_index, T, T, T)
+    : _deviceIndex(device_index), _arraySize(array_size) {
   const auto &physicalDevices = _devices.physicalDevices;
   if (physicalDevices.empty()) {
     throw std::runtime_error("No Vulkan physical devices found");
@@ -299,7 +298,11 @@ VulkanStream<T>::VulkanStream(BenchId, const intptr_t array_size,
 
   _descriptorSetLayout = vk::raii::DescriptorSetLayout(_device, setLayoutInfo);
 
-  vk::PipelineLayoutCreateInfo pipelineLayoutInfo({}, *_descriptorSetLayout);
+  // The init kernel reads its initial A, B and C values from push constants
+  vk::PushConstantRange pushRange{vk::ShaderStageFlagBits::eCompute, 0,
+                                  3 * sizeof(T)};
+  vk::PipelineLayoutCreateInfo pipelineLayoutInfo({}, *_descriptorSetLayout,
+                                                  pushRange);
   _pipelineLayout = vk::raii::PipelineLayout(_device, pipelineLayoutInfo);
 
   vk::DescriptorPoolSize poolSize;
@@ -422,28 +425,20 @@ vk::raii::Pipeline VulkanStream<T>::createPipeline(const char *entry) {
     uint32_t workgroupSize; // spec constant id 0
     uint32_t elementCount;  // spec constant id 1
     uint32_t dotGridSize;   // spec constant id 2
-    T initA;                // spec constant id 3
-    T initB;                // spec constant id 4
-    T initC;                // spec constant id 5
-    T scalar;               // spec constant id 6
+    T scalar;               // spec constant id 3
   };
 
-  const std::array<vk::SpecializationMapEntry, 7> specializationMap{{
+  const std::array<vk::SpecializationMapEntry, 4> specializationMap{{
       {0, offsetof(SpecializationBuffer, workgroupSize), sizeof(uint32_t)},
       {1, offsetof(SpecializationBuffer, elementCount), sizeof(uint32_t)},
       {2, offsetof(SpecializationBuffer, dotGridSize), sizeof(uint32_t)},
-      {3, offsetof(SpecializationBuffer, initA), sizeof(T)},
-      {4, offsetof(SpecializationBuffer, initB), sizeof(T)},
-      {5, offsetof(SpecializationBuffer, initC), sizeof(T)},
-      {6, offsetof(SpecializationBuffer, scalar), sizeof(T)},
+      {3, offsetof(SpecializationBuffer, scalar), sizeof(T)},
   }};
 
   const uint32_t dotDispatchElems = _dotNumDispatchGroups * _workgroupSize;
-  SpecializationBuffer specializationData{
-      _workgroupSize,   static_cast<uint32_t>(_arraySize),
-      dotDispatchElems, _initA,
-      _initB,           _initC,
-      T(startScalar)};
+  SpecializationBuffer specializationData{_workgroupSize,
+                                          static_cast<uint32_t>(_arraySize),
+                                          dotDispatchElems, T(startScalar)};
 
   vk::SpecializationInfo specializationInfo(
       specializationMap.size(), specializationMap.data(),
@@ -522,13 +517,19 @@ template <class T> vk::raii::CommandBuffer &VulkanStream<T>::beginCommands() {
 template <class T>
 void VulkanStream<T>::dispatch(
     const vk::Pipeline &pipeline,
-    const std::vector<vk::BufferMemoryBarrier> &barriers) {
+    const std::vector<vk::BufferMemoryBarrier> &barriers,
+    const std::array<T, 3> *pushConstants) {
   // Dispatches a command-buffer with a single compute pipeline command
-  auto &cmd = beginCommands();
+  vk::raii::CommandBuffer &cmd = beginCommands();
 
   cmd.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline);
   cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *_pipelineLayout, 0,
                          {*descriptorSets.front()}, {});
+
+  if (pushConstants) {
+    cmd.pushConstants<T>(*_pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0,
+                         *pushConstants);
+  }
 
   if (!barriers.empty()) {
     cmd.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
@@ -607,7 +608,7 @@ template <class T> T VulkanStream<T>::dot() {
   // buffer which an element for each workgroup in the dispatch. The second
   // command in the command-buffer then copies from the device side buffer
   // to a host visible and coherent staging buffer.
-  auto &cmd = beginCommands();
+  vk::raii::CommandBuffer &cmd = beginCommands();
 
   cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *_pipelines.dot);
   cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *_pipelineLayout, 0,
@@ -656,16 +657,11 @@ template <class T> T VulkanStream<T>::dot() {
 
 template <class T>
 void VulkanStream<T>::init_arrays(T initA, T initB, T initC) {
-  // These values match those set on VulkanStream object construction where they
-  // are embedded in the device code as specialization constants
-  (void)initA;
-  (void)initB;
-  (void)initC;
-
   // The init kernel is the first kernel executed and writes to buffers A,B,C
-  // based on device side values.
+  // using the initial values passed as push constants.
   std::vector<vk::BufferMemoryBarrier> barriers;
-  dispatch(*_pipelines.init, barriers);
+  const std::array<T, 3> initValues{initA, initB, initC};
+  dispatch(*_pipelines.init, barriers, &initValues);
 
   _bufferA.state = vk::AccessFlagBits::eShaderWrite;
   _bufferB.state = vk::AccessFlagBits::eShaderWrite;
@@ -678,7 +674,7 @@ void VulkanStream<T>::copyDeviceToHost(const Buffer &src, std::vector<T> &dst) {
 
   // Create and submit a command-buffer with a copy command that will copy our
   // device buffer into the staging buffer which is host visible & coherent.
-  auto &cmd = beginCommands();
+  vk::raii::CommandBuffer &cmd = beginCommands();
 
   vk::BufferMemoryBarrier computeToTransfer(
       src.state, vk::AccessFlagBits::eTransferRead, VK_QUEUE_FAMILY_IGNORED,
