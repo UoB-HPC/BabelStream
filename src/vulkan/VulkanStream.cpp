@@ -226,11 +226,16 @@ VulkanStream<T>::VulkanStream(BenchId, const intptr_t array_size,
         "Vulkan device cannot expose a large enough execution grid.");
   }
 
-  // Vulkan does not provide a way to query the parallel unit count like
-  // `CL_DEVICE_MAX_COMPUTE_UNITS` int OpenCL or `multiProcessorCount` in CUDA.
-  // We therefore hardcode a workgroup count for DOT that enables enough work to
-  // be done per thread to take advantage of the strided access loops.
-  _dotNumDispatchGroups = std::min(64u, _numDispatchGroups);
+  // Vulkan does not provide a portable way to query the parallel unit count
+  // like `CL_DEVICE_MAX_COMPUTE_UNITS` in OpenCL or `multiProcessorCount` in
+  // CUDA, only vendor extensions (e.g. VK_NV_shader_sm_builtins) do. We
+  // therefore use a fixed workgroup count for DOT that gives each thread enough
+  // work to take advantage of the strided access loop while leaving plenty of
+  // groups per compute unit. Some devices (e.g. Intel Arc A750) lose bandwidth
+  // with fewer, while others (e.g. NVIDIA, Intel Arc iGPU) are insensitive to
+  // anything between 16 and 256 groups.
+  constexpr uint32_t dotTargetGroups = 256;
+  _dotNumDispatchGroups = std::min(dotTargetGroups, _numDispatchGroups);
 
   std::cout << "Using Vulkan device "
             << physicalDevice.getProperties().deviceName << std::endl;
