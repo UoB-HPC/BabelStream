@@ -14,6 +14,10 @@
 # The recommended way to install the VulkanSDK on Linux is by tarball, which
 # also provides the VulkanHpp headers. This model has been tested building
 # against VulkanSDK version 1.4.341.1 and later.
+#
+# Alternatively, use -DFETCH_VULKAN_HEADERS=ON to download the Vulkan-Headers
+# (version set by -DFETCH_VULKAN_HEADERS_VERSION) instead of using an installed
+# SDK. slangc is still needed, via SLANGC_EXECUTABLE.
 register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that is supported by CMake detection"
         "c++")
@@ -22,14 +26,38 @@ register_flag_optional(SLANGC_EXECUTABLE
         "Path to the slangc compiler executable"
         "slangc")
 
+option(FETCH_VULKAN_HEADERS "Fetch (download) the Vulkan-Headers library, which provides VulkanHpp.
+                             This uses CMake's FetchContent feature. The Vulkan loader is opened at
+                             runtime, so no Vulkan SDK is needed at build time (slangc is still required).
+                             Specify version by setting FETCH_VULKAN_HEADERS_VERSION" OFF)
+set(FETCH_VULKAN_HEADERS_VERSION "v1.4.341" CACHE STRING
+        "Specify version of Vulkan-Headers to use if FETCH_VULKAN_HEADERS is ON")
+
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)
-    find_package(Vulkan REQUIRED)
-    register_link_library(Vulkan::Vulkan)
+    if (FETCH_VULKAN_HEADERS)
+        FetchContent_Declare(
+                vulkan_headers
+                URL "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/${FETCH_VULKAN_HEADERS_VERSION}.zip"
+        )
+        FetchContent_MakeAvailable(vulkan_headers)
+        # vk::raii opens the Vulkan loader with dlopen, so don't link libvulkan
+        register_link_library(Vulkan::Headers ${CMAKE_DL_LIBS})
+    else ()
+        find_package(Vulkan REQUIRED)
+        register_link_library(Vulkan::Vulkan)
+    endif ()
 endmacro()
 
 macro(setup_target NAME)
-    find_program(_slangc NAMES "${SLANGC_EXECUTABLE}" REQUIRED)
+    # find_program caches its result, so clear it to re-search on reconfigure
+    unset(_slangc CACHE)
+    find_program(_slangc NAMES "${SLANGC_EXECUTABLE}")
+    if (NOT _slangc)
+        message(FATAL_ERROR
+                "Could not find slangc using SLANGC_EXECUTABLE='${SLANGC_EXECUTABLE}'. "
+                "Set -DSLANGC_EXECUTABLE to the path of the slangc compiler binary.")
+    endif ()
 
     set(_shader_src "${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/shaders.slang")
     set(_shader_dir "${CMAKE_CURRENT_BINARY_DIR}/vulkan-shaders")

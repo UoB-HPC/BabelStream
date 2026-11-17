@@ -43,7 +43,7 @@ VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
   return vk::False;
 }
 
-uint32_t selectQueueFamily(const vk::PhysicalDevice &device) {
+uint32_t selectQueueFamily(const vk::raii::PhysicalDevice &device) {
   const auto families = device.getQueueFamilyProperties();
 
   // Prefer dedicated compute queues if possible
