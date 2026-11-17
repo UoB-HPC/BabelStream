@@ -35,6 +35,8 @@
 #include "SerialStream.h"
 #elif defined(FUTHARK)
 #include "FutharkStream.h"
+#elif defined(VULKAN)
+#include "VulkanStream.h"
 #endif
 
 template <typename T, typename...Args>
@@ -102,6 +104,10 @@ std::unique_ptr<Stream<T>> make_stream(Args... args) {
 #elif defined(FUTHARK)
   // Use the Futhark implementation
   return std::make_unique<FutharkStream<T>>(args...);
+
+#elif defined(VULKAN)
+  // Use the Vulkan implementation
+  return std::make_unique<VulkanStream<T>>(args...);
 
 #else
 

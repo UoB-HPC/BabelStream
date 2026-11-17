@@ -81,6 +81,13 @@ jobs:
           - {variant: "adaptivecpp-sycl2020-usm", model: "sycl2020-usm", cmake_args: "-DSYCL_COMPILER=AdaptiveCpp -DSYCL_COMPILER_DIR=/opt/adaptivecpp", toolchain: *adaptivecpp}
           - {variant: "adaptivecpp-std-data", model: "std-data", cmake_args: "-DCMAKE_CXX_COMPILER=/opt/adaptivecpp/bin/acpp -DACPP_OFFLOAD=ON", toolchain: *adaptivecpp}
           - {variant: "adaptivecpp-pcuda", model: "cuda", cmake_args: "-DACPP_PCUDA_DRIVER=ON -DCMAKE_CXX_COMPILER=/opt/adaptivecpp/bin/acpp -DCMAKE_CUDA_COMPILER=/opt/adaptivecpp/bin/acpp -DCUDA_ARCH=sm_80 -DCUDA_EXTRA_FLAGS=--acpp-targets=generic", toolchain: *adaptivecpp}
+          - {variant: "vulkan-lavapipe", model: "vulkan", vulkan_sdk_version: "1.4.341.1", vulkan_sdk_sha256: "3bf0f762afb6c79bc6a9d9fb5998745ccff928800a29619b501ed9de7fd9789b",
+              cmake_args: "-DSLANGC_EXECUTABLE=/opt/vulkan-sdk/x86_64/bin/slangc", model_packages: "mesa-vulkan-drivers xz-utils", toolchain: &vulkan {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
+              cc: "gcc", cxx: "g++", env_script: ".github/ci/vulkan-env.sh"}}
+          - {variant: "vulkan-lavapipe-debug", model: "vulkan", vulkan_sdk_version: "1.4.341.1", vulkan_sdk_sha256: "3bf0f762afb6c79bc6a9d9fb5998745ccff928800a29619b501ed9de7fd9789b",
+              cmake_args: "-DCMAKE_BUILD_TYPE=Debug -DSLANGC_EXECUTABLE=/opt/vulkan-sdk/x86_64/bin/slangc", model_packages: "mesa-vulkan-drivers xz-utils", toolchain: *vulkan}
+          - {variant: "vulkan-lavapipe-fetch-headers", model: "vulkan", vulkan_sdk_version: "1.4.341.1", vulkan_sdk_sha256: "3bf0f762afb6c79bc6a9d9fb5998745ccff928800a29619b501ed9de7fd9789b",
+              cmake_args: "-DFETCH_VULKAN_HEADERS=ON -DSLANGC_EXECUTABLE=/opt/vulkan-sdk/x86_64/bin/slangc", model_packages: "mesa-vulkan-drivers xz-utils", toolchain: *vulkan}
           - {variant: "futhark", model: "futhark", futhark_ref: "v0.28.1", futhark_sha256: "044a8ef2f55e3a8eb18d367dfa85438e958e61dedfd0f6621b507eb9d6fff281",
               cmake_args: "-DFUTHARK_COMPILER=/opt/futhark/bin/futhark -DFUTHARK_BACKEND=multicore", model_packages: "xz-utils", toolchain: {architectures: [x86_64], image: "docker.io/library/ubuntu:24.04",
               cc: "gcc", cxx: "g++"}}

@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Fortran with gfortran can offload OpenMP target and OpenACC builds via `OFFLOAD=nvptx-none` or `OFFLOAD=amdgcn-amdhsa`, with an optional `OFFLOAD_ARCH` (e.g. `sm_80`, `gfx90a`)
 - `ocl` memory capacity checks can be disabled with `OCL_DISABLE_MEMORY_CHECK` (#183)
 - `cuda` supports clang as the CUDA compiler via `CUDA_CLANG_DRIVER=ON` (#191)
+- New `vulkan` model using the compute capabilities in the Khronos Vulkan API. (#227)
 
 ### Removed
 - Remove support for ComputeCpp compiler
