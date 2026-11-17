@@ -68,6 +68,18 @@ if [[ -n ${CI_FUTHARK_REF:-} ]]; then
   rm -rf "$futhark_build"
 fi
 
+if [[ -n ${CI_VULKAN_SDK_VERSION:-} ]]; then
+  vulkan_build=$(mktemp -d)
+  printf 'Downloading Vulkan SDK %s\n' "$CI_VULKAN_SDK_VERSION"
+  curl "${curl_options[@]}" \
+    "https://sdk.lunarg.com/sdk/download/${CI_VULKAN_SDK_VERSION}/linux/vulkansdk-linux-x86_64-${CI_VULKAN_SDK_VERSION}.tar.xz" \
+    -o "$vulkan_build/vulkansdk.tar.xz"
+  echo "$CI_VULKAN_SDK_SHA256" " $vulkan_build/vulkansdk.tar.xz" | sha256sum --check
+  mkdir -p /opt/vulkan-sdk
+  tar -xJf "$vulkan_build/vulkansdk.tar.xz" -C /opt/vulkan-sdk --strip-components=1
+  rm -rf "$vulkan_build"
+fi
+
 if [[ -n ${CI_ENV_SCRIPT:-} ]]; then
   set +u # Vendor environment scripts may reference unset variables.
   # shellcheck disable=SC1090
