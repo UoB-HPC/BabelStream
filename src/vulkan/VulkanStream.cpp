@@ -280,6 +280,11 @@ VulkanStream<T>::VulkanStream(BenchId, const intptr_t array_size,
       vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueFamilyIndex};
   _commandPool = vk::raii::CommandPool(_device, poolInfo);
 
+  vk::CommandBufferAllocateInfo cmdAllocInfo{
+      *_commandPool, vk::CommandBufferLevel::ePrimary, 1};
+  auto commandBuffers = vk::raii::CommandBuffers(_device, cmdAllocInfo);
+  _commandBuffer = std::move(commandBuffers.front());
+
   std::array<vk::DescriptorSetLayoutBinding, _descriptorCount> bindings{};
   for (uint32_t i = 0; i < bindings.size(); ++i) {
     bindings[i].binding = i;
@@ -502,20 +507,24 @@ template <class T> void VulkanStream<T>::writeDescriptorSets() {
   _device.updateDescriptorSets(writes, {});
 }
 
+template <class T> vk::raii::CommandBuffer &VulkanStream<T>::beginCommands() {
+  // A command buffer is reused for every submission. This is only safe as
+  // each submit is followed by a queue wait idle, so it is never in flight when
+  // it is reset and re-recorded for a single submission.
+  _commandBuffer.reset();
+
+  vk::CommandBufferBeginInfo beginInfo;
+  beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+  _commandBuffer.begin(beginInfo);
+  return _commandBuffer;
+}
+
 template <class T>
 void VulkanStream<T>::dispatch(
     const vk::Pipeline &pipeline,
     const std::vector<vk::BufferMemoryBarrier> &barriers) {
   // Dispatches a command-buffer with a single compute pipeline command
-  vk::CommandBufferAllocateInfo allocInfo{*_commandPool,
-                                          vk::CommandBufferLevel::ePrimary, 1};
-
-  auto commands = vk::raii::CommandBuffers(_device, allocInfo);
-  auto &cmd = commands.front();
-
-  vk::CommandBufferBeginInfo beginInfo;
-  beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-  cmd.begin(beginInfo);
+  auto &cmd = beginCommands();
 
   cmd.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline);
   cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *_pipelineLayout, 0,
@@ -598,15 +607,7 @@ template <class T> T VulkanStream<T>::dot() {
   // buffer which an element for each workgroup in the dispatch. The second
   // command in the command-buffer then copies from the device side buffer
   // to a host visible and coherent staging buffer.
-  vk::CommandBufferAllocateInfo allocInfo{*_commandPool,
-                                          vk::CommandBufferLevel::ePrimary, 1};
-
-  auto commands = vk::raii::CommandBuffers(_device, allocInfo);
-  auto &cmd = commands.front();
-
-  vk::CommandBufferBeginInfo beginInfo;
-  beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-  cmd.begin(beginInfo);
+  auto &cmd = beginCommands();
 
   cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *_pipelines.dot);
   cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *_pipelineLayout, 0,
@@ -677,15 +678,7 @@ void VulkanStream<T>::copyDeviceToHost(const Buffer &src, std::vector<T> &dst) {
 
   // Create and submit a command-buffer with a copy command that will copy our
   // device buffer into the staging buffer which is host visible & coherent.
-  vk::CommandBufferAllocateInfo allocInfo{*_commandPool,
-                                          vk::CommandBufferLevel::ePrimary, 1};
-
-  auto commands = vk::raii::CommandBuffers(_device, allocInfo);
-  auto &cmd = commands.front();
-
-  vk::CommandBufferBeginInfo beginInfo;
-  beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-  cmd.begin(beginInfo);
+  auto &cmd = beginCommands();
 
   vk::BufferMemoryBarrier computeToTransfer(
       src.state, vk::AccessFlagBits::eTransferRead, VK_QUEUE_FAMILY_IGNORED,

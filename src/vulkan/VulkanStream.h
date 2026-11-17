@@ -92,6 +92,7 @@ private:
   vk::raii::Device _device{nullptr};
   vk::raii::Queue _queue{nullptr};
   vk::raii::CommandPool _commandPool{nullptr};
+  vk::raii::CommandBuffer _commandBuffer{nullptr};
   vk::raii::DescriptorSetLayout _descriptorSetLayout{nullptr};
   vk::raii::PipelineLayout _pipelineLayout{nullptr};
   vk::raii::DescriptorPool _descriptorPool{nullptr};
@@ -128,6 +129,10 @@ private:
 
   // Helper function for writing descriptor sets
   void writeDescriptorSets();
+
+  // Helper function for resetting and beginning recording of the shared command
+  // buffer
+  vk::raii::CommandBuffer &beginCommands();
 
   // Helper function for launching a compute pipeline and waiting for it to
   // complete
