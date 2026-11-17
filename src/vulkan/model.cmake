@@ -72,6 +72,4 @@ macro(setup_target NAME)
     add_custom_target(${NAME}_slang_shaders DEPENDS ${_outputs})
     add_dependencies(${NAME} ${NAME}_slang_shaders)
     target_include_directories(${NAME} PRIVATE ${_shader_dir})
-    # For VK_KHR_portability_subset
-    target_compile_definitions(${NAME} PRIVATE VK_ENABLE_BETA_EXTENSIONS)
 endmacro()

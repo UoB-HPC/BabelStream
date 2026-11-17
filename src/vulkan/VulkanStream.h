@@ -17,13 +17,12 @@
 
 // State that we need to create to list devices
 struct VulkanDevices {
+  vk::raii::Context context;
   vk::raii::Instance instance{nullptr};
   vk::raii::DebugUtilsMessengerEXT debugMessenger{nullptr};
-  vk::raii::Context context;
   std::vector<vk::raii::PhysicalDevice> physicalDevices;
 
   VulkanDevices();
-  ~VulkanDevices();
 };
 
 // Wrapper for Vulkan buffer objects and underlying memory
@@ -33,15 +32,6 @@ struct Buffer {
   vk::DeviceSize size{0};
   void *mapped{nullptr};
   vk::AccessFlagBits state{0};
-
-  void clear() {
-    if (mapped) {
-      memory.unmapMemory();
-      mapped = nullptr;
-    }
-    buffer = nullptr;
-    memory = nullptr;
-  }
 };
 
 // Wrapper for the Vulkan compute pipeline for each operation
@@ -53,16 +43,6 @@ struct Pipelines {
   vk::raii::Pipeline triad{nullptr};
   vk::raii::Pipeline nstream{nullptr};
   vk::raii::Pipeline dot{nullptr};
-
-  void clear() {
-    init = nullptr;
-    copy = nullptr;
-    mul = nullptr;
-    add = nullptr;
-    triad = nullptr;
-    nstream = nullptr;
-    dot = nullptr;
-  }
 };
 
 enum class ShaderKernel {
@@ -80,7 +60,6 @@ public:
   // Interface constructor and destructor
   VulkanStream(BenchId bs, intptr_t array_size, int device_id, T initA, T initB,
                T initC);
-  ~VulkanStream() override;
 
   // Interface functions for running operations on device
   void copy() override;
@@ -110,6 +89,11 @@ private:
 
   // Constant for the 4 descriptors we have for in the shader module
   static constexpr unsigned _descriptorCount = 4;
+
+  // Order of member declarations is important as we need to free the objects
+  // created from the logical device before the logical device itself. C++
+  // default destruction destroys elements in the reverse order they were
+  // created.
 
   // Holds Vulkan instance and enumerated physical devices
   VulkanDevices _devices;

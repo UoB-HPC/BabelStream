@@ -23,8 +23,6 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
-#include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <numeric>
 #include <stdexcept>
@@ -101,37 +99,33 @@ VulkanDevices::VulkanDevices() {
   appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   appInfo.pEngineName = "BabelStream";
   appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.apiVersion = vk::ApiVersion14;
+  appInfo.apiVersion = vk::ApiVersion13;
 
-  // Enable validation layer in debug builds
   std::vector<char const *> requiredLayers;
   std::vector<const char *> enabledExtensions;
   auto extProperties = context.enumerateInstanceExtensionProperties();
 #ifndef NDEBUG
-  requiredLayers.push_back("VK_LAYER_KHRONOS_validation");
-  enabledExtensions.push_back(vk::EXTDebugUtilsExtensionName);
-
-  for (auto const &ext : enabledExtensions) {
-    bool extUnsupported =
-        std::none_of(std::begin(extProperties), std::end(extProperties),
-                     [ext](auto const &extProperty) {
-                       return strcmp(extProperty.extensionName, ext) == 0;
-                     });
-    if (extUnsupported) {
-      throw std::runtime_error("Required Vulkan extension not supported");
-    }
+  // In debug builds, opportunistically enable the validation layer and debug
+  // utils extension. Both are optional and skipped if unavailable.
+  auto layerProperties = context.enumerateInstanceLayerProperties();
+  bool validationLayerSupported =
+      std::any_of(std::begin(layerProperties), std::end(layerProperties),
+                  [](auto const &layerProperty) {
+                    return strcmp(layerProperty.layerName,
+                                  "VK_LAYER_KHRONOS_validation") == 0;
+                  });
+  if (validationLayerSupported) {
+    requiredLayers.push_back("VK_LAYER_KHRONOS_validation");
   }
 
-  auto layerProperties = context.enumerateInstanceLayerProperties();
-  for (auto const &requiredLayer : requiredLayers) {
-    bool layerUnsupported = std::none_of(
-        std::begin(layerProperties), std::end(layerProperties),
-        [requiredLayer](auto const &layerProperty) {
-          return strcmp(layerProperty.layerName, requiredLayer) == 0;
-        });
-    if (layerUnsupported) {
-      throw std::runtime_error("Required Vulkan layer not supported");
-    }
+  bool debugUtilsSupported =
+      std::any_of(std::begin(extProperties), std::end(extProperties),
+                  [](auto const &extProperty) {
+                    return strcmp(extProperty.extensionName,
+                                  vk::EXTDebugUtilsExtensionName) == 0;
+                  });
+  if (debugUtilsSupported) {
+    enabledExtensions.push_back(vk::EXTDebugUtilsExtensionName);
   }
 #endif
 
@@ -161,7 +155,6 @@ VulkanDevices::VulkanDevices() {
 
 #ifndef NDEBUG
   vk::DebugUtilsMessageSeverityFlagsEXT severityFlags(
-      vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
       vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
       vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
   vk::DebugUtilsMessageTypeFlagsEXT messageTypeFlags(
@@ -171,21 +164,19 @@ VulkanDevices::VulkanDevices() {
   vk::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo{
       {}, severityFlags, messageTypeFlags, &debugCallback};
 
-  createInfo.pNext = &debugUtilsMessengerCreateInfo;
+  if (debugUtilsSupported) {
+    createInfo.pNext = &debugUtilsMessengerCreateInfo;
+  }
   instance = vk::raii::Instance(context, createInfo);
-  debugMessenger =
-      instance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfo);
+  if (debugUtilsSupported) {
+    debugMessenger =
+        instance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfo);
+  }
 #else
   instance = vk::raii::Instance(context, createInfo);
 #endif
 
   physicalDevices = instance.enumeratePhysicalDevices();
-}
-
-VulkanDevices::~VulkanDevices() {
-  physicalDevices.clear();
-  debugMessenger = nullptr;
-  instance = nullptr;
 }
 
 template <class T>
@@ -233,6 +224,13 @@ VulkanStream<T>::VulkanStream(BenchId, const intptr_t array_size,
   _workgroupSize = std::min(limits.maxComputeWorkGroupInvocations,
                             limits.maxComputeWorkGroupSize[0]);
 
+  // Dot compute shader assumes the workgroup size is a power of two,
+  // round down to largest power of two. `std::bit_floor` can be used here
+  // when project moves to C++20
+  while (_workgroupSize & (_workgroupSize - 1)) {
+    _workgroupSize &= _workgroupSize - 1;
+  }
+
   _numDispatchGroups = (_arraySize + _workgroupSize - 1) / _workgroupSize;
   if (_numDispatchGroups > limits.maxComputeWorkGroupCount[0]) {
     // We could workaround this threshold in future if we did multiple
@@ -272,11 +270,12 @@ VulkanStream<T>::VulkanStream(BenchId, const intptr_t array_size,
   bool portabilityExtSupported = std::any_of(
       std::begin(physicalDeviceExtensions), std::end(physicalDeviceExtensions),
       [](auto const &extProperty) {
-        return strcmp(extProperty.extensionName,
-                      VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME) == 0;
+        return strcmp(extProperty.extensionName, "VK_KHR_portability_subset") ==
+               0;
       });
+
+  const char *enabledExtension = "VK_KHR_portability_subset";
   if (portabilityExtSupported) {
-    const char *enabledExtension = VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME;
     deviceInfo.setEnabledExtensionCount(1);
     deviceInfo.setPpEnabledExtensionNames(&enabledExtension);
   }
@@ -328,25 +327,6 @@ VulkanStream<T>::VulkanStream(BenchId, const intptr_t array_size,
   createBuffers();
   writeDescriptorSets();
   createPipelines();
-}
-
-template <class T> VulkanStream<T>::~VulkanStream() {
-  // Order of destruction is important we need to free the objects
-  // created from the logical device before the logical device itself
-  _bufferA.clear();
-  _bufferB.clear();
-  _bufferC.clear();
-  _bufferPartial.clear();
-  _bufferStaging.clear();
-  _bufferPartialStaging.clear();
-  _pipelines.clear();
-  _queue = nullptr;
-  _commandPool = nullptr;
-  _descriptorSetLayout = nullptr;
-  descriptorSets.clear();
-  _pipelineLayout = nullptr;
-  _descriptorPool = nullptr;
-  _device = nullptr;
 }
 
 template <class T> void VulkanStream<T>::createBuffers() {
@@ -401,8 +381,6 @@ VulkanStream<T>::findMemoryType(uint32_t typeBits,
 
   throw std::runtime_error(
       "Unable to find a Vulkan memory type matching requirements");
-
-  return 0;
 }
 
 template <class T>
@@ -488,7 +466,7 @@ vk::raii::Pipeline VulkanStream<T>::createPipeline(const ShaderKernel entry) {
   vk::raii::ShaderModule shaderModule = _device.createShaderModule(moduleInfo);
 
   // Specialization constants that must match ids in shader module
-  struct __attribute__((__packed__)) SpecializationBuffer {
+  struct SpecializationBuffer {
     uint32_t workgroupSize; // spec constant id 0
     uint32_t elementCount;  // spec constant id 1
     uint32_t dotGridSize;   // spec constant id 2
@@ -498,22 +476,15 @@ vk::raii::Pipeline VulkanStream<T>::createPipeline(const ShaderKernel entry) {
     T scalar;               // spec constant id 6
   };
 
-  uint32_t offset = 0;
-  uint32_t index = 0;
-  std::vector<vk::SpecializationMapEntry> specializationMap;
-  specializationMap.emplace_back(index++, offset, sizeof(uint32_t));
-  offset += sizeof(uint32_t);
-  specializationMap.emplace_back(index++, offset, sizeof(uint32_t));
-  offset += sizeof(uint32_t);
-  specializationMap.emplace_back(index++, offset, sizeof(uint32_t));
-  offset += sizeof(uint32_t);
-  specializationMap.emplace_back(index++, offset, sizeof(T));
-  offset += sizeof(T);
-  specializationMap.emplace_back(index++, offset, sizeof(T));
-  offset += sizeof(T);
-  specializationMap.emplace_back(index++, offset, sizeof(T));
-  offset += sizeof(T);
-  specializationMap.emplace_back(index++, offset, sizeof(T));
+  const std::array<vk::SpecializationMapEntry, 7> specializationMap{{
+      {0, offsetof(SpecializationBuffer, workgroupSize), sizeof(uint32_t)},
+      {1, offsetof(SpecializationBuffer, elementCount), sizeof(uint32_t)},
+      {2, offsetof(SpecializationBuffer, dotGridSize), sizeof(uint32_t)},
+      {3, offsetof(SpecializationBuffer, initA), sizeof(T)},
+      {4, offsetof(SpecializationBuffer, initB), sizeof(T)},
+      {5, offsetof(SpecializationBuffer, initC), sizeof(T)},
+      {6, offsetof(SpecializationBuffer, scalar), sizeof(T)},
+  }};
 
   const uint32_t dotDispatchElems = _dotNumDispatchGroups * _workgroupSize;
   SpecializationBuffer specializationData{
