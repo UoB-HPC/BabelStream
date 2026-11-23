@@ -67,8 +67,8 @@ jobs:
             mkdir -p "$cli_dir"
             as_root=()
             if command -v sudo >/dev/null 2>&1; then as_root=(sudo); fi
-            "${as_root[@]}" apt-get -o Acquire::Retries=5 update
-            (cd "$cli_dir" && apt-get -o Acquire::Retries=5 download docker.io)
+            "${as_root[@]}" apt-get -o Acquire::Retries=10 update
+            (cd "$cli_dir" && apt-get -o Acquire::Retries=10 download docker.io)
             dpkg-deb --fsys-tarfile "$cli_dir"/docker.io_*.deb |
               tar -x -C "$cli_dir" --strip-components=3 ./usr/bin/docker
             echo "$cli_dir" >> "$GITHUB_PATH"
