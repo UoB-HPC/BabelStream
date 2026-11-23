@@ -38,6 +38,8 @@ jobs:
       CI_RAJA_REF: ${{ matrix.raja_ref }}
       CI_FUTHARK_REF: ${{ matrix.futhark_ref }}
       CI_FUTHARK_SHA256: ${{ matrix.futhark_sha256 }}
+      CI_VULKAN_SDK_VERSION: ${{ matrix.vulkan_sdk_version }}
+      CI_VULKAN_SDK_SHA256: ${{ matrix.vulkan_sdk_sha256 }}
       CI_ADAPTIVECPP_SOURCE_URL: ${{ matrix.toolchain.source_url }}
       CI_ADAPTIVECPP_SHA256: ${{ matrix.toolchain.sha256 }}
       CI_CMAKE_ARGS: ${{ matrix.cmake_args }}
@@ -88,6 +90,7 @@ jobs:
             --env ACT --env CI_NATIVE_CXX_FLAGS --env CI_NATIVE_CUDA_FLAGS \
             --env CI_KOKKOS_REF --env CI_RAJA_REF \
             --env CI_FUTHARK_REF --env CI_FUTHARK_SHA256 \
+            --env CI_VULKAN_SDK_VERSION --env CI_VULKAN_SDK_SHA256 \
             --env CI_ADAPTIVECPP_SOURCE_URL --env CI_ADAPTIVECPP_SHA256 \
             --env CI_CMAKE_ARGS \
             --env BUILD_TESTING --env CMAKE_BUILD_PARALLEL_LEVEL \
