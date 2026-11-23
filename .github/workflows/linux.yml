@@ -27,8 +27,7 @@ jobs:
           - {variant: "gcc-13-omp", model: "omp", toolchain: *gcc_13}
           - {variant: "gcc-14-serial", model: "serial", toolchain: &gcc_14 {image: "docker.io/library/ubuntu:24.04", cc: "gcc-14", cxx: "g++-14", packages: "g++-14"}}
           - {variant: "gcc-14-omp", model: "omp", toolchain: *gcc_14}
-          - {variant: "gcc-15-serial", model: "serial", toolchain: &gcc_15 {image: "docker.io/library/ubuntu:24.04", cc: "gcc-15", cxx: "g++-15", packages: "g++-15", apt_key: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xC8EC952E2A0E1FBDC5090F6A2C277A0A352154E5",
-              apt_source: "https://ppa.launchpadcontent.net/ubuntu-toolchain-r/test/ubuntu noble main"}}
+          - {variant: "gcc-15-serial", model: "serial", toolchain: &gcc_15 {image: "docker.io/library/ubuntu:26.04", cc: "gcc-15", cxx: "g++-15", packages: "g++-15"}}
           - {variant: "gcc-15-omp", model: "omp", toolchain: *gcc_15}
           - {variant: "clang-11-serial", model: "serial", toolchain: &clang_11 {image: "docker.io/library/ubuntu:22.04", cc: "clang-11", cxx: "clang++-11", packages: "clang-11"}}
           - {variant: "clang-11-omp", model: "omp", cmake_args: &clang_omp_flags "-DCXX_EXTRA_FLAGS=-Wno-pass-failed", model_packages: "libomp-11-dev", toolchain: *clang_11}
