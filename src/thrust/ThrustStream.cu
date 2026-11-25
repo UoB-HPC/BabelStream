@@ -188,7 +188,7 @@ T ThrustStream<T>::dot()
 #if defined(__NVCC__) || defined(__NVCOMPILER_CUDA__)
 #define IMPL_FN__(fn) cuda##fn
 #define IMPL_TYPE__(tpe) cuda##tpe
-#elif defined(__HIP_PLATFORM_HCC__)
+#elif defined(__HIP_PLATFORM_AMD__) || defined(__HIP_PLATFORM_HCC__)
 #define IMPL_FN__(fn) hip##fn
 #define IMPL_TYPE__(tpe) hip##tpe##_t
 #else
